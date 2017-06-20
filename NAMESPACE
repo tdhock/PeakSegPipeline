@@ -1,0 +1,6 @@
+useDynLib(PeakSegPipeline)
+exportPattern("^[[:alpha:]]+")
+importFrom("stats", "quantile", "sd")
+importFrom("utils", "write.table")
+import(data.table)
+import(PeakError)
