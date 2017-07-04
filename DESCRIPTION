@@ -12,4 +12,5 @@ Description: Implementations of supervised machine learning
  for joint peak calling (for each peak, jointly using all samples).
 License: GPL-3
 SystemRequirements: db_stl, bedGraphToBigWig, bigWigToBedGraph, bedToBigBed
-Imports: R (>= 2.10), data.table (>= 1.9.8), PeakError
+Depends: R (>= 2.10)
+Imports: data.table (>= 1.9.8), PeakError

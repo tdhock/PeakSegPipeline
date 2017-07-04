@@ -1,18 +1,10 @@
-system.or.stop <- function(cmd){
-  cat(cmd, "\n")
-  code <- system(cmd)
-  if(code != 0){
-    stop("non-zero exit code ", code)
-  }
-}
-
 create_track_hub <- function
 (data.dir="test/input",
   url.prefix="http://hubs.hpc.mcgill.ca/~thocking/PeakSegFPOP-",
   genome="hg19",
   email="email@domain.com",
   goldenPath.url="http://hgdownload.soe.ucsc.edu/goldenPath/"
-  ){
+){
   ## First make sure we have the chromInfo file for this genome.
   chromInfo.txt <- paste0(genome, "_chromInfo.txt")
   if(!file.exists(chromInfo.txt)){
@@ -21,7 +13,6 @@ create_track_hub <- function
     download.file(chromInfo.url, chromInfo.gz)
     system.or.stop(paste("zcat", gz, ">", chromInfo.txt))
   }
-
   ## Then create bedGraph files if necessary.
   bedGraph.file.vec <- Sys.glob(file.path(
     data.dir, "samples", "*", "*", "coverage.bedGraph"))
@@ -55,7 +46,6 @@ create_track_hub <- function
   group.colors <- rep(maybe.short, l=length(group.names))
   names(group.colors) <- group.names
   data.name <- basename(data.dir)
-
   joint_peaks.bedGraph.vec <- sub(
     "coverage.bigWig$", "joint_peaks.bedGraph", bigWig.file.vec)
   joint.bigWig.list <- list()
@@ -71,13 +61,11 @@ create_track_hub <- function
       joint.bigWig.list[[joint_peaks.bedGraph]] <- joint_peaks.bigWig
     }
   }
-
   ## Write genomes.txt
   writeLines(paste0("
 genome ", genome, "
 trackDb trackDb.txt
 "), file.path(data.dir, "genomes.txt"))
-
   ## Write hub.txt
   writeLines(paste0("
 hub ", data.name, "
@@ -85,7 +73,6 @@ shortLabel ", data.name, "
 longLabel ", data.name, "
 genomesFile genomes.txt
 email ", email), file.path(data.dir, "hub.txt"))
-
   ## create jointProblems.bigBed
   jproblems.glob <- file.path(data.dir, "problems", "*", "jointProblems.bed")
   jprobs <- tryCatch({
@@ -111,7 +98,6 @@ email ", email), file.path(data.dir, "hub.txt"))
   }else{
     unlink(jointProblems.bed)
   }
-
   bedToBigBed <- function(bed, opt=""){
     bed.long <- fread(bed)
     names(bed.long)[1:3] <- c("chrom", "chromStart", "chromEnd")
@@ -154,7 +140,6 @@ email ", email), file.path(data.dir, "hub.txt"))
       bigBed.list[[bed.name]] <- bedToBigBed(bed.file)
     }
   }
-
   bed.track.vec <- if(length(bigBed.list)==0){
     ""
   }else{
@@ -175,7 +160,6 @@ superTrack on show
 shortLabel ", group.names, "
 longLabel ", group.names, " ChIP-seq samples
 ")
-
   track <- function(url, data.type, color){
     paste0("
   track ", track.id.vec, data.type, "
@@ -218,7 +202,6 @@ longLabel ", group.names, " ChIP-seq samples
     )
   }
 })
-
   u.group.vec <- unique(group.id.vec)
   equals.vec <- paste0(u.group.vec, "=", u.group.vec)
   track.content <- paste(
