@@ -285,4 +285,19 @@ normalizePath("plot_all.R", mustWork=TRUE),
 " ", data.dir, " 
 ")
   writeLines(script.txt, sh.file)
+  ## Create track hub script.
+  hub <- file.path(data.dir, "hub")
+  hub.cmd <- Rscript(
+    'PeakSegPipeline::create_track_hub("%s", "%s", "%s", "%s")',
+    data.dir,
+    "http://hubs.hpc.mcgill.ca/~thocking/PeakSegFPOP-",
+    "hg19",
+    "email@domain.com")
+  script.txt <- paste0(
+    PBS.header, "
+#PBS -o ", hub, ".out
+#PBS -e ", hub, ".err
+#PBS -N hub
+", hub.cmd, "
+")
 }

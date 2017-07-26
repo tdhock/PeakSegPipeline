@@ -1,0 +1,380 @@
+[[https://travis-ci.org/tdhock/PeakSegPipeline][https://travis-ci.org/tdhock/PeakSegPipeline.png?branch=master]]
+
+PeakSegPipeline: an R package for genome-wide supervised ChIP-seq
+peak prediction, for a single experiment type (e.g. broad H3K36me3 or
+sharp H3K4me3 data), jointly using multiple samples and cell types.
+- *Labeling.* The first step of any supervised analysis is to label a
+  few genomic regions with and without peaks in your data. The
+  [[file:R/create_track_hub.R][PeakSegPipeline::create_track_hub]] function creates a track hub from
+  bigWig files, which makes it easy to visualize data on the UCSC
+  genome browser and then create labels (specific genomic regions
+  where you have observed presence or absence of peaks in specific
+  samples). For more details about labeling see [[#Label-Data][Input Files -> Label
+  Data]] below.
+- *Single-sample peak calling using PeakSegFPOP.* This repository
+  includes PeakSegFPOP, a command line limited memory PeakSeg
+  functional pruning optimal partitioning algorithm
+  ([[https://arxiv.org/abs/1703.03352][arXiv:1703.03352]]), which is used to predict preliminary peaks for
+  each sample independently.
+- *Multiple-sample peak calling using PeakSegJoint.* After
+  single-sample analysis, peaks are clustered into genomic regions
+  with overlapping peaks. In each cluster we run [[https://github.com/tdhock/PeakSegJoint][PeakSegJoint]] to find
+  the most likely common peak positions across multiple samples --
+  this includes a prediction of which samples are up and down for each
+  genomic region.
+
+There are two major differences between PeakSegPipeline and all of the
+other peak detection algorithms for ChIP-seq data analysis:
+
+- *Supervised machine learning:* PeakSegFPOP and PeakSegJoint are
+  trained by providing labels ([[https://github.com/tdhock/PeakSegJoint/blob/master/inst/exampleData/manually_annotated_region_labels.txt][example]]) that indicate regions with and
+  without peaks. So if you see false positives (a peak called where
+  there is clearly only background noise) or false negatives (no peak
+  called where there should be one) you can add labels to correct
+  the models, and they learn and get more accurate as more labels
+  are added. In contrast, other peak detection methods are
+  *unsupervised*, meaning that they usually have 10-20 parameters, and
+  no obvious way to train them, yielding arbitrarily inaccurate peaks
+  that can NOT be corrected using labels.
+- *Joint peak detection in any number of samples or cell types* so the
+  model can be easily interpreted to find similarities or differences
+  between samples (PeakSegJoint outputs a binary matrix, samples x
+  peaks). In contrast, it is not easy to find similarities and
+  differences between samples using single-sample peak detection
+  methods (e.g. [[https://github.com/taoliu/MACS][MACS]]), and other multi-sample peak detection methods
+  are limited to one (e.g. [[https://github.com/mahmoudibrahim/jamm][JAMM]]) or two (e.g. [[https://code.google.com/p/pepr-chip-seq/][PePr]]) cell types
+  (assuming all samples of the same cell type are replicates with the
+  same peak pattern).
+
+** Installation and testing
+
+Install UCSC command line programs built for the x86_64 architecture
+(you may need a different architecture for your system). TODO: write
+an R function that downloads and/or builds/installs these binaries.
+
+#+BEGIN_SRC shell-script
+export BIN=~/bin # or any other directory on your $PATH
+curl -L http://hgdownload.cse.ucsc.edu/admin/exe/linux.x86_64/bigWigToBedGraph -o $BIN/bigWigToBedGraph
+curl -L http://hgdownload.cse.ucsc.edu/admin/exe/linux.x86_64/bedGraphToBigWig -o $BIN/bigWigToBedGraph
+curl -L http://hgdownload.cse.ucsc.edu/admin/exe/linux.x86_64/bedToBigBed -o $BIN/bedToBigBed
+chmod u+x $BIN/bigWigToBedGraph $BIN/bedToBigBed $BIN/bedGraphToBigWig
+#+END_SRC
+
+Install build tools and BerkeleyDB STL. On my Ubuntu system the
+command looks like this, but it may be different for you.
+
+#+BEGIN_SRC shell-script
+sudo aptitude install build-essential r-recommended libdb6.0++-dev libdb6.0-stl-dev bedtools
+#+END_SRC
+
+BerkeleyDB STL is used by PeakSegFPOP to write a large temporary file
+to disk. If you don't have root or aptitude, then you can always
+install BerkeleyDB by hand to your home directory
+
+#+BEGIN_SRC shell-script
+wget http://download.oracle.com/berkeley-db/db-6.2.23.NC.tar.gz
+tar xf db-6.2.23.NC.tar.gz
+cd db-6.2.23.NC/build_unix
+../dist/configure --prefix=$HOME --enable-stl
+make
+make install
+#+END_SRC 
+
+If BerkeleyDB is installed to your home directory or some other
+non-standard directory, then you probably need to tell R how to find
+it (TODO: maybe include BerkeleyDB STL inside this package, to avoid
+installation hassles).
+
+Install the PeakSegPipeline R package.
+
+#+BEGIN_SRC shell-script
+Rscript -e 'devtools::install_github("tdhock/PeakSegPipeline")'
+#+END_SRC
+
+Once everything has been installed, you can test your installation by
+executing [[file:tests/testthat/test-demo.R]] It will first download some
+bigWigs and labels to the =test/demo= directory, then run the
+PeakSegPipeline on them. If everything worked, you can view the
+results by opening =test/demo/index.html= in a web browser, and it
+should be the same as the results shown on
+http://cbio.mines-paristech.fr/~thocking/hubs/test/demo/
+
+** Input Files
+
+PeakSegPipeline uses PeakSegFPOP + PeakSegJoint to predict common and
+different peaks in multiple samples. It requires three kinds of input
+data:
+- coverage data under =project/samples=,
+- labels in =project/labels=,
+- genomic segmentation problems in =project/problems.bed=.
+
+To give a concrete example, let us consider the data set that is used
+when you run [[file:tests/testthat/test-demo.R]]
+
+*** Coverage data
+
+Each coverage data file should contain counts of aligned sequence
+reads at every genomic position, for one sample. These files can be in
+either [[https://genome.ucsc.edu/goldenpath/help/bedgraph.html][bedGraph]] or [[https://genome.ucsc.edu/goldenpath/help/bigWig.html][bigWig]] format (bigWig is preferable since it is
+indexed and thus faster to read than bedGraph). For example
+this test downloads 8 files:
+
+#+BEGIN_SRC 
+test/demo/samples/bcell/MS026601/coverage.bigWig
+test/demo/samples/bcell_/MS010302/coverage.bigWig
+test/demo/samples/Input/MS002201/coverage.bigWig
+test/demo/samples/Input/MS026601/coverage.bigWig
+test/demo/samples/Input_/MS002202/coverage.bigWig
+test/demo/samples/Input_/MS010302/coverage.bigWig
+test/demo/samples/kidney/MS002201/coverage.bigWig
+test/demo/samples/kidney_/MS002202/coverage.bigWig
+#+END_SRC
+
+In the example above we have the =test/demo= directory which will
+contain all data sets, labels, and peak calls for this particular
+project. The =samples= directory contains a sub-directory for each
+sample group (experimental conditions or cell types, e.g. =bcell= or
+=kidney=). Each sample group directory should contain a sub-directory
+for each sample (e.g. =MS002201= or =MS010302=). Each sample
+sub-directory should contain either a =coverage.bedGraph= or
+=coverage.bigWig= file with counts of aligned sequence reads.
+
+Note that in this demonstration project, the groups with underscores
+are un-labeled samples (e.g. =bcell_=), and the groups without
+underscores are labeled samples (e.g. =bcell=). In real projects
+typically you would combine those two groups into a single labeled
+group, but in this project we keep them separate in order to
+demonstrate the prediction accuracy of the learning algorithm.
+
+*** Label Data
+
+The =project/labels/*.txt= files contain genomic regions with or without
+peaks. These labels will be used to train the peak prediction models
+(automatically select model parameters that yield optimal peak
+prediction accuracy). A quick and easy way to create labels is by
+visual inspection as in the [[http://cbio.mines-paristech.fr/~thocking/chip-seq-chunk-db/][McGill ChIP-seq peak detection benchmark]]
+(for details please read [[http://bioinformatics.oxfordjournals.org/content/early/2016/10/23/bioinformatics.btw672.abstract][Hocking et al, Bioinformatics 2016]]).
+
+*To visually label your data* first create a project directory on a
+webserver with =project/samples/groupID/sampleID/coverage.bigWig=
+files, then create a track hub using a command such as
+
+#+BEGIN_SRC shell-script
+Rscript create_track_hub.R project http://your.server.com/~user/path- hg19 email@domain.com
+#+END_SRC
+
+The arguments of the =create_track_hub.R= script are as follows:
+- The first argument =project= is the data directory. 
+- The second argument =http://your.server.com/~user/path-= is the URL
+  prefix (appended before the first argument to obtain URLs for the
+  trackDb.txt file).
+- The third argument =hg19= is the UCSC genome ID for the genomes.txt file. 
+- The fourth argument =email@domain.com= is the email address for the
+  hub.txt file.
+
+If that command worked, then you should see a message =Created
+http://your.server.com/~user/path-project/hub.txt= and then you can
+paste that URL into [[http://genome.ucsc.edu/cgi-bin/hgHubConnect#unlistedHubs][My Data -> Track Hubs -> My Hubs]] then click Add
+Hub to tell the UCSC genome browser to display your data.  Navigate
+around the genome until you have found some peaks, then add positive
+and negative labels in =project/labels/*.txt= files.
+
+*For example* the test data set contains only one
+labels file,
+
+#+BEGIN_SRC 
+test/demo/labels/some_labels.txt
+#+END_SRC
+
+which contains lines such as the following
+
+#+BEGIN_SRC 
+chr10:33,061,897-33,162,814 noPeaks
+chr10:33,456,000-33,484,755 peakStart kidney
+chr10:33,597,317-33,635,209 peakEnd kidney
+chr10:33,662,034-33,974,942 noPeaks
+
+chr10:35,182,820-35,261,001 noPeaks
+chr10:35,261,418-35,314,654 peakStart bcell kidney
+#+END_SRC
+
+*A chunk is a group of nearby labels.* In the example above there are
+two chunks (far apart genomic regions, separated by an empty
+line). The first chunk has two regions with noPeaks labels in all
+samples, and two regions with positive labels in kidney samples and
+noPeaks labels in bcell samples. The second chunk has one region with
+noPeaks in bcell and kidney samples, and one region with a peakStart
+label in bcell and kidney samples.
+
+In general, the labels file is divided into separate chunks by empty
+lines. Each chunk should contain lines for several nearby genomic
+regions, the corresponding label (noPeaks, peakStart, peakEnd, peaks),
+and the sample groups to which that label should be assigned (all
+other groups mentioned in the labels file will receive the noPeaks
+label). Ideally, each chunk should contain 
+- At least one label with a peak in all samples.
+- At least one label with no peaks in any samples.
+- At least one label with a peak in some samples but not others (these
+  labels are crucial for the model to be able to learn what is a
+  significant difference between up and down).
+
+*Visualizing labels.* After having added some labels in
+=project/labels/*.txt= files, run =Rscript convert_labels.R project=
+to create =project/all_labels.bed=.  Then when you re-run =Rscript
+create_track_hub.R ...= it will create a new hub with a track
+"Manually labeled regions with and without peaks" that displays the
+labels you have created.
+
+*** Genomic segmentation problems
+
+The last input file that you need to provide is a list of separate
+segmentation problems for your reference genome (regions without
+gaps). This file should be in [[https://genome.ucsc.edu/FAQ/FAQformat#format1][BED]] format
+(e.g. [[https://raw.githubusercontent.com/tdhock/PeakSegFPOP/master/hg19_problems.bed][hg19_problems.bed]]).
+
+If you don't use hg19, but you do use another standard genome that is
+hosted on UCSC, then you can use [[file:R/downloadProblems.R][PeakSegPipeline::downloadProblems]].
+
+#+BEGIN_SRC shell-script
+Rscript -e 'PeakSegPipeline::downloadProblems("hg38", "hg38_problems.bed")'
+#+END_SRC
+
+If your reference genome does not exist on UCSC, you can use
+[[file:R/gap2problems.R][PeakSegPipeline::gap2problems]] to make a =problems.bed= file.
+
+#+BEGIN_SRC shell-script
+Rscript -e 'PeakSegPipeline::gap2problems("yourGenome_gap.bed", "yourGenome_chromInfo.txt", "yourGenome_problems.bed")'
+#+END_SRC
+
+where the chromInfo file contains one line for every chromosome, and
+the gap file contains one line for every gap in the reference (unknown
+/ NNN sequence). If there are no gaps in your genome, then you can use
+=yourGenome_chromInfo.txt= as a =problems.bed= file.
+
+** Running steps of the pipeline in parallel
+
+The first step is to convert label text files to bed files:
+
+#+BEGIN_SRC shell-script
+Rscript -e 'PeakSegPipeline::convert_labels("test/demo")'
+#+END_SRC
+
+Since the human genome is so large, we recommend to do model training
+and peak prediction in parallel. To use a PBS/qsub cluster such as
+Compute Canada's [[http://www.hpc.mcgill.ca/index.php/guillimin-status][guillimin]], call
+[[file:create_problems_all.R][PeakSegPipeline::create_problems_all]] with a =PBS.header= argument that
+reflects your cluster configuration:
+
+#+BEGIN_SRC shell-script
+Rscript -e 'PeakSegPipeline::create_problems_all("test/demo")'
+#+END_SRC
+
+That will create problem sub-directories in
+=test/demo/samples/*/*/problems/*=. Begin model training by computing
+=target.tsv= files:
+
+#+BEGIN_SRC shell-script
+for lbed in test/demo/samples/*/*/problems/*/labels.bed;do qsub $(echo $lbed|sed 's/labels.bed/target.tsv.sh/');done
+#+END_SRC
+
+The target is the largest interval of log(penalty) values for which
+PeakSegFPOP returns peak models that have the minimum number of
+incorrect labels. The =target.tsv= files are used for training a
+machine learning model that can predict optimal penalty values, even
+for un-labeled samples and genome subsets. To train a model, use
+
+#+BEGIN_SRC shell-script
+Rscript -e 'PeakSegPipeline::train_model("test/demo")'
+#+END_SRC
+
+which trains a model using
+=test/demo/samples/*/*/problems/*/target.tsv= files, and saves it to
+=test/demo/model.RData=. To compute peak predictions independently for
+each sample and genomic segmentation problem,
+
+#+BEGIN_SRC shell-script
+for sh in test/demo/problems/*/jointProblems.bed.sh;do qsub $sh;done
+#+END_SRC
+
+which will launch one job for each genomic segmentation problem. Each
+job will make peak predictions in all samples, then write
+=test/demo/problems/*/jointProblems/*= directories with
+=target.tsv.sh= and =peaks.bed.sh= scripts. One directory and joint
+segmentation problem will be created for each genomic region which has
+at least one sample with a predicted peak. To train a joint peak
+calling model, run
+
+#+BEGIN_SRC shell-script
+qsub test/demo/joint.model.RData.sh
+#+END_SRC
+
+which will compute =test/demo/joint.model.RData= and
+=test/demo/jobs/*/jobProblems.bed= files. To make joint peak
+predictions, run
+
+#+BEGIN_SRC shell-script
+for sh in test/demo/jobs/*/jobPeaks.sh;do qsub $sh;done
+#+END_SRC
+
+To gather all the peak predictions in a summary on
+=test/demo/index.html=, run
+
+#+BEGIN_SRC shell-script
+qsub test/demo/peaks_matrix.tsv.sh
+#+END_SRC
+
+Finally, you can create =test/demo/hub.txt= which can be used as a
+track hub on the UCSC genome browser:
+
+#+BEGIN_SRC shell
+Rscript test/demo/hub.sh
+#+END_SRC
+
+The script will create
+=test/demo/samples/*/*/coverage.bigWig= and
+=test/demo/samples/*/*/joint_peaks.bigWig= files that will be shown
+together on the track hub in a multiWig container (for each sample, a
+colored coverage profile with superimposed peak calls as horizontal
+black line segments).
+
+** Output Files
+
+The [[file:plot_all.R][PeakSegPipeline::plot_all]] function creates
+- =index.html= a web page which summarizes the results,
+- =peaks_matrix.tsv= a binary matrix (peaks x samples) in which 1
+  means peak and 0 means no peak.
+- =peaks_summary.tsv= is a table with a row for each genomic region
+  that has a peak in at least one sample. The columns are
+  - =chrom=, =peakStart=, =peakEnd= genomic region of peak.
+  - =specificity= if you have labeled peaks in Input samples, the
+    model labels each peak as either specific (few Input samples up),
+    or non-specific (many Input samples up). If you want to filter
+    non-specific Input peaks yourself, you can use the =n.Input=
+    column, which is the number of Input samples with a peak in this
+    region.
+  - =loss.diff= the likelihood of the peak (larger values mean taller
+    and wider peaks in more samples).
+  - =chisq.pvalue=, =fisher.pvalue= P-Values from Chi-Squared
+    (=chisq.test=) and Fisher's exact test (=fisher.test=) for whether
+    or not this peak is group-specific (lower values mean strong
+    correlation between peak calls and groups).
+
+** Related work
+
+- [[https://github.com/tdhock/coseg][PeakSegOptimal::PeakSegFPOP]] provides a O(n log n) memory (and no
+  disk usage) implementation of the PeakSegFPOP algorithm for
+  separately calling peaks for every sample and genomic problem. In
+  contrast [[file:R/PeakSegFPOP.R][PeakSegPipeline::PeakSegFPOP_disk]] implements the same
+  algorithm using O(log n) memory and O(n log n) disk space (which is
+  highly unlikely to memory swap, but a bit slower on large data
+  sets). The [[https://github.com/tdhock/PeakSegFPOP][PeakSegFPOP]] command line program is another on-disk
+  implementation which can be used outside of R.
+- The [[https://github.com/tdhock/PeakSegJoint][PeakSegJoint]] package is used by PeakSegPipeline, for its
+  algorithms for joint peak calling across any number of samples and
+  cell types.
+- The [[https://github.com/tdhock/penaltyLearning][penaltyLearning]] package is used by PeakSegPipeline, for its
+  supervised learning algorithms (interval regression) which are used
+  to predict model complexity (log penalty = number of peaks).
+- The [[https://github.com/tdhock/PeakError][PeakError]] package is used by PeakSegPipeline, to compute the
+  number of incorrect labels for each peak model.
+
