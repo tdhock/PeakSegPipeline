@@ -9,8 +9,7 @@ sharp H3K4me3 data), jointly using multiple samples and cell types.
   bigWig files, which makes it easy to visualize data on the UCSC
   genome browser and then create labels (specific genomic regions
   where you have observed presence or absence of peaks in specific
-  samples). For more details about labeling see [[#Label-Data][Input Files -> Label
-  Data]] below.
+  samples). For more details about labeling see [[#label-data][Input Files -> Label Data]] below.
 - *Single-sample peak calling using PeakSegFPOP.* This repository
   includes PeakSegFPOP, a command line limited memory PeakSeg
   functional pruning optimal partitioning algorithm
