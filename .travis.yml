@@ -16,6 +16,7 @@ before_install:
   - chmod 755 *
   - export PATH=$(pwd):$PATH
   - travis-tool.sh bootstrap
+  - sudo apt-get install -y bedtools libdb5.1++-dev libdb5.1-stl-dev 
 
 install:
   - travis-tool.sh r_install devtools ggplot2 RJSONIO hexbin xtable future directlabels
