@@ -158,8 +158,9 @@ PeakSegFPOP_disk <- structure(function
 (bedGraph.file,
 ### character scalar: tab-delimited tabular text file with four
 ### columns: chrom, chromStart, chromEnd, coverage.
-  penalty
-### numeric scalar: non-negative penalty. More penalty means fewer
+  pen.str
+### character scalar that can be converted to a numeric scalar via
+### as.numeric: non-negative penalty. More penalty means fewer
 ### peaks. 0 and Inf are OK.
 ){
   if(!(
@@ -169,15 +170,15 @@ PeakSegFPOP_disk <- structure(function
   )){
     stop("bedGraph.file must be the name of a data file to segment")
   }
+  penalty <- as.numeric(pen.str)
   if(!(
     is.numeric(penalty) &&
     length(penalty)==1 &&
     0 <= penalty && penalty <= Inf
   )){
-    stop("penalty must be a non-negative numeric scalar")
+    stop("penalty=", penalty, " but it must be a non-negative numeric scalar")
   }
   norm.file <- normalizePath(bedGraph.file, mustWork=TRUE)
-  pen.str <- as.character(penalty)
   result <- .C(
     "PeakSegFPOP_interface",
     bedGraph.file=as.character(norm.file),
