@@ -482,7 +482,7 @@ problem.target <- function
     error.sorted[, errors := fp + fn]
     setkey(error.sorted, peaks)
     ##error.sorted[, model.complexity := oracleModelComplexity(bases, segments)]
-    path <- error.sorted[, exactModelSelection(
+    path <- error.sorted[, penaltyLearning::modelSelection(
       total.cost, peaks, peaks)]
     path.dt <- data.table(path)
     setkey(path.dt, peaks)
