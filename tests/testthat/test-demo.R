@@ -1,5 +1,6 @@
 library(testthat)
 context("demo")
+source("functions.R")
 
 ## Download bigWig files from github.
 bigWig.part.vec <- c(
@@ -70,11 +71,7 @@ chr10	125919472	128616069
 
 ## Whole pipeline.
 system(paste("bigWigToBedGraph", bigWig.file, "/dev/stdout|head"))
-convert.cmd <- paste("Rscript pipeline.R", set.dir)
-status <- system(convert.cmd)
-test_that("pipeline script succeeds", {
-  expect_equal(status, 0)
-})
+pipeline(set.dir)
 index.html <- file.path(set.dir, "index.html")
 test_that("index.html is created", {
   expect_true(file.exists(index.html))

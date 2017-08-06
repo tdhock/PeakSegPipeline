@@ -126,18 +126,6 @@ create_problems_all <- function
       nrow(labels), length(labels.by.problem),
       problems.dir))
     nothing <- lapply(1:nrow(problems), makeProblem)
-    ## Script for peaks on the whole sample.
-    peaks.bed <- file.path(sample.dir, "peaks.bed")
-    sh.file <- paste0(peaks.bed, ".sh")
-    sample.id <- basename(sample.dir)
-    script.txt <- paste0(PBS.header, "
-#PBS -o ", peaks.bed, ".out
-#PBS -e ", peaks.bed, ".err
-#PBS -N Predict", sample.id, "
-", "Rscript ", normalizePath("predict_sample.R", mustWork=TRUE), " ",
-sample.dir, " 
-")
-    writeLines(script.txt, sh.file)
   }
   chunk.limits.RData <- file.path(data.dir, "chunk.limits.RData")
   if(file.exists(chunk.limits.RData)){
@@ -164,9 +152,8 @@ sample.dir, "
     pred.cmd <- Rscript(
       'coseg::problem.predict.allSamples("%s")',
       prob.dir)
-    joint.prob.cmd <- paste(
-      "Rscript",
-      normalizePath("create_problems_joint.R", mustWork=TRUE),
+    joint.prob.cmd <- Rscript(
+      'PeakSegPipeline::create_problems_joint("%s")',
       prob.dir)
     joint.targets.cmd <- Rscript(
       'PeakSegJoint::problem.joint.targets("%s")',
@@ -245,17 +232,6 @@ sample.dir, "
           sep="\t",
           col.names=TRUE,
           quote=FALSE)
-        figure.png <- file.path(chunk.dir, "figure-predictions.png")
-        script.txt <- paste0(PBS.header, "
-#PBS -o ", figure.png, ".out
-#PBS -e ", figure.png, ".err
-#PBS -N FIG", chunk$chunk.name, "
-Rscript ",
-normalizePath("plot_chunk.R", mustWork=TRUE),
-" ", chunk.dir, "
-")
-        sh.file <- paste0(figure.png, ".sh")
-        writeLines(script.txt, sh.file)
       }
     }
   }
@@ -280,9 +256,9 @@ normalizePath("plot_chunk.R", mustWork=TRUE),
 #PBS -o ", peaks.tsv, ".out
 #PBS -e ", peaks.tsv, ".err
 #PBS -N PeaksMatrix
-Rscript ",
-normalizePath("plot_all.R", mustWork=TRUE),
-" ", data.dir, " 
+", Rscript(
+  'PeakSegPipeline::plot_all("%s")',
+  data.dir), "
 ")
   writeLines(script.txt, sh.file)
   ## Create track hub script.

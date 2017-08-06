@@ -13,4 +13,4 @@ Description: Implementations of supervised machine learning
 License: GPL-3
 SystemRequirements: db_stl, bedGraphToBigWig, bigWigToBedGraph, bedToBigBed
 Depends: R (>= 2.10)
-Imports: data.table (>= 1.9.8), PeakError
+Imports: data.table (>= 1.9.8), PeakError, PeakSegJoint
