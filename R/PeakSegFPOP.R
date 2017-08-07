@@ -482,8 +482,8 @@ problem.target <- function
     error.sorted[, errors := fp + fn]
     setkey(error.sorted, peaks)
     ##error.sorted[, model.complexity := oracleModelComplexity(bases, segments)]
-    path <- error.sorted[, penaltyLearning::modelSelection(
-      total.cost, peaks, peaks)]
+    path <- penaltyLearning::modelSelection(
+      error.sorted, "total.cost", "peaks")
     path.dt <- data.table(path)
     setkey(path.dt, peaks)
     join.dt <- error.sorted[path.dt][order(penalty),]
@@ -491,7 +491,7 @@ problem.target <- function
     side.vec.list <- list(fn="end", fp="start", errors=c("start", "end"))
     result <- list(models=path, candidates=list())
     for(error.col in c("fp", "fn", "errors")){
-      indices <- largestContinuousMinimum(
+      indices <- penaltyLearning::largestContinuousMinimumC(
         join.dt[[error.col]],
         join.dt[, max.log.lambda-min.log.lambda]
         )
@@ -534,6 +534,9 @@ problem.target <- function
     next.str <- paste(next.pen)
     error.list[next.str] <- mclapply.or.stop(next.str, getError)
     error.dt <- do.call(rbind, error.list)[order(-penalty),]
+    if(!is.numeric(error.dt$penalty)){
+      stop("penalty column is not numeric -- check loss in _loss.tsv files")
+    }
     print(error.dt[,.(penalty, peaks, status, fp, fn)])
     target.list <- getTarget(error.dt)
     target.vec <- c(
