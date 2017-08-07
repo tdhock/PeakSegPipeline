@@ -43,7 +43,7 @@ chr10:39,125,134-39,125,550 peakStart bcell kidney Input
 chr10:39,125,594-39,126,266 peakEnd bcell kidney Input
 chr10:39,126,866-39,140,858 noPeaks
 "
-set.dir <- file.path("test", "demo")
+set.dir <- file.path(Sys.getenv("HOME"), "PeakSegPipeline-test", "demo")
 repos.url <- "https://raw.githubusercontent.com/tdhock/input-test-data/master/"
 for(bigWig.part in bigWig.part.vec){
   suffix <- ifelse(grepl("MS026601|MS002201", bigWig.part), "/", "_/")

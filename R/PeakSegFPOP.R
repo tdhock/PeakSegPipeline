@@ -24,10 +24,10 @@ problem.train <- function(data.dir.str){
   targets <- do.call(rbind, targets.list)
   set.seed(1)
   model <- if(nrow(features) < 10){
-    IntervalRegressionUnregularized(
+    penaltyLearning::IntervalRegressionUnregularized(
       features[, c("log.quartile.100%", "log.data")], targets)
   }else{
-    IntervalRegressionCV(
+    penaltyLearning::IntervalRegressionCV(
       features, targets, verbose=0,
       initial.regularization=1e-4,
       min.observations=nrow(features),
@@ -111,7 +111,7 @@ problem.train <- function(data.dir.str){
       aes(xintercept=mean),
       data=size.model,
       size=1, color="red")+
-    PeakSegJoint::geom_tallrect(
+    penaltyLearning::geom_tallrect(
       aes(xmin=lower.lim, xmax=upper.lim),
       data=size.model, fill="red")+
     geom_line(
@@ -130,7 +130,7 @@ problem.train <- function(data.dir.str){
 PeakSegFPOP_disk <- structure(function
 ### Run the PeakSeg Functional Pruning Optimal Partitioning algorithm,
 ### using a file on disk (rather than in memory as in
-### coseg::PeakSegFPOP) to store the function piece lists.
+### coseg::PeakSegFPOP) to store the O(N) function piece lists, each of size O(log N).
 ### Finds the optimal change-points using the Poisson loss and the
 ### PeakSeg constraint. For N data points, the functional pruning
 ### algorithm is O(N log N) time and disk space, and O(log N) memory.

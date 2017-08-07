@@ -98,7 +98,7 @@ create_problems_all <- function
       ## Script for coverage.
       target.tsv <- file.path(problem.dir, "target.tsv")
       sh.file <- paste0(target.tsv, ".sh")
-      target.cmd <- Rscript('coseg::problem.target("%s")', problem.dir)
+      target.cmd <- Rscript('PeakSegPipeline::problem.target("%s")', problem.dir)
       script.txt <- paste0(PBS.header, "
 #PBS -o ", target.tsv, ".out
 #PBS -e ", target.tsv, ".err
@@ -110,7 +110,7 @@ create_problems_all <- function
       peaks.bed <- file.path(problem.dir, "peaks.bed")
       sh.file <- paste0(peaks.bed, ".sh")
       predict.cmd <- Rscript(
-        'coseg::problem.predict("%s")',
+        'PeakSegPipeline::problem.predict("%s")',
         problem.dir)
       script.txt <- paste0(PBS.header, "
 #PBS -o ", peaks.bed, ".out
@@ -150,13 +150,13 @@ create_problems_all <- function
     jointProblems.bed <- file.path(prob.dir, "jointProblems.bed")
     sh.file <- paste0(jointProblems.bed, ".sh")
     pred.cmd <- Rscript(
-      'coseg::problem.predict.allSamples("%s")',
+      'PeakSegPipeline::problem.predict.allSamples("%s")',
       prob.dir)
     joint.prob.cmd <- Rscript(
       'PeakSegPipeline::create_problems_joint("%s")',
       prob.dir)
     joint.targets.cmd <- Rscript(
-      'PeakSegJoint::problem.joint.targets("%s")',
+      'PeakSegPipeline::problem.joint.targets("%s")',
       prob.dir)
     script.txt <- paste0(PBS.header, "
 #PBS -o ", jointProblems.bed, ".out
@@ -171,7 +171,7 @@ create_problems_all <- function
     peaks.bed <- file.path(prob.dir, "peaks.bed")
     sh.file <- paste0(peaks.bed, ".sh")
     pred.cmd <- Rscript(
-      'PeakSegJoint::problem.joint.predict.many("%s")',
+      'PeakSegPipeline::problem.joint.predict.many("%s")',
       prob.dir)
     script.txt <- paste0(PBS.header, "
 #PBS -o ", peaks.bed, ".out
@@ -187,7 +187,7 @@ create_problems_all <- function
     jobPeaks <- file.path(job.dir, "jobPeaks")
     sh.file <- paste0(jobPeaks, ".sh")
     pred.cmd <- Rscript(
-      'PeakSegJoint::problem.joint.predict.job("%s")',
+      'PeakSegPipeline::problem.joint.predict.job("%s")',
       job.path)
     script.txt <- paste0(PBS.header, "
 #PBS -o ", jobPeaks, ".out
@@ -239,7 +239,7 @@ create_problems_all <- function
   joint.model.RData <- file.path(data.dir, "joint.model.RData")
   sh.file <- paste0(joint.model.RData, ".sh")
   train.cmd <- Rscript(
-    'PeakSegJoint::problem.joint.targets.train("%s")',
+    'PeakSegPipeline::problem.joint.targets.train("%s")',
     data.dir)
   script.txt <- paste0(PBS.header, "
 #PBS -o ", joint.model.RData, ".out

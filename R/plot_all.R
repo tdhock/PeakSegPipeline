@@ -14,7 +14,7 @@ plot_all <- function
       "(?<before>[^_]+)",
       "(?<after>_.*)?")
     value.vec <- unique(chrom.vec)
-    chr.mat <- str_match_named(value.vec, chr.pattern)
+    chr.mat <- namedCapture::str_match_named(value.vec, chr.pattern)
     did.not.match <- is.na(chr.mat[, 1])
     if(any(did.not.match)){
       print(value.vec[did.not.match])
@@ -39,7 +39,7 @@ plot_all <- function
   LAPPLY <- lapply
   LAPPLY <- mclapply.or.stop
   LAPPLY(chunk.dir.vec, function(chunk.dir){
-    PeakSegJoint::problem.joint.plot(chunk.dir)
+    PeakSegPipeline::problem.joint.plot(chunk.dir)
   })
   unsorted.problems <- fread(file.path(set.dir, "problems.bed"))
   setnames(unsorted.problems, c("chrom", "problemStart", "problemEnd"))
@@ -47,7 +47,7 @@ plot_all <- function
     "chr",
     "(?<before>[^_]+)",
     "(?<after>_.*)?")
-  chr.mat <- str_match_named(unsorted.problems$chrom, chr.pattern)
+  chr.mat <- namedCapture::str_match_named(unsorted.problems$chrom, chr.pattern)
   problems <- unsorted.problems[order(
     suppressWarnings(as.numeric(chr.mat[, "before"])),
     chr.mat[, "before"],
@@ -252,7 +252,7 @@ peak.name)]
   if(nrow(input.labels)){
     setkey(input.pred, chrom, peakStart, peakEnd)
     labeled.input <- foverlaps(input.pred, input.labels, nomatch=0L)
-    thresh.dt <- labeled.input[, data.table(WeightedROC(
+    thresh.dt <- labeled.input[, data.table(WeightedROC::WeightedROC(
       n.Input, ifelse(prop.noPeaks==0, 1, -1)))]
     thresh.best <- thresh.dt[which.min(FP+FN),]
     ## threshold is smallest n.Input that is classified as non-specific.
@@ -399,7 +399,7 @@ peak.name)]
       "(?<chromEnd>[0-9 ,]+)")
     pos2df <- function(path.vec){
       problem <- basename(path.vec)
-      df <- str_match_named(
+      df <- namedCapture::str_match_named(
         problem,
         g.pos.pattern,
         list(

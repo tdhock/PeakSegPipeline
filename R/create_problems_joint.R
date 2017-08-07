@@ -177,7 +177,7 @@ create_problems_joint <- function(prob.dir){
         target.tsv <- file.path(jprob.dir, "target.tsv")
         sh.file <- paste0(target.tsv, ".sh")
         target.cmd <- Rscript(
-          'PeakSegJoint::problem.joint.target("%s")', jprob.dir)
+          'PeakSegPipeline::problem.joint.target("%s")', jprob.dir)
         script.txt <- paste0(PBS.header, "
 #PBS -o ", target.tsv, ".out
 #PBS -e ", target.tsv, ".err
@@ -190,7 +190,7 @@ create_problems_joint <- function(prob.dir){
       peaks.bed <- file.path(jprob.dir, "peaks.bed")
       sh.file <- paste0(peaks.bed, ".sh")
       pred.cmd <- Rscript(
-        'PeakSegJoint::problem.joint.predict("%s")',
+        'PeakSegPipeline::problem.joint.predict("%s")',
         jprob.dir)
       script.txt <- paste0(PBS.header, "
 #PBS -o ", peaks.bed, ".out
