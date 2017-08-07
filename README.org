@@ -26,7 +26,7 @@ There are two major differences between PeakSegPipeline and all of the
 other peak detection algorithms for ChIP-seq data analysis:
 
 - *Supervised machine learning:* PeakSegFPOP and PeakSegJoint are
-  trained by providing labels ([[https://github.com/tdhock/PeakSegJoint/blob/master/inst/exampleData/manually_annotated_region_labels.txt][example]]) that indicate regions with and
+  trained by providing labels that indicate regions with and
   without peaks. So if you see false positives (a peak called where
   there is clearly only background noise) or false negatives (no peak
   called where there should be one) you can add labels to correct
