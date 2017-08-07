@@ -3,10 +3,7 @@ language: c
 sudo: required
 
 env:
-  - TEST_SUITE=functions
-  - TEST_SUITE=bash-noinput
-  - TEST_SUITE=bash-input-nolabels
-  - TEST_SUITE=bash-input-labels
+  - TEST_SUITE=demo
 
 before_install:
   - curl -OL http://hgdownload.cse.ucsc.edu/admin/exe/linux.x86_64/bigWigInfo
