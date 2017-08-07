@@ -124,7 +124,7 @@ int PeakSegFPOP_disk(char *bedGraph_file_name, char* penalty_str){
     }
     segments_file << chrom << "\t" << first_chromStart << "\t" << chromEnd << "\tbackground\t" << cum_weighted_count/cum_weight_i << "\n";
     segments_file.close();
-    loss_file << std::setprecision(20) << penalty << //penalty constant
+    loss_file << std::setprecision(20) << penalty_str << //penalty constant
       "\t" << 1 << //segments
       "\t" << 0 << //peaks
       "\t" << (int)cum_weight_i << //total bases
