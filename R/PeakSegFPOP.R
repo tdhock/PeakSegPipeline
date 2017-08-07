@@ -469,7 +469,11 @@ problem.target <- function
     stopifnot(length(penalty.str) == 1)
     result <- problem.PeakSegFPOP(problem.dir, penalty.str)
     penalty.peaks <- result$segments[status=="peak",]
-    penalty.error <- PeakErrorChrom(penalty.peaks, problem.labels)
+    tryCatch({
+      penalty.error <- PeakErrorChrom(penalty.peaks, problem.labels)
+    }, error=function(e){
+      stop("try deleting _segments.bed and recomputing, error computing number of incorrect labels: ", e)
+    })
     with(penalty.error, data.table(
       result$loss,
       fn=sum(fn),
@@ -566,7 +570,9 @@ problem.target <- function
     }else{
       error.candidates[done==FALSE, unique(next.pen)]
     }
-    if(interactive() && length(next.pen)){
+    if(FALSE && interactive() && length(next.pen)){
+      ## This may cause a crash if executed within mclapply, and it is
+      ## mostly just for debugging purposes.
       gg <- ggplot()+
         geom_abline(aes(slope=peaks, intercept=total.cost),
                     data=error.dt)+
