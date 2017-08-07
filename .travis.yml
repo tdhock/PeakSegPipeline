@@ -22,6 +22,7 @@ install:
   - travis-tool.sh r_install devtools ggplot2 RJSONIO hexbin xtable future directlabels
   - Rscript -e "devtools::install_github('faizan-khan-iit/ggplot2@5fb99d0cece13239bbbc09c6b8a7da7f86ac58e2', dep=TRUE)"
   - Rscript -e "devtools::install_github('tdhock/animint', upgrade_dependencies=FALSE)"
+  - Rscript -e "devtools::install_github('PeakSegJoint')"
   - travis-tool.sh install_deps
   - Rscript -e "devtools::install(dependencies=FALSE)"
 
