@@ -1,4 +1,5 @@
 library(testthat)
+library(data.table)
 context("demo")
 
 ## Download bigWig files from github.
@@ -42,20 +43,41 @@ chr10:39,125,134-39,125,550 peakStart bcell kidney Input
 chr10:39,125,594-39,126,266 peakEnd bcell kidney Input
 chr10:39,126,866-39,140,858 noPeaks
 "
-set.dir <- file.path(Sys.getenv("HOME"), "PeakSegPipeline-test", "demo")
+
+test.data.dir <- file.path(Sys.getenv("HOME"), "PeakSegPipeline-test")
+non.integer.dir <- file.path(test.data.dir, "non-integer")
+demo.dir <- file.path(test.data.dir, "demo")
+chrom.sizes.file <- tempfile()
+chrom.sizes <- data.table(chrom="chr10", bases=128616069)
+fwrite(chrom.sizes, chrom.sizes.file, sep="\t", col.names=FALSE)
 repos.url <- "https://raw.githubusercontent.com/tdhock/input-test-data/master/"
 for(bigWig.part in bigWig.part.vec){
   suffix <- ifelse(grepl("MS026601|MS002201", bigWig.part), "/", "_/")
-  bigWig.file <- file.path(set.dir, "samples", sub("/", suffix, bigWig.part), "coverage.bigWig")
+  bigWig.file <- file.path(
+    non.integer.dir, "samples",
+    sub("/", suffix, bigWig.part), "coverage.bigWig")
   bigWig.url <- paste0(repos.url, bigWig.part, ".bigwig")
   download.to(bigWig.url, bigWig.file)
+  demo.bigWig <- sub("non-integer", "demo", bigWig.file)
+  if(!file.exists(demo.bigWig)){
+    dir.create(dirname(demo.bigWig), showWarnings=FALSE, recursive=TRUE)
+    bw.dt <- PeakSegJoint::readBigWig(bigWig.file, "chr10", 0, 128616069)
+    out.dt <- data.table(chrom="chr10", bw.dt)
+    demo.bedGraph <- sub("bigWig", "bedGraph", demo.bigWig)
+    fwrite(out.dt, demo.bedGraph, sep="\t", col.names=FALSE)
+    PeakSegPipeline::system.or.stop(
+      paste("bedGraphToBigWig", demo.bedGraph, chrom.sizes.file, demo.bigWig))
+    unlink(demo.bedGraph)
+  }
 }
-labels.file <- file.path(set.dir, "labels", "some_labels.txt")
-dir.create(dirname(labels.file), showWarnings=FALSE, recursive=TRUE)
-writeLines(label.txt, labels.file)
-problems.bed <- file.path(set.dir, "problems.bed")
-unlink(problems.bed)
-cat("chr10	60000	17974675
+
+for(set.dir in c(non.integer.dir, demo.dir)){
+  labels.file <- file.path(set.dir, "labels", "some_labels.txt")
+  dir.create(dirname(labels.file), showWarnings=FALSE, recursive=TRUE)
+  writeLines(label.txt, labels.file)
+  problems.bed <- file.path(set.dir, "problems.bed")
+  unlink(problems.bed)
+  cat("chr10	60000	17974675
 chr10	18024675	38818835
 chr10	38868835	39154935
 chr10	42746000	46426964
@@ -67,21 +89,30 @@ chr10	51187410	51398845
 chr10	51448845	125869472
 chr10	125919472	128616069
 ", file=problems.bed)
+}
 
-## Whole pipeline.
+## Pipeline should raise error for non-integer data.
 system(paste("bigWigToBedGraph", bigWig.file, "/dev/stdout|head"))
-pipeline(set.dir)
-index.html <- file.path(set.dir, "index.html")
+test_that("error for non-integer data in bigWigs", {
+  expect_error({
+    pipeline(non.integer.dir)
+  }, "non-integer data in /home/thocking/PeakSegPipeline-test/non-integer/samples/kidney/MS002201/coverage.bigWig")
+})
+
+## Pipeline should run to completion for integer count data.
+system(paste("bigWigToBedGraph", demo.bigWig, "/dev/stdout|head"))
+pipeline(demo.dir)
+index.html <- file.path(demo.dir, "index.html")
 test_that("index.html is created", {
   expect_true(file.exists(index.html))
 })
 
 ## Post-processing to explain the output.
 joint.problems.dt <- fread(paste("cat", file.path(
-  set.dir, "problems", "*", "jointProblems.bed")))
+  demo.dir, "problems", "*", "jointProblems.bed")))
 setnames(joint.problems.dt, c("chrom", "problemStart", "problemEnd"))
 peaks.glob <- file.path(
-  set.dir, "problems", "*", "jointProblems", "*", "peaks.bed")
+  demo.dir, "problems", "*", "jointProblems", "*", "peaks.bed")
 ##Sys.glob(peaks.glob)
 joint.peaks.dt <- fread(paste("cat", peaks.glob))
 setnames(
@@ -90,9 +121,9 @@ setnames(
 joint.peaks.dt[, sample.id := sub(".*/", "", sample.path)]
 joint.peaks.dt[, sample.group := sub("/.*", "", sample.path)]
 chunks.dt <- fread(paste("cat", file.path(
-  set.dir, "problems", "*", "chunks", "*", "chunk.bed")))
+  demo.dir, "problems", "*", "chunks", "*", "chunk.bed")))
 setnames(chunks.dt, c("chrom", "chunkStart", "chunkEnd"))
-all.problems <- fread(file.path(set.dir, "problems.bed"))
+all.problems <- fread(file.path(demo.dir, "problems.bed"))
 setnames(all.problems, c("chrom", "problemStart", "problemEnd"))
 data.start <- min(chunks.dt$chunkStart)
 data.end <- max(chunks.dt$chunkEnd)
@@ -114,7 +145,7 @@ setnames(limits.dt, c("plotStart", "plotEnd"))
 limits.dt$y <- "plots in un-labeled regions"
 
 labels.bed.vec <- Sys.glob(file.path(
-  set.dir, "samples", "*", "*", "labels.bed"))
+  demo.dir, "samples", "*", "*", "labels.bed"))
 all.labels.list <- list()
 for(labels.bed in labels.bed.vec){
   sample.dir <- dirname(labels.bed)
@@ -178,12 +209,12 @@ gg <- ggplot()+
   ylab("")+
   xlab("position on chr10 (kb = kilo bases)")+
   scale_color_manual(values=c("non-specific"="red", specific="deepskyblue"))
-png(file.path(set.dir, "figure-demo-overview.png"), res=100, h=200, w=1000)
+png(file.path(demo.dir, "figure-demo-overview.png"), res=100, h=200, w=1000)
 print(gg)
 dev.off()
 
 coverage.bigWig.vec <- Sys.glob(file.path(
-  set.dir, "samples", "*", "*", "coverage.bigWig"))
+  demo.dir, "samples", "*", "*", "coverage.bigWig"))
 ann.colors <-
   c(noPeaks="#f6f4bf",
     peakStart="#ffafaf",
@@ -261,7 +292,7 @@ for(limit.i in seq_along(limits.list)){
   }
   f <- sprintf(
     "%s/figure-demo-%d-%d.png",
-    set.dir,
+    demo.dir,
     limit.vec[1]/1e6, limit.vec[2]/1e6)
   png(f, res=100, width=1000, height=600)
   print(gg)
