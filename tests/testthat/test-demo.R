@@ -1,6 +1,5 @@
 library(testthat)
 context("demo")
-source("functions.R")
 
 ## Download bigWig files from github.
 bigWig.part.vec <- c(
