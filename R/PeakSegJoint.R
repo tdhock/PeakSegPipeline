@@ -89,6 +89,7 @@ problem.joint.predict.job <- function
       if(0 == file.size(jpeaks.bed)){
         jprob.peaks <- data.table()
         loss.dt <- data.table()
+        log.inc.vec <- NULL
         TRUE
       }else{
         tryCatch({
@@ -96,8 +97,7 @@ problem.joint.predict.job <- function
           setnames(
             jprob.peaks,
             c("chrom", "chromStart", "chromEnd", "name", "mean"))
-          loss.dt <- fread(file.path(joint.dir, "loss.tsv"))
-          setnames(loss.dt, "loss.diff")
+          load(file.path(joint.dir, "peakInfo.RData"))
           TRUE
         }, error=function(e){
           FALSE
@@ -107,7 +107,7 @@ problem.joint.predict.job <- function
     gc()
     jmodel <- if(already.computed){
       cat("Skipping since peaks.bed already exists.\n")
-      list(peaks=jprob.peaks, loss=loss.dt)
+      list(peaks=jprob.peaks, loss=loss.dt, log2.inc=log.inc.vec)
     }else{
       problem.joint.predict(joint.dir)
     }
@@ -117,6 +117,7 @@ problem.joint.predict.job <- function
         peakStart=peaks$chromStart[1],
         peakEnd=peaks$chromEnd[1],
         means=list(peaks[, structure(mean, names=name)]),
+        peak.height=list(log2.inc),
         loss.diff=loss$loss.diff,
         problem.name=prob$problem.name
       ))
@@ -127,8 +128,8 @@ problem.joint.predict.job <- function
   jobPeaks.RData <- file.path(job.dir, "jobPeaks.RData")
   save(jobPeaks, file=jobPeaks.RData)
   jobPeaks
-### data.table of predicted loss, peak positions, and means per sample
-### (in a list column).
+### data.table of predicted loss, peak positions, means per sample
+### (in a list column), and peak height (in a list column).
 }
 
 problem.joint.targets <- function
@@ -381,23 +382,22 @@ problem.joint.predict <- function
   selected <- subset(
     segmentations$modelSelection,
     min.log.lambda < log.penalty & log.penalty < max.log.lambda)
-  loss.tsv <- file.path(jointProblem.dir, "loss.tsv")
+  peakInfo.RData <- file.path(jointProblem.dir, "peakInfo.RData")
   if(selected$peaks == 0){
-    unlink(loss.tsv)
+    unlink(peakInfo.RData)
     pred.dt <- data.table()
     loss.dt <- data.table()
+    log.inc.vec <- NULL
   }else{
     selected.loss <- segmentations$loss[paste(selected$peaks), "loss"]
     flat.loss <- segmentations$loss["0", "loss"]
     loss.dt <- data.table(
       loss.diff=flat.loss-selected.loss)
-    write.table(
-      loss.dt,
-      loss.tsv,
-      quote=FALSE,
-      sep="\t",
-      col.names=FALSE,
-      row.names=FALSE)
+    log.inc.vec <- with(segmentations, log2(
+      mean.mat[,2]/(
+        (mean.mat[,1]+mean.mat[,3])/2)
+    ))
+    save(loss.dt, log.inc.vec, file=peakInfo.RData)
     pred.df <- subset(segmentations$peaks, peaks==selected$peaks)
     pred.dt <- with(pred.df, data.table(
       chrom,
@@ -417,7 +417,7 @@ problem.joint.predict <- function
     sep="\t",
     col.names=FALSE,
     row.names=FALSE)
-  list(peaks=pred.dt, loss=loss.dt)
+  list(peaks=pred.dt, loss=loss.dt, log2.inc=log.inc.vec)
 ### list of peaks and loss.
 }
 

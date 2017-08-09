@@ -3,7 +3,7 @@
 \title{PeakSegFPOP disk}
 \description{Run the PeakSeg Functional Pruning Optimal Partitioning algorithm,
 using a file on disk (rather than in memory as in
-coseg::PeakSegFPOP) to store the function piece lists.
+coseg::PeakSegFPOP) to store the O(N) function piece lists, each of size O(log N).
 Finds the optimal change-points using the Poisson loss and the
 PeakSeg constraint. For N data points, the functional pruning
 algorithm is O(N log N) time and disk space, and O(log N) memory.
@@ -28,11 +28,12 @@ constraints are active for non-zero change-point variables, the
 recovered model is not feasible for the strict inequality
 constraints of the PeakSeg problem, and the optimum of the PeakSeg
 problem is undefined.}
-\usage{PeakSegFPOP_disk(bedGraph.file, penalty)}
+\usage{PeakSegFPOP_disk(bedGraph.file, pen.str)}
 \arguments{
   \item{bedGraph.file}{character scalar: tab-delimited tabular text file with four
 columns: chrom, chromStart, chromEnd, coverage.}
-  \item{penalty}{numeric scalar: non-negative penalty. More penalty means fewer
+  \item{pen.str}{character scalar that can be converted to a numeric scalar via
+as.numeric: non-negative penalty. More penalty means fewer
 peaks. 0 and Inf are OK.}
 }
 

@@ -509,6 +509,14 @@ specific.html.vec
     input.pred,
     file.path(set.dir, "peaks_summary.tsv"),
     sep="\t")
+  height.list <- jobPeaks$peak.height
+  names(height.list) <- jobPeaks$peak.name
+  height.mat <- do.call(rbind, height.list)[peak.mat.dt$peak, rownames(peak.mat)]
+  height.dt <- data.table(peak=rownames(height.mat), height.mat)
+  fwrite(
+    height.dt,
+    file.path(set.dir, "peaks_matrix_height.tsv"),
+    sep="\t")
   peaks.bed <- file.path(set.dir, "peaks_summary.bed")
   bed.dt <- input.pred[specificity != "non-specific",]
   max.samples <- max(bed.dt$n.samples)

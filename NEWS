@@ -1,3 +1,14 @@
+2017.08.09
+
+compiling, installing, passing demo test.
+
+pipeline stops in target interval computation if there is non-integer
+data in bigWig files.
+
+import PeakSegJoint >= 2017.08.08 which returns mean.mat, which we use
+to derive a log peak height relative to background, in
+problem.joint.predict.
+
 2017.06.19
 
 copied code from PeakSegFPOP repo, modified for R interface.
