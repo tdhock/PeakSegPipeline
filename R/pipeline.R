@@ -9,7 +9,7 @@ pipeline <- function(set.dir.path){
   samples.dir <- file.path(set.dir, "samples")
   labels.bed.vec <- Sys.glob(file.path(
     samples.dir, "*", "*", "problems", "*", "labels.bed"))
-  mclapply.or.stop(labels.bed.vec, function(labels.bed){
+  lapply(labels.bed.vec, function(labels.bed){
     sample.dir <- dirname(labels.bed)
     problem.target(sample.dir)
   })

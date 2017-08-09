@@ -97,9 +97,9 @@ system(paste("bigWigToBedGraph", bigWig.file, "/dev/stdout|head"))
 test_that("error for non-integer data in bigWigs", {
   expect_error({
     pipeline(non.integer.dir)
-  }, "errors in mclapply"#"non-integer data in /home/thocking/PeakSegPipeline-test/non-integer/samples/kidney/MS002201/coverage.bigWig"
-  )
+  }, "non-integer data in")
 })
+unlink(non.integer.dir, recursive=TRUE, force=TRUE)
 
 ## Pipeline should run to completion for integer count data.
 system(paste("bigWigToBedGraph", demo.bigWig, "/dev/stdout|head"))
