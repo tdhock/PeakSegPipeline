@@ -278,8 +278,10 @@ problem.joint <- function
   coverage <- do.call(rbind, coverage.list)
   profile.list <- ProfileList(coverage)
   fit <- PeakSegJointSeveral(coverage)
+  rownames(fit$mean_mat) <- names(profile.list)
   segmentations <- ConvertModelList(fit)
   segmentations$features <- featureMatrix(profile.list)
+  segmentations$mean.mat <- fit$mean_mat
   cat("Writing segmentation and features to", segmentations.RData, "\n")
   save(segmentations, file=segmentations.RData)
   segmentations$coverage <- coverage
