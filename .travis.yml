@@ -23,6 +23,7 @@ install:
   - Rscript -e "devtools::install_github('tdhock/PeakSegJoint')"
   - travis-tool.sh install_deps
   - Rscript -e "devtools::install(dependencies=FALSE)"
+  - rm -rf /tmp/Rtmp*
 
 script:
   - Rscript -e "source('tests/testthat.R', chdir = TRUE)"
