@@ -45,7 +45,8 @@ chr10:39,125,594-39,126,266 peakEnd bcell kidney Input
 chr10:39,126,866-39,140,858 noPeaks
 "
 
-test.data.dir <- file.path(Sys.getenv("HOME"), "PeakSegPipeline-test")
+##test.data.dir <- file.path(Sys.getenv("HOME"), "PeakSegPipeline-test")
+test.data.dir <- file.path(tempdir(), "PeakSegPipeline-test")
 non.integer.dir <- file.path(test.data.dir, "non-integer")
 demo.dir <- file.path(test.data.dir, "demo")
 chrom.sizes.file <- tempfile()
