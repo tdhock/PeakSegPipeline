@@ -295,10 +295,8 @@ problem.coverage <- function
     if(any(prob.cov$coverage < 0)){
       stop("negative coverage in ", prob.cov.bedGraph)
     }
-    min.above.zero <- prob.cov[0 < coverage, min(coverage)]
-    prob.cov[, count.num := coverage/min.above.zero]
-    prob.cov[, count.num.str := paste(count.num)]
-    prob.cov[, count.int := as.integer(round(count.num))]
+    prob.cov[, count.num.str := paste(coverage)]
+    prob.cov[, count.int := as.integer(round(coverage))]
     prob.cov[, count.int.str := paste(count.int)]
     not.int <- prob.cov[count.int.str != count.num.str, ]
     if(nrow(not.int)){
