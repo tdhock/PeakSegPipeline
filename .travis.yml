@@ -9,6 +9,7 @@ before_install:
   - curl -OL http://hgdownload.cse.ucsc.edu/admin/exe/linux.x86_64/bigWigInfo
   - curl -OL http://hgdownload.cse.ucsc.edu/admin/exe/linux.x86_64/bigWigToBedGraph
   - curl -OL http://hgdownload.cse.ucsc.edu/admin/exe/linux.x86_64/bedToBigBed
+  - curl -OL http://hgdownload.cse.ucsc.edu/admin/exe/linux.x86_64/bedGraphToBigWig
   - curl -OL http://raw.github.com/craigcitro/r-travis/master/scripts/travis-tool.sh
   - chmod 755 *
   - export PATH=$(pwd):$PATH
