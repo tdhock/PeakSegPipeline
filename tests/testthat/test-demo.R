@@ -104,8 +104,9 @@ unlink(non.integer.dir, recursive=TRUE, force=TRUE)
 
 ## Pipeline should run to completion for integer count data.
 system(paste("bigWigToBedGraph", demo.bigWig, "/dev/stdout|head"))
-pipeline(demo.dir)
 index.html <- file.path(demo.dir, "index.html")
+unlink(index.html)
+pipeline(demo.dir)
 test_that("index.html is created", {
   expect_true(file.exists(index.html))
 })

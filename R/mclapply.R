@@ -10,7 +10,7 @@ maxjobs.mclapply <- function(X, FUN, maxjobs=getOption("mc.cores", 1L)){
   }
   if(maxjobs == 1L)return(lapply(X, FUN))
   N <- length(X)
-  i.list <- splitIndices(N, N/maxjobs)
+  i.list <- parallel::splitIndices(N, N/maxjobs)
   result.list <- list()
   for(i in seq_along(i.list)){
     i.vec <- i.list[[i]]
