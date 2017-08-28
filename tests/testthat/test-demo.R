@@ -63,11 +63,11 @@ for(bigWig.part in bigWig.part.vec){
   demo.bigWig <- sub("non-integer", "demo", bigWig.file)
   if(!file.exists(demo.bigWig)){
     dir.create(dirname(demo.bigWig), showWarnings=FALSE, recursive=TRUE)
-    bw.dt <- PeakSegJoint::readBigWig(bigWig.file, "chr10", 0, 128616069)
+    bw.dt <- readBigWig(bigWig.file, "chr10", 0, 128616069)
     out.dt <- data.table(chrom="chr10", bw.dt)
     demo.bedGraph <- sub("bigWig", "bedGraph", demo.bigWig)
     fwrite(out.dt, demo.bedGraph, sep="\t", col.names=FALSE)
-    PeakSegPipeline::system.or.stop(
+    system.or.stop(
       paste("bedGraphToBigWig", demo.bedGraph, chrom.sizes.file, demo.bigWig))
     unlink(demo.bedGraph)
   }
@@ -104,8 +104,9 @@ unlink(non.integer.dir, recursive=TRUE, force=TRUE)
 
 ## Pipeline should run to completion for integer count data.
 system(paste("bigWigToBedGraph", demo.bigWig, "/dev/stdout|head"))
-pipeline(demo.dir)
 index.html <- file.path(demo.dir, "index.html")
+unlink(index.html)
+pipeline(demo.dir)
 test_that("index.html is created", {
   expect_true(file.exists(index.html))
 })
