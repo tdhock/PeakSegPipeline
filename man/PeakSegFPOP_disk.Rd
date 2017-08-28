@@ -58,7 +58,7 @@ four <- rbind(
 write.table(
   four, tmp <- tempfile(),
   sep="\t", row.names=FALSE, col.names=FALSE)
-names.list <- PeakSegFPOP_disk(tmp, 10)
+names.list <- PeakSegFPOP_disk(tmp, "10.5")
 unlink(names.list$db)
 seg.df <- read.table(names.list$segments)
 names(seg.df) <- c("chrom", "chromStart", "chromEnd", "status", "mean")
