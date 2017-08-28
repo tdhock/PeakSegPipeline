@@ -170,6 +170,12 @@ PeakSegFPOP_disk <- structure(function
   )){
     stop("bedGraph.file must be the name of a data file to segment")
   }
+  if(!is.character(pen.str)){
+    stop(paste(
+      "pen.str must be a character string",
+      "that can be converted to a non-negative numeric scalar"
+    ))
+  }
   penalty <- as.numeric(pen.str)
   if(!(
     is.numeric(penalty) &&
@@ -203,7 +209,7 @@ PeakSegFPOP_disk <- structure(function
   write.table(
     four, tmp <- tempfile(),
     sep="\t", row.names=FALSE, col.names=FALSE)
-  names.list <- PeakSegFPOP_disk(tmp, 10)
+  names.list <- PeakSegFPOP_disk(tmp, "10.5")
   unlink(names.list$db)
   seg.df <- read.table(names.list$segments)
   names(seg.df) <- c("chrom", "chromStart", "chromEnd", "status", "mean")
