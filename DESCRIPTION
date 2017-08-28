@@ -16,4 +16,4 @@ Depends: R (>= 2.10)
 Imports: data.table (>= 1.9.8), PeakError, PeakSegJoint (>= 2017.08.08),
  penaltyLearning, ggplot2, namedCapture, animint, xtable, WeightedROC,
  parallel
-Suggests: testthat
+Suggests: testthat, httr
