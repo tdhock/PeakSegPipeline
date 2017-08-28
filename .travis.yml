@@ -2,6 +2,8 @@ language: c
 
 sudo: required
 
+dist: precise
+
 env:
   - TEST_SUITE=demo
 
