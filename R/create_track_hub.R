@@ -1,12 +1,28 @@
 create_track_hub <- function
+### Create track hub for a project.
 (data.dir="test/input",
+### data/project directory.
   url.prefix="http://hubs.hpc.mcgill.ca/~thocking/PeakSegFPOP-",
+### Prefix to use for links to bigWig/bigBed files, data.dir will be
+### appended after this. e.g. if
+### url.prefix="http://some.domain/~user/foo-" and
+### data.dir="test/input" then URLS will be
+### http://some.domain/~user/foo-test/input/samples/groupID/sampleID/coverage.bigWig,
+### etc.
   genome="hg19",
+### genome string as defined at UCSC, e.g. "hg19"
   email="email@domain.com",
+### email address for maintainer of track hub.
   goldenPath.url="http://hgdownload.soe.ucsc.edu/goldenPath/"
+### link to download UCSC genome chromInfo files, necessary for
+### creating bigWigs.
 ){
-  ## First make sure we have the chromInfo file for this genome.
+  gz <- chrom <- problemStart <- problemEnd <- chromEnd <- . <-
+    name <- chrom <- chromStart <- NULL
+  ## above to avoid "no visible binding for global variable" NOTEs in
+  ## CRAN check.
   chromInfo.txt <- paste0(genome, "_chromInfo.txt")
+  ## First make sure we have the chromInfo file for this genome.
   if(!file.exists(chromInfo.txt)){
     chromInfo.url <- paste0(goldenPath.url, genome, "/database/chromInfo.txt.gz")
     chromInfo.gz <- paste(chromInfo.txt, ".gz")

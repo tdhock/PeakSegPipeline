@@ -1,4 +1,5 @@
 downloadProblems <- function
+### Create problems.bed based on data from UCSC.
 (genome,
 ### UCSC ID e.g. hg19 or hg38.
   problems.bed,
@@ -6,6 +7,9 @@ downloadProblems <- function
   url.prefix="http://hgdownload.soe.ucsc.edu/goldenPath/"
 ### http://path.to/goldenPath/
   ){
+  gap <- chromInfo <- NULL
+  ## above to avoid "no visible binding for global variable" NOTEs in
+  ## CRAN check.
   pre.genome <- paste0(url.prefix, genome)
   file.list <- list()
   for(db in c("chromInfo", "gap")){    

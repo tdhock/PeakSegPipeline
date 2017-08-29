@@ -1,10 +1,34 @@
 plot_all <- function
+### Plot results of peak calling, generate summary web page.
 (set.dir.arg,
 ### Path/to/data/dir.
   zoom.out.times=10
 ## The UCSC links in the HTML tables will be zoomed out from the peak
 ## this number of times.
 ){
+  problemStart <- problem.name <- chrom <- problemEnd <-
+    separate.problem <- jobPeaks.RData <- peak.name <- peakStart <-
+      peakEnd <- means <- peakBases <- samples.prop <- groups <-
+        chisq.pvalue <- loss.diff <- sample.path <- mean.str <-
+          . <- most.freq.group <- most.freq.prop <- most.next.prop <-
+            sample.counts <- least.freq.group <- least.freq.prop <-
+              least.next.prop <- least.next.group <- peak <- samples <-
+                annotation <- labelStart <- labelEnd <- n.Input <-
+                  prop.noPeaks <- FP <- FN <- specificity <- log10.bases <-
+                    log10.samples <- n.samples <- log10.samples.i <-
+                      log10.bases.i <- log10.bases.start <- log10.bases.end <-
+                        log10.samples.start <- log10.samples.end <-
+                          log10.bases.label <- log10.bases.mid <-
+                            log10.samples.label <- log10.samples.mid <-
+                              count <- e <- mid.peakEnd <- min.peakEnd <-
+                                max.peakEnd <- chrom.box <- chrom.fac <-
+                                  xval <- chunk <- chunk.problem <-
+                                    labeled.chunks <- labelStart1 <-
+                                      problemStart1 <- labeled.regions <-
+                                        problem <- peak.regions <-
+                                          peak.samples <- score <- NULL
+  ## above to avoid "no visible binding for global variable" NOTEs in
+  ## CRAN check.
   zoom.factor <- (zoom.out.times-1)/2
   set.dir <- normalizePath(set.dir.arg, mustWork=TRUE)
   orderChrom <- function(chrom.vec, ...){

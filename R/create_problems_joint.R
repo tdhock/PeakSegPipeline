@@ -1,4 +1,15 @@
-create_problems_joint <- function(prob.dir){
+create_problems_joint <- function
+### Create joint problems for one separate problem, after separate
+### peak prediction.
+(prob.dir
+### proj.dir/problems/problemID
+){
+  chromStart <- chromEnd <- clusterStart1 <- clusterStart <-
+    clusterEnd <- . <- annotation <- labelStart <- labelEnd <-
+      labelStart1 <- bases <- reduce <- mid.before <- mid.after <-
+        problemStart <- problemEnd <- problemStart1 <- NULL
+  ## above to avoid "no visible binding for global variable" NOTEs in
+  ## CRAN check.
   jointProblems.bed.sh <- file.path(prob.dir, "jointProblems.bed.sh")
   PBS.header <- if(file.exists(jointProblems.bed.sh)){
     sh.lines <- readLines(jointProblems.bed.sh)
@@ -209,8 +220,7 @@ create_problems_joint <- function(prob.dir){
       "Creating ", nrow(problem.info),
       " joint segmentation problems for ", problem.name,
       "\n", sep="")
-    library(parallel)
-    nothing <- lapply(1:nrow(problem.info), makeProblem)
+    nothing <- mclapply.or.stop(1:nrow(problem.info), makeProblem)
     write.table(
       problem.info[, .(chrom, problemStart, problemEnd)],
       paste0(jointProblems, ".bed"),

@@ -1,4 +1,7 @@
 gap2problems <- function
+### Convert a gap file from UCSC to a problems.bed file, which is used
+### in the PeakSegPipeline to determine where PeakSegFPOP should be
+### run to do peak calling for each sample independently.
 (gap.bed,
 ### gap.bed file, parts of the genome with gaps (NNNN).
   chromInfo.txt,
@@ -6,6 +9,9 @@ gap2problems <- function
   problems.bed
 ### will be created
 ){
+  chrom <- chromStart <- chromEnd <- NULL
+  ## above to avoid "no visible binding for global variable" NOTEs in
+  ## CRAN check.
   gap.all <- fread(gap.bed)
   gap <- gap.all[, 1:3, with=FALSE]
   setnames(gap, c("chrom", "chromStart", "chromEnd"))

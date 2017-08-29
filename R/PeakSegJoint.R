@@ -67,6 +67,10 @@ problem.joint.predict.job <- function
 (job.dir
 ### project/jobs/jobID
 ){
+  jprob.name <- chrom <- problemStart <- problemEnd <- problem.name <-
+    jprob.name <- NULL
+  ## above to avoid "no visible binding for global variable" NOTEs in
+  ## CRAN check.
   jobProblems <- fread(file.path(job.dir, "jobProblems.bed"))
   jobs.dir <- dirname(job.dir)
   data.dir <- dirname(jobs.dir)
@@ -186,6 +190,10 @@ problem.joint.train <- function
 (data.dir
 ### project directory.
 ){
+  segmentations <- status <- too.lo <- too.hi <- jprobs.bed <- job <-
+    . <- chrom <- problemStart <- problemEnd <- NULL
+  ## above to avoid "no visible binding for global variable" NOTEs in
+  ## CRAN check.
   joint.model.RData <- file.path(data.dir, "joint.model.RData")
   target.tsv.vec <- Sys.glob(file.path(
     data.dir, "problems", "*", "jointProblems", "*", "target.tsv"))
@@ -253,6 +261,9 @@ problem.joint <- function
 (jointProblem.dir
 ### path/to/jointProblem
 ){
+  problemStart1 <- problemStart <- problemEnd <- NULL
+  ## above to avoid "no visible binding for global variable" NOTEs in
+  ## CRAN check.
   segmentations.RData <- file.path(jointProblem.dir, "segmentations.RData")
   problem.bed <- file.path(jointProblem.dir, "problem.bed")
   problem <- fread(problem.bed)
@@ -281,7 +292,7 @@ problem.joint <- function
   fit <- PeakSegJointSeveral(coverage)
   rownames(fit$mean_mat) <- names(profile.list)
   segmentations <- ConvertModelList(fit)
-  segmentations$features <- featureMatrix(profile.list)
+  segmentations$features <- PeakSegJoint::featureMatrix(profile.list)
   segmentations$mean.mat <- fit$mean_mat
   cat("Writing segmentation and features to", segmentations.RData, "\n")
   save(segmentations, file=segmentations.RData)
@@ -301,6 +312,10 @@ readCoverage <- function
   end
 ### end of coverage to read.
 ){
+  problemStart <- problemEnd <- chromStart1 <- chromStart <-
+    chromEnd <- problemStart1 <- NULL
+  ## above to avoid "no visible binding for global variable" NOTEs in
+  ## CRAN check.
   chrom <- sub(":.*", "", basename(problem.dir))
   jprob <- data.table(chrom, problemStart=start, problemEnd=end)
   problems.dir <- dirname(problem.dir)
@@ -351,6 +366,9 @@ problem.joint.predict <- function
 (jointProblem.dir
 ### project/problems/problemID/jointProblems/jointProbID
 ){
+  joint.model <- min.log.lambda <- max.log.lambda <- peaks <- NULL
+  ## above to avoid "no visible binding for global variable" NOTEs in
+  ## CRAN check.
   segmentations.RData <- file.path(jointProblem.dir, "segmentations.RData")
   if(file.exists(segmentations.RData)){
     cat("Loading model from ", segmentations.RData, "\n", sep="")
@@ -426,6 +444,9 @@ problem.joint.target <- function
 (jointProblem.dir
 ### Joint problem directory.
 ){
+  annotation <- chromStart <- chromEnd <- NULL
+  ## above to avoid "no visible binding for global variable" NOTEs in
+  ## CRAN check.
   segmentations.RData <- file.path(jointProblem.dir, "segmentations.RData")
   if(file.exists(segmentations.RData)){
     cat("Loading model from ", segmentations.RData, "\n", sep="")
@@ -520,9 +541,12 @@ problem.joint.plot <- function
 (chunk.dir
 ### project/problems/problemID/chunks/chunkID
 ){
-  if(!require(ggplot2)){
-    stop("please install ggplot2")
-  }
+  chunkStart1 <- chunkStart <- chunkEnd <- problemStart1 <-
+    problem.name <- chrom <- problemEnd <- problemStart <- peakStart1 <-
+      peakStart <- peakEnd <- sample.path <- chromStart <- chromEnd <-
+        annotation <- count <- peak.type <- NULL
+  ## above to avoid "no visible binding for global variable" NOTEs in
+  ## CRAN check.
   chunks.dir <- dirname(chunk.dir)
   prob.dir <- dirname(chunks.dir)
   prob.name <- basename(prob.dir)

@@ -1,4 +1,14 @@
-problem.train <- function(data.dir.str){
+problem.train <- function
+### Train a penalty function that predicts the number of peaks for
+### each separate problem. Run this step after computing target
+### intervals for each labeled separate problem (problem.target), and
+### before peak prediction (problem.predict).
+(data.dir.str){
+  status <- too.lo <- too.hi <- penalty <- bases <- chromEnd <- chromStart <-
+    upper.lim <- lower.lim <- upper.bases <- lower.bases <- ..density.. <-
+      prob <- hjust <- NULL
+  ## above to avoid "no visible binding for global variable" NOTEs in
+  ## CRAN check.
   data.dir <- normalizePath(data.dir.str, mustWork=TRUE)
   samples.dir <- file.path(data.dir, "samples")
   model.RData <- file.path(data.dir, "model.RData")
@@ -246,7 +256,12 @@ problem.coverage <- function
 ### entire genome, and sampleID/problems/problemID/problem.bed
 ### contains one line that indicates the genomic coordinates of a
 ### particular segmentation problem.
- ){
+){
+  chrom <- problemStart <- problemEnd <- count.num.str <- coverage <-
+    count.int <- count.int.str <- chromStart <- chromEnd <- J <-
+      count <- NULL
+  ## above to avoid "no visible binding for global variable" NOTEs in
+  ## CRAN check.
   stopifnot(is.character(problem.dir))
   stopifnot(length(problem.dir)==1)
   problems.dir <- dirname(problem.dir)
@@ -451,6 +466,11 @@ problem.target <- function
 ### incorrect labels will be computed in order to find the target
 ### interval of minimal error penalty values.
  ){
+  status <- peaks <- errors <- fp <- fn <- penalty <- max.log.lambda <-
+    min.log.lambda <- penalty <- . <- done <- total.cost <- mean.pen.cost <-
+      bases <- NULL
+  ## above to avoid "no visible binding for global variable" NOTEs in
+  ## CRAN check.
   stopifnot(is.character(problem.dir))
   stopifnot(length(problem.dir)==1)
   c.info <- problem.coverage(problem.dir)
@@ -614,6 +634,10 @@ problem.predict <- function
 (problem.dir
 ### project/samples/groupID/sampleID/problems/problemID.
  ){
+  model <- status <- chromEnd <- chromStart <- size.model <- lower.bases <-
+    upper.bases <- NULL
+  ## above to avoid "no visible binding for global variable" NOTEs in
+  ## CRAN check.
   stopifnot(is.character(problem.dir))
   stopifnot(length(problem.dir)==1)
   problems.dir <- dirname(problem.dir)

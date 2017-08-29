@@ -1,10 +1,8 @@
-## input: a directory with labels.bed and coverage.bedGraph.
-
-## output: problems directory with sub-directories for each problem
-## with labels.
-
 create_problems_all <- function
+### Create problems directory with sub-directories for each problem
+### with labels.
 (data.dir.arg,
+### a directory with labels.bed and coverage.bedGraph.
   PBS.header="#!/bin/bash
 #PBS -l nodes=1:ppn=4
 #PBS -l walltime=24:00:00
@@ -14,6 +12,11 @@ create_problems_all <- function
 #PBS -V"
 ### Header for sh files.
 ){
+  problemStart1 <- problemStart <- problem.name <- chrom <- problemEnd <-
+    chromStart1 <- chromStart <- chromEnd <- chunk.limits <- chunk.name <-
+      . <- regions.by.chunk.file <- NULL
+  ## above to avoid "no visible binding for global variable" NOTEs in
+  ## CRAN check.
   data.dir <- normalizePath(data.dir.arg, mustWork=TRUE)
   problems.bed <- file.path(data.dir, "problems.bed")
   samples.dir <- file.path(data.dir, "samples")

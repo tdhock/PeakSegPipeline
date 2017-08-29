@@ -1,4 +1,12 @@
-convert_labels <- function(proj.dir){
+convert_labels <- function
+### Convert label text files in proj.dir/labels/*.txt to
+### proj.dir/samples/*/*/labels.bed files.
+(proj.dir
+### project directory.
+){
+  chromStart <- chromEnd <- . <- NULL
+  ## above to avoid "no visible binding for global variable" NOTEs in
+  ## CRAN check.
   project.dir <- normalizePath(proj.dir, mustWork=TRUE)
   labels.file.vec <- Sys.glob(file.path(project.dir, "labels", "*.txt"))
 
