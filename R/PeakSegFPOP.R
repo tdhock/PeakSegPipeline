@@ -405,7 +405,13 @@ problem.PeakSegFPOP <- function
       penalty_timing.tsv,
       row.names=FALSE, col.names=FALSE,
       quote=FALSE, sep="\t")
+    du <- function(){
+      system(sprintf("du -m %s/*", tmp))
+      system("df -m")
+    }
+    du()
     unlink(penalty.db)
+    du()
     penalty.loss <- fread(penalty_loss.tsv)
     setnames(penalty.loss, c(
       "penalty", "segments", "peaks", "bases",
