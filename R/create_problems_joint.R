@@ -7,7 +7,7 @@ create_problems_joint <- function
   chromStart <- chromEnd <- clusterStart1 <- clusterStart <-
     clusterEnd <- . <- annotation <- labelStart <- labelEnd <-
       labelStart1 <- bases <- reduce <- mid.before <- mid.after <-
-        problemStart <- problemEnd <- problemStart1 <- NULL
+        problemStart <- problemEnd <- problemStart1 <- cluster <- NULL
   ## above to avoid "no visible binding for global variable" NOTEs in
   ## CRAN check.
   jointProblems.bed.sh <- file.path(prob.dir, "jointProblems.bed.sh")

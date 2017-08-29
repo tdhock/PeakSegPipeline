@@ -292,7 +292,7 @@ problem.joint <- function
   fit <- PeakSegJointSeveral(coverage)
   rownames(fit$mean_mat) <- names(profile.list)
   segmentations <- ConvertModelList(fit)
-  segmentations$features <- PeakSegJoint::featureMatrix(profile.list)
+  segmentations$features <- PeakSegJoint::featureMatrixJoint(profile.list)
   segmentations$mean.mat <- fit$mean_mat
   cat("Writing segmentation and features to", segmentations.RData, "\n")
   save(segmentations, file=segmentations.RData)

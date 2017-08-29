@@ -1,3 +1,4 @@
+### URL where UCSC data files can be downloaded.
 ucsc.goldenPath.url <- "http://hgdownload.soe.ucsc.edu/goldenPath/"
 
 downloadProblems <- function
