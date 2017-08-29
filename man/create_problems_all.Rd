@@ -3,11 +3,10 @@
 \title{create problems all}
 \description{Create problems directory with sub-directories for each problem
 with labels.}
-\usage{create_problems_all(data.dir.arg, PBS.header = "#!/bin/bash\\n#PBS -l nodes=1:ppn=4\\n#PBS -l walltime=24:00:00\\n#PBS -A bws-221-ae\\n#PBS -m ae\\n#PBS -M tdhock5@gmail.com\\n#PBS -V")}
+\usage{create_problems_all(data.dir.arg, PBS.header = PBS.header.default)}
 \arguments{
   \item{data.dir.arg}{a directory with labels.bed and coverage.bedGraph.}
-  \item{PBS.header}{
-}
+  \item{PBS.header}{Header for sh files.}
 }
 
 

@@ -1,15 +1,19 @@
-create_problems_all <- function
-### Create problems directory with sub-directories for each problem
-### with labels.
-(data.dir.arg,
-### a directory with labels.bed and coverage.bedGraph.
-  PBS.header="#!/bin/bash
+### PBS header used by default in create_problems_all, defined
+### separately here to avoid CRAN check problems in docs.
+PBS.header.default <- "#!/bin/bash
 #PBS -l nodes=1:ppn=4
 #PBS -l walltime=24:00:00
 #PBS -A bws-221-ae
 #PBS -m ae
 #PBS -M tdhock5@gmail.com
 #PBS -V"
+
+create_problems_all <- function
+### Create problems directory with sub-directories for each problem
+### with labels.
+(data.dir.arg,
+### a directory with labels.bed and coverage.bedGraph.
+  PBS.header=PBS.header.default
 ### Header for sh files.
 ){
   problemStart1 <- problemStart <- problem.name <- chrom <- problemEnd <-

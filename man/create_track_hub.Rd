@@ -2,8 +2,8 @@
 \alias{create_track_hub}
 \title{create track hub}
 \description{Create track hub for a project.}
-\usage{create_track_hub(data.dir = "test/input", url.prefix = "http://hubs.hpc.mcgill.ca/~thocking/PeakSegFPOP-", 
-    genome = "hg19", email = "email@domain.com", goldenPath.url = "http://hgdownload.soe.ucsc.edu/goldenPath/")}
+\usage{create_track_hub(data.dir, url.prefix, genome, email, 
+    goldenPath.url = ucsc.goldenPath.url)}
 \arguments{
   \item{data.dir}{data/project directory.}
   \item{url.prefix}{Prefix to use for links to bigWig/bigBed files, data.dir will be

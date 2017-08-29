@@ -1,19 +1,19 @@
 create_track_hub <- function
 ### Create track hub for a project.
-(data.dir="test/input",
+(data.dir,
 ### data/project directory.
-  url.prefix="http://hubs.hpc.mcgill.ca/~thocking/PeakSegFPOP-",
+  url.prefix,
 ### Prefix to use for links to bigWig/bigBed files, data.dir will be
 ### appended after this. e.g. if
 ### url.prefix="http://some.domain/~user/foo-" and
 ### data.dir="test/input" then URLS will be
 ### http://some.domain/~user/foo-test/input/samples/groupID/sampleID/coverage.bigWig,
 ### etc.
-  genome="hg19",
+  genome,
 ### genome string as defined at UCSC, e.g. "hg19"
-  email="email@domain.com",
+  email,
 ### email address for maintainer of track hub.
-  goldenPath.url="http://hgdownload.soe.ucsc.edu/goldenPath/"
+  goldenPath.url=ucsc.goldenPath.url
 ### link to download UCSC genome chromInfo files, necessary for
 ### creating bigWigs.
 ){

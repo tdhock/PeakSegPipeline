@@ -1,10 +1,12 @@
+ucsc.goldenPath.url <- "http://hgdownload.soe.ucsc.edu/goldenPath/"
+
 downloadProblems <- function
 ### Create problems.bed based on data from UCSC.
 (genome,
 ### UCSC ID e.g. hg19 or hg38.
   problems.bed,
 ### file to save.
-  url.prefix="http://hgdownload.soe.ucsc.edu/goldenPath/"
+  url.prefix=ucsc.goldenPath.url
 ### http://path.to/goldenPath/
   ){
   gap <- chromInfo <- NULL

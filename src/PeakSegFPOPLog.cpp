@@ -9,6 +9,7 @@
 // http://docs.oracle.com/cd/E17076_05/html/programmer_reference/arch_apis.html
 #include <dbstl_vector.h>
 //#include <db_cxx.h>
+#include <R.h>
 
 #include "funPieceListLog.h"
 #include "PeakSegFPOPLog.h"
@@ -75,7 +76,7 @@ int PeakSegFPOP_disk(char *bedGraph_file_name, char* penalty_str){
       (line.c_str(),
        "%s %d %d %d%s\n",
        chrom, &chromStart, &chromEnd, &coverage, extra);
-    //printf("%s %d %d %d%s\n", chrom, chromStart, chromEnd, coverage, extra);
+    //Rprintf("%s %d %d %d%s\n", chrom, chromStart, chromEnd, coverage, extra);
     if(items < 4){
       return ERROR_NOT_ENOUGH_COLUMNS;
     }
@@ -138,7 +139,7 @@ int PeakSegFPOP_disk(char *bedGraph_file_name, char* penalty_str){
     return 0;
   }
   int data_count = line_i;
-  //printf("data_count=%d min_log_mean=%f max_log_mean=%f\n", data_count, min_log_mean, max_log_mean);
+  //Rprintf("data_count=%d min_log_mean=%f max_log_mean=%f\n", data_count, min_log_mean, max_log_mean);
   //return 0;
   bedGraph_file.clear();
   bedGraph_file.seekg(0, std::ios::beg);
@@ -178,7 +179,7 @@ int PeakSegFPOP_disk(char *bedGraph_file_name, char* penalty_str){
     weight = chromEnd-chromStart;
     cum_weight_i += weight;
     // if(data_i < 10 || data_i > 1192280){
-    //   printf("data_i=%d weight=%f cum=%f coverage=%d\n",
+    //   Rprintf("data_i=%d weight=%f cum=%f coverage=%d\n",
     // 	     data_i, weight, cum_weight_i, coverage);
     // }
     if(data_i==0){
@@ -191,11 +192,11 @@ int PeakSegFPOP_disk(char *bedGraph_file_name, char* penalty_str){
       min_prev_cost.set_to_min_less_of(&down_cost_prev, verbose);
       int status = min_prev_cost.check_min_of(&down_cost_prev, &down_cost_prev);
       if(status){
-	printf("BAD MIN LESS CHECK data_i=%d status=%d\n", data_i, status);
+	Rprintf("BAD MIN LESS CHECK data_i=%d status=%d\n", data_i, status);
 	min_prev_cost.set_to_min_less_of(&down_cost_prev, true);
-	printf("=prev down cost\n");
+	Rprintf("=prev down cost\n");
 	down_cost_prev.print();
-	printf("=min less(prev down cost)\n");
+	Rprintf("=min less(prev down cost)\n");
 	min_prev_cost.print();
 	throw status;
       }
@@ -218,15 +219,15 @@ int PeakSegFPOP_disk(char *bedGraph_file_name, char* penalty_str){
 	up_cost.set_to_min_env_of(&min_prev_cost, &up_cost_prev, verbose);
 	status = up_cost.check_min_of(&min_prev_cost, &up_cost_prev);
 	if(status){
-	  printf("BAD MIN ENV CHECK data_i=%d status=%d\n", data_i, status);
+	  Rprintf("BAD MIN ENV CHECK data_i=%d status=%d\n", data_i, status);
 	  up_cost.set_to_min_env_of(&min_prev_cost, &up_cost_prev, true);
-	  printf("=prev down cost\n");
+	  Rprintf("=prev down cost\n");
 	  down_cost_prev.print();
-	  printf("=min less(prev down cost) + %f\n", penalty);
+	  Rprintf("=min less(prev down cost) + %f\n", penalty);
 	  min_prev_cost.print();
-	  printf("=prev up cost\n");
+	  Rprintf("=prev up cost\n");
 	  up_cost_prev.print();
-	  printf("=new up cost model\n");
+	  Rprintf("=new up cost model\n");
 	  up_cost.print();
 	  throw status;
 	}
@@ -237,7 +238,7 @@ int PeakSegFPOP_disk(char *bedGraph_file_name, char* penalty_str){
 	 -coverage*weight,
 	 0.0);
       up_cost.multiply(1/cum_weight_i);
-      //printf("computing down cost\n");
+      //Rprintf("computing down cost\n");
       // compute down_cost.
       if(data_i==1){
 	//for second data point, the cost is only a function of the
@@ -246,7 +247,7 @@ int PeakSegFPOP_disk(char *bedGraph_file_name, char* penalty_str){
       }else{
 	// if data_i is down, it could have come from up_cost_prev.
 	// if(data_i==2329683){
-	//   printf("computing cost data_i=%d\n", data_i);
+	//   Rprintf("computing cost data_i=%d\n", data_i);
 	//   verbose=1;
 	// }else{
 	//   verbose=0;
@@ -254,11 +255,11 @@ int PeakSegFPOP_disk(char *bedGraph_file_name, char* penalty_str){
 	min_prev_cost.set_to_min_more_of(&up_cost_prev, verbose);
 	status = min_prev_cost.check_min_of(&up_cost_prev, &up_cost_prev);
 	if(status){
-	  printf("BAD MIN MORE CHECK data_i=%d status=%d\n", data_i, status);
+	  Rprintf("BAD MIN MORE CHECK data_i=%d status=%d\n", data_i, status);
 	  min_prev_cost.set_to_min_more_of(&up_cost_prev, true);
-	  printf("=prev up cost\n");
+	  Rprintf("=prev up cost\n");
 	  up_cost_prev.print();
-	  printf("=min more(prev up cost)\n");
+	  Rprintf("=min more(prev up cost)\n");
 	  min_prev_cost.print();
 	  throw status;
 	}
@@ -267,15 +268,15 @@ int PeakSegFPOP_disk(char *bedGraph_file_name, char* penalty_str){
 	down_cost.set_to_min_env_of(&min_prev_cost, &down_cost_prev, verbose);
 	status = down_cost.check_min_of(&min_prev_cost, &down_cost_prev);
 	if(status){
-	  printf("BAD MIN ENV CHECK data_i=%d status=%d\n", data_i, status);
+	  Rprintf("BAD MIN ENV CHECK data_i=%d status=%d\n", data_i, status);
 	  down_cost.set_to_min_env_of(&min_prev_cost, &down_cost_prev, true);
-	  printf("=prev up cost\n");
+	  Rprintf("=prev up cost\n");
 	  up_cost_prev.print();
-	  printf("=min more(prev up cost)\n");
+	  Rprintf("=min more(prev up cost)\n");
 	  min_prev_cost.print();
-	  printf("=prev down cost\n");
+	  Rprintf("=prev down cost\n");
 	  down_cost_prev.print();
-	  printf("=new down cost model\n");
+	  Rprintf("=new down cost model\n");
 	  down_cost.print();
 	  throw status;
 	}
@@ -297,14 +298,14 @@ int PeakSegFPOP_disk(char *bedGraph_file_name, char* penalty_str){
     }
     up_cost_prev = up_cost;
     down_cost_prev = down_cost;
-    //printf("data_i=%d data_i+data_count=%d\n", data_i, data_i+data_count);
+    //Rprintf("data_i=%d data_i+data_count=%d\n", data_i, data_i+data_count);
     up_cost.chromEnd = chromEnd;
     cost_model_mat[data_i] = up_cost;
     down_cost.chromEnd = chromEnd;
     cost_model_mat[data_i + data_count] = down_cost;
     data_i++;
   }
-  //printf("AFTER\n");
+  //Rprintf("AFTER\n");
   // Decoding the cost_model_vec, and writing to the output matrices.
   int prev_seg_end;
   int prev_seg_offset = 0;
@@ -314,7 +315,7 @@ int PeakSegFPOP_disk(char *bedGraph_file_name, char* penalty_str){
   down_cost.Minimize
     (&best_cost, &best_log_mean,
      &prev_seg_end, &prev_log_mean);
-  //printf("mean=%f end_i=%d chromEnd=%d\n", exp(best_log_mean), prev_seg_end, down_cost.chromEnd);
+  //Rprintf("mean=%f end_i=%d chromEnd=%d\n", exp(best_log_mean), prev_seg_end, down_cost.chromEnd);
   prev_chromEnd = down_cost.chromEnd;
   // mean_vec[0] = exp(best_log_mean);
   // end_vec[0] = prev_seg_end;
@@ -324,7 +325,7 @@ int PeakSegFPOP_disk(char *bedGraph_file_name, char* penalty_str){
     line_i++;
     // up_cost is actually either an up or down cost.
     up_cost = cost_model_mat[prev_seg_offset + prev_seg_end];
-    //printf("decoding prev_seg_end=%d prev_seg_offset=%d\n", prev_seg_end, prev_seg_offset);
+    //Rprintf("decoding prev_seg_end=%d prev_seg_offset=%d\n", prev_seg_end, prev_seg_offset);
     segments_file << chrom << "\t" << up_cost.chromEnd << "\t" << prev_chromEnd << "\t";
     // change prev_seg_offset for next iteration.
     if(prev_seg_offset==0){
@@ -346,11 +347,11 @@ int PeakSegFPOP_disk(char *bedGraph_file_name, char* penalty_str){
     }
     up_cost.findMean
       (best_log_mean, &prev_seg_end, &prev_log_mean);
-    //printf("mean=%f end=%d chromEnd=%d\n", exp(best_log_mean), prev_seg_end, up_cost.chromEnd);
+    //Rprintf("mean=%f end=%d chromEnd=%d\n", exp(best_log_mean), prev_seg_end, up_cost.chromEnd);
   }//for(data_i
   segments_file << chrom << "\t" << first_chromStart << "\t" << prev_chromEnd << "\tbackground\t" << exp(best_log_mean) << "\n";
   segments_file.close();
-  //printf("feasible=%d\n", feasible);
+  //Rprintf("feasible=%d\n", feasible);
   int n_peaks = (line_i-1)/2;
   loss_file << std::setprecision(20) << penalty << //penalty constant
     "\t" << line_i << //segments
