@@ -406,7 +406,7 @@ problem.PeakSegFPOP <- function
       row.names=FALSE, col.names=FALSE,
       quote=FALSE, sep="\t")
     du <- function(){
-      system(sprintf("du -m %s/*", tmp))
+      system(sprintf("du -m %s/*", problem.dir))
       system("df -m")
     }
     du()
