@@ -370,6 +370,9 @@ int PeakSegFPOP_disk(char *bedGraph_file_name, char* penalty_str){
     "\t" << max_intervals <<
     "\n";
   loss_file.close();
+  // need to close the database file, otherwise it takes up disk space
+  // until R exists.
+  db->close(0);
   return 0;
 }
 
