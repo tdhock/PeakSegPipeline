@@ -9,13 +9,15 @@ env:
 
 before_install:
   - mkdir bin
-  - cd bin && curl -OL http://hgdownload.cse.ucsc.edu/admin/exe/linux.x86_64/bigWigInfo
-  - cd bin && curl -OL http://hgdownload.cse.ucsc.edu/admin/exe/linux.x86_64/bigWigToBedGraph
-  - cd bin && curl -OL http://hgdownload.cse.ucsc.edu/admin/exe/linux.x86_64/bedToBigBed
-  - cd bin && curl -OL http://hgdownload.cse.ucsc.edu/admin/exe/linux.x86_64/bedGraphToBigWig
-  - cd bin && curl -OL http://raw.github.com/craigcitro/r-travis/master/scripts/travis-tool.sh
-  - chmod 755 bin/*
-  - export PATH=$(pwd)/bin:$PATH
+  - pushd bin
+  - curl -OL http://hgdownload.cse.ucsc.edu/admin/exe/linux.x86_64/bigWigInfo
+  - curl -OL http://hgdownload.cse.ucsc.edu/admin/exe/linux.x86_64/bigWigToBedGraph
+  - curl -OL http://hgdownload.cse.ucsc.edu/admin/exe/linux.x86_64/bedToBigBed
+  - curl -OL http://hgdownload.cse.ucsc.edu/admin/exe/linux.x86_64/bedGraphToBigWig
+  - curl -OL http://raw.github.com/craigcitro/r-travis/master/scripts/travis-tool.sh
+  - chmod 755 *
+  - export PATH=$(pwd):$PATH
+  - popd
   - travis-tool.sh bootstrap
   - sudo apt-get install -y bedtools libdb5.1++-dev libdb5.1-stl-dev texlive
 
