@@ -3,19 +3,21 @@ language: c
 sudo: required
 
 env:
-  - TEST_SUITE=demo
-  - TEST_SUITE=
+  - TEST_SUITE=pipeline-noinput
+  - TEST_SUITE=pipeline-input
+  - TEST_SUITE=CRAN
 
 before_install:
-  - curl -OL http://hgdownload.cse.ucsc.edu/admin/exe/linux.x86_64/bigWigInfo
-  - curl -OL http://hgdownload.cse.ucsc.edu/admin/exe/linux.x86_64/bigWigToBedGraph
-  - curl -OL http://hgdownload.cse.ucsc.edu/admin/exe/linux.x86_64/bedToBigBed
-  - curl -OL http://hgdownload.cse.ucsc.edu/admin/exe/linux.x86_64/bedGraphToBigWig
-  - curl -OL http://raw.github.com/craigcitro/r-travis/master/scripts/travis-tool.sh
-  - chmod 755 *
-  - export PATH=$(pwd):$PATH
+  - mkdir bin
+  - cd bin && curl -OL http://hgdownload.cse.ucsc.edu/admin/exe/linux.x86_64/bigWigInfo
+  - cd bin && curl -OL http://hgdownload.cse.ucsc.edu/admin/exe/linux.x86_64/bigWigToBedGraph
+  - cd bin && curl -OL http://hgdownload.cse.ucsc.edu/admin/exe/linux.x86_64/bedToBigBed
+  - cd bin && curl -OL http://hgdownload.cse.ucsc.edu/admin/exe/linux.x86_64/bedGraphToBigWig
+  - cd bin && curl -OL http://raw.github.com/craigcitro/r-travis/master/scripts/travis-tool.sh
+  - chmod 755 bin/*
+  - export PATH=$(pwd)/bin:$PATH
   - travis-tool.sh bootstrap
-  - sudo apt-get install -y bedtools libdb5.1++-dev libdb5.1-stl-dev 
+  - sudo apt-get install -y bedtools libdb5.1++-dev libdb5.1-stl-dev texlive
 
 install:
   - travis-tool.sh r_install devtools ggplot2 RJSONIO hexbin xtable future directlabels
@@ -23,10 +25,9 @@ install:
   - Rscript -e "devtools::install_github('tdhock/animint', upgrade_dependencies=FALSE)"
   - travis-tool.sh install_deps
   - Rscript -e "devtools::install(dependencies=FALSE)"
-  - rm -rf /tmp/Rtmp*
 
 script:
-  - Rscript -e "source('tests/testthat.R', chdir = TRUE)"
+  - if [ "$TEST_SUITE" == "CRAN" ];then bash build.sh;else Rscript -e "source('tests/testthat.R', chdir = TRUE)";fi
 
 after_failure:
   - travis-tool.sh dump_logs
