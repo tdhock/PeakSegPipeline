@@ -405,15 +405,7 @@ problem.PeakSegFPOP <- function
       penalty_timing.tsv,
       row.names=FALSE, col.names=FALSE,
       quote=FALSE, sep="\t")
-    du <- function(msg){
-      cmd <- sprintf("du -m %s/*.db", problem.dir)
-      cat(paste(msg, "removing file (unlink)--------", cmd, "\n"))
-      system(cmd)
-      system("df -m")
-    }
-    du("BEFORE")
     unlink(penalty.db)
-    du("AFTER")
     penalty.loss <- fread(penalty_loss.tsv)
     setnames(penalty.loss, c(
       "penalty", "segments", "peaks", "bases",

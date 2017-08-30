@@ -13,5 +13,8 @@ download.to <- function
 }
 
 suite <- Sys.getenv("TEST_SUITE")
-if(suite=="")suite <- NULL
-test_check("PeakSegPipeline", filter=suite)
+if(suite==""){
+  PeakSegPipeline::system.or.stop("cd .. && bash build.sh")
+}else{
+  test_check("PeakSegPipeline", filter=suite)
+}

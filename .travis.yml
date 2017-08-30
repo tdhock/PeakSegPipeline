@@ -4,6 +4,7 @@ sudo: required
 
 env:
   - TEST_SUITE=demo
+  - TEST_SUITE=
 
 before_install:
   - curl -OL http://hgdownload.cse.ucsc.edu/admin/exe/linux.x86_64/bigWigInfo
@@ -34,3 +35,4 @@ notifications:
   email:
     on_success: change
     on_failure: change
+
