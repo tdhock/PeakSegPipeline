@@ -65,7 +65,7 @@ int PeakSegFPOP_disk(char *bedGraph_file_name, char* penalty_str){
   int chromStart, chromEnd, coverage, items, line_i=0;
   char chrom[100];
   char extra[100] = "";
-  double cum_weight_i = 0.0, cum_weight_prev_i, cum_weighted_count;
+  double cum_weight_i = 0.0, cum_weight_prev_i, cum_weighted_count=0.0;
   double min_log_mean=INFINITY, max_log_mean=-INFINITY, log_data;
   int data_i = 0;
   double weight;

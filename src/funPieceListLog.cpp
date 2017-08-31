@@ -281,7 +281,7 @@ void PiecewisePoissonLossLog::set_to_min_less_of
 	// right of the interval are equal.
 	double right_left_diff = right_cost - left_cost;
 	if(verbose)Rprintf("right_cost-left_cost=%e\n", right_left_diff);
-	bool right_left_equal = right_left_diff < NEWTON_EPSILON;
+	//bool right_left_equal = right_left_diff < NEWTON_EPSILON;
 	bool next_cost_more_than_left;
 	if(next_it == input->piece_list.end()){
 	  next_cost_more_than_left = true;
@@ -628,14 +628,16 @@ void PiecewisePoissonLossLog::findMean
   }
 }
 
-double PiecewisePoissonLossLog::findCost(double mean){
+double PiecewisePoissonLossLog::findCost(double log_mean){
   PoissonLossPieceListLog::iterator it;
   for(it=piece_list.begin(); it != piece_list.end(); it++){
-    if(it->min_log_mean <= mean && mean <= it->max_log_mean){
-      int verbose = 0;
-      return it->getCost(mean);
+    if(it->min_log_mean <= log_mean && log_mean <= it->max_log_mean){
+      return it->getCost(log_mean);
     }
   }
+  // we should never get here, but we include this return in order to
+  // avoid clang++ warning control may reach end of non-void function.
+  return INFINITY;
 }
 
 void PiecewisePoissonLossLog::print(){
@@ -666,7 +668,6 @@ void PiecewisePoissonLossLog::Minimize
  int *data_i,
  double *prev_log_mean){
   double candidate_cost, candidate_log_mean;
-  int verbose=false;
   PoissonLossPieceListLog::iterator it;
   *best_cost = INFINITY;
   for(it=piece_list.begin(); it != piece_list.end(); it++){
@@ -690,7 +691,6 @@ void PiecewisePoissonLossLog::Minimize
 int PiecewisePoissonLossLog::check_min_of
 (PiecewisePoissonLossLog *prev, PiecewisePoissonLossLog *model){
   PoissonLossPieceListLog::iterator it;
-  int verbose = 0;
   for(it = piece_list.begin(); it != piece_list.end(); it++){
     if(it != piece_list.begin()){
       PoissonLossPieceListLog::iterator pit = it;
@@ -772,14 +772,14 @@ int PiecewisePoissonLossLog::check_min_of
       Rprintf("max_log_mean<=min_log_mean=%15.10f model\n", it->min_log_mean);
       return 2;
     }
-    double mid_mean = (it->min_log_mean + it->max_log_mean)/2;
-    if(-INFINITY < mid_mean){
-      double cost_model = it->getCost(mid_mean);
-      double cost_min = findCost(mid_mean);
+    double mid_log_mean = (it->min_log_mean + it->max_log_mean)/2;
+    if(-INFINITY < mid_log_mean){
+      double cost_model = it->getCost(mid_log_mean);
+      double cost_min = findCost(mid_log_mean);
       if(cost_model+1e-6 < cost_min){
-	Rprintf("model(%f)=%f\n", mid_mean, cost_model);
+	Rprintf("model(%f)=%f\n", mid_log_mean, cost_model);
 	model->print();
-	Rprintf("min(%f)=%f\n", mid_mean, cost_min);
+	Rprintf("min(%f)=%f\n", mid_log_mean, cost_min);
 	print();
 	return 1;
       }
