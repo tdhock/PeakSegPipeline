@@ -54,10 +54,9 @@ chrom.sizes <- data.table(chrom="chr10", bases=128616069)
 fwrite(chrom.sizes, chrom.sizes.file, sep="\t", col.names=FALSE)
 repos.url <- "https://raw.githubusercontent.com/tdhock/input-test-data/master/"
 for(bigWig.part in bigWig.part.vec){
-  suffix <- ifelse(grepl("MS026601|MS002201", bigWig.part), "/", "_/")
   bigWig.file <- file.path(
     non.integer.dir, "samples",
-    sub("/", suffix, bigWig.part), "coverage.bigWig")
+    bigWig.part, "coverage.bigWig")
   bigWig.url <- paste0(repos.url, bigWig.part, ".bigwig")
   download.to(bigWig.url, bigWig.file)
   demo.bigWig <- sub("non-integer", "demo", bigWig.file)
