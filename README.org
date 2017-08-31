@@ -52,8 +52,9 @@ necessary because the coverage data must be stored in bigWig files for
 efficient indexed access.
 
 Install a C++ compiler and a BerkeleyDB STL development library, [[https://github.com/tdhock/PeakSegPipeline/wiki/FAQ#Installing-BerkeleyDB-STL][as
-explained in our FAQ]]. BerkeleyDB STL is used by PeakSegFPOP to write a
-large temporary file to disk.
+explained in our FAQ]]. BerkeleyDB STL is used by
+=PeakSegPipeline::PeakSegFPOP_disk= to write a large temporary file to
+disk.
 
 Finally, install the PeakSegPipeline R package.
 
