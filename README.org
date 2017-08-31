@@ -47,44 +47,22 @@ other peak detection algorithms for ChIP-seq data analysis:
 
 ** Installation and testing
 
-Install UCSC command line programs built for the x86_64 architecture
-(you may need a different architecture for your system). TODO: write
-an R function that downloads and/or builds/installs these binaries.
+Install UCSC command line programs, [[https://github.com/tdhock/PeakSegPipeline/wiki/FAQ#installing-ucsc-command-line-programs][as explained on our FAQ]].
+
+Install a C++ compiler and a BerkeleyDB STL development library. On
+my Ubuntu system the command looks like this:
 
 #+BEGIN_SRC shell-script
-export BIN=~/bin # or any other directory on your $PATH
-curl -L http://hgdownload.cse.ucsc.edu/admin/exe/linux.x86_64/bigWigToBedGraph -o $BIN/bigWigToBedGraph
-curl -L http://hgdownload.cse.ucsc.edu/admin/exe/linux.x86_64/bedGraphToBigWig -o $BIN/bigWigToBedGraph
-curl -L http://hgdownload.cse.ucsc.edu/admin/exe/linux.x86_64/bedToBigBed -o $BIN/bedToBigBed
-chmod u+x $BIN/bigWigToBedGraph $BIN/bedToBigBed $BIN/bedGraphToBigWig
-#+END_SRC
-
-Install build tools and BerkeleyDB STL. On my Ubuntu system the
-command looks like this, but it may be different for you.
-
-#+BEGIN_SRC shell-script
-sudo aptitude install build-essential r-recommended libdb6.0++-dev libdb6.0-stl-dev bedtools
+sudo aptitude install build-essential r-recommended libdb6.0++-dev libdb6.0-stl-dev
 #+END_SRC
 
 BerkeleyDB STL is used by PeakSegFPOP to write a large temporary file
 to disk. If you don't have root or aptitude, then you can always
-install BerkeleyDB by hand to your home directory
+install BerkeleyDB by hand to your home directory -- see [[https://github.com/tdhock/PeakSegPipeline/wiki/FAQ#compiler-installation-problems][our FAQ on
+Compiler installation problems which explains how to do this on Unix
+and MacOS]].
 
-#+BEGIN_SRC shell-script
-wget http://download.oracle.com/berkeley-db/db-6.2.23.NC.tar.gz
-tar xf db-6.2.23.NC.tar.gz
-cd db-6.2.23.NC/build_unix
-../dist/configure --prefix=$HOME --enable-stl
-make
-make install
-#+END_SRC 
-
-If BerkeleyDB is installed to your home directory or some other
-non-standard directory, then you probably need to tell R how to find
-it (TODO: maybe include BerkeleyDB STL inside this package, to avoid
-installation hassles).
-
-Install the PeakSegPipeline R package.
+Finally, install the PeakSegPipeline R package.
 
 #+BEGIN_SRC shell-script
 Rscript -e 'devtools::install_github("tdhock/PeakSegPipeline")'

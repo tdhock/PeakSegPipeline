@@ -284,27 +284,16 @@ problem.coverage <- function
   if(!coverage.ok){
     ## Create problemID/coverage.bedGraph from either
     ## sampleID/coverage.bigWig or sampleID/coverage.bedGraph.
-    coverage.bedGraph <- file.path(sample.dir, "coverage.bedGraph")
     coverage.bigWig <- file.path(sample.dir, "coverage.bigWig")
     cov.cmd <- if(file.exists(coverage.bigWig)){
       problem[, sprintf(
         "bigWigToBedGraph -chrom=%s -start=%d -end=%d %s %s",
         chrom, problemStart, problemEnd,
         coverage.bigWig, prob.cov.bedGraph)]
-    }else if(file.exists(coverage.bedGraph)){
-      ## Use intersectBed -sorted to avoid memory
-      ## problems. coverage.bedGraph needs to be -a since that is
-      ## reported in the output.
-      paste(
-        "intersectBed -sorted",
-        "-a", coverage.bedGraph,
-        "-b", problem.bed,
-        ">", prob.cov.bedGraph)
     }else{
       stop("To compute ", prob.cov.bedGraph,
-           " need either ", coverage.bigWig,
-           " or ", coverage.bedGraph,
-           " which do not exist.")
+           " need ", coverage.bigWig,
+           " which does not exist.")
     }
     cat(cov.cmd, "\n")
     status <- system(cov.cmd)
@@ -339,12 +328,10 @@ problem.coverage <- function
       sep="\t",
       col.names=FALSE)
   }
-### Nothing. If necessary, the intersectBed or bigWigToBedGraph
-### command line program is used to create problemID/coverage.bedGraph
-### and then we (1) stop if there are any negative data, (2) stop if
-### the data are not integers, or can not be normalized by the
-### smallest non-zero value to obtain integers, and (3) add lines with
-### zero counts for missing data.
+### Nothing. If necessary, the bigWigToBedGraph command line program
+### is used to create problemID/coverage.bedGraph and then we (1) stop
+### if there are any negative or non-integer data and (2) add lines
+### with zero counts for missing data.
 }
 
 problem.PeakSegFPOP <- function
