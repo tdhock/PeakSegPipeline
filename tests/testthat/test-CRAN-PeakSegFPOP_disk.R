@@ -1,5 +1,5 @@
 library(testthat)
-context("errors")
+context("PeakSegFPOP_disk")
 library(PeakSegPipeline)
 
 r <- function(chrom, chromStart, chromEnd, coverage){
