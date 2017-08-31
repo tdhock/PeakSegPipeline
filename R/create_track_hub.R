@@ -17,7 +17,7 @@ create_track_hub <- function
 ### link to download UCSC genome chromInfo files, necessary for
 ### creating bigWigs.
 ){
-  gz <- chrom <- problemStart <- problemEnd <- chromEnd <- . <-
+  chrom <- problemStart <- problemEnd <- chromEnd <- . <-
     name <- chrom <- chromStart <- NULL
   ## above to avoid "no visible binding for global variable" NOTEs in
   ## CRAN check.
@@ -27,7 +27,7 @@ create_track_hub <- function
     chromInfo.url <- paste0(goldenPath.url, genome, "/database/chromInfo.txt.gz")
     chromInfo.gz <- paste(chromInfo.txt, ".gz")
     download.file(chromInfo.url, chromInfo.gz)
-    system.or.stop(paste("zcat", gz, ">", chromInfo.txt))
+    system.or.stop(paste("zcat", chromInfo.gz, ">", chromInfo.txt))
   }
   ## Then create bedGraph files if necessary.
   bedGraph.file.vec <- Sys.glob(file.path(

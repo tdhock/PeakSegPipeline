@@ -283,4 +283,8 @@ create_problems_all <- function
 #PBS -N hub
 ", hub.cmd, "
 ")
+  hub.sh <- paste0(hub, ".sh")
+  if(!file.exists(hub.sh)){
+    writeLines(script.txt, hub.sh)
+  }
 }
