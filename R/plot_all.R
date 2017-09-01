@@ -388,11 +388,11 @@ peak.name)]
           "http://genome.ucsc.edu/cgi-bin/hgTracks?position=%s:%d-%d",
           chrom,
           as.integer(peakStart-peakBases*zoom.factor),
-          as.integer(min.peakEnd+peakBases*zoom.factor)),
+          as.integer(min.peakEnd+peakBases*zoom.factor))
+        ),
         size=4,
         showSelected="chrom.box",
-        validate_params=FALSE,
-        chunk_vars=c("chrom.box"),
+        chunk_vars="chrom.box",
         data=peak.boxes[, rbind(
           data.table(peak.boxes, x="log10(bases)", xval=log10(peakBases)),
           data.table(
