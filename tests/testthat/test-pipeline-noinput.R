@@ -2,6 +2,7 @@ library(testthat)
 library(PeakSegPipeline)
 library(data.table)
 context("noinput")
+options(mc.cores=parallel::detectCores())
 
 ## Download bigWig files from github.
 bigWig.part.vec <- c(
