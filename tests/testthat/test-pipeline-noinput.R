@@ -34,15 +34,6 @@ chr10:38,585,584-38,643,190 noPeaks
 chr10:38,643,191-38,650,766 peakStart bcell kidney
 chr10:38,731,066-38,750,574 peakEnd bcell kidney
 chr10:38,750,960-38,790,663 noPeaks
-
-chr10:38,807,475-38,815,200 noPeaks
-chr10:38,815,201-38,816,355 peakStart bcell kidney Input
-chr10:38,818,377-38,819,342 peakEnd bcell kidney Input
-
-chr10:39,098,319-39,111,384 noPeaks
-chr10:39,125,134-39,125,550 peakStart bcell kidney Input
-chr10:39,125,594-39,126,266 peakEnd bcell kidney Input
-chr10:39,126,866-39,140,858 noPeaks
 "
 
 ##test.data.dir <- file.path(Sys.getenv("HOME"), "PeakSegPipeline-test")

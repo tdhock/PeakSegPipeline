@@ -545,7 +545,10 @@ problem.target <- function
   error.list <- list()
   next.pen <- c(0, Inf)
   while(length(next.pen)){
-    cat("Next =", paste(next.pen, collapse=", "), "\n")
+    cat(
+      "Next =", paste(next.pen, collapse=", "),
+      "mc.cores=", getOption("mc.cores"),
+      "\n")
     next.str <- paste(next.pen)
     error.list[next.str] <- mclapply.or.stop(next.str, getError)
     error.dt <- do.call(rbind, error.list)[order(-penalty),]
