@@ -25,7 +25,7 @@ create_track_hub <- function
   ## First make sure we have the chromInfo file for this genome.
   if(!file.exists(chromInfo.txt)){
     chromInfo.url <- paste0(goldenPath.url, genome, "/database/chromInfo.txt.gz")
-    chromInfo.gz <- paste(chromInfo.txt, ".gz")
+    chromInfo.gz <- paste0(chromInfo.txt, ".gz")
     download.file(chromInfo.url, chromInfo.gz)
     system.or.stop(paste("zcat", chromInfo.gz, ">", chromInfo.txt))
   }
