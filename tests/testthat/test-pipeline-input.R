@@ -74,18 +74,7 @@ for(set.dir in c(non.integer.dir, demo.dir)){
   writeLines(label.txt, labels.file)
   problems.bed <- file.path(set.dir, "problems.bed")
   unlink(problems.bed)
-  cat("chr10	60000	17974675
-chr10	18024675	38818835
-chr10	38868835	39154935
-chr10	42746000	46426964
-chr10	47529169	47792476
-chr10	47892476	48055707
-chr10	48105707	49095536
-chr10	49195536	51137410
-chr10	51187410	51398845
-chr10	51448845	125869472
-chr10	125919472	128616069
-", file=problems.bed)
+  cat("chr10	18024675	38818835", file=problems.bed)
 }
 
 ## Pipeline should raise error for non-integer data.
