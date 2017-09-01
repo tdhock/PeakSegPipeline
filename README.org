@@ -37,7 +37,7 @@ other peak detection algorithms for ChIP-seq data analysis:
   that can NOT be corrected using labels.
 - *Joint peak detection in any number of samples or cell types* so the
   model can be easily interpreted to find similarities or differences
-  between samples (PeakSegJoint outputs a binary matrix, samples x
+  between samples (PeakSegPipeline outputs a binary matrix, samples x
   peaks). In contrast, it is not easy to find similarities and
   differences between samples using single-sample peak detection
   methods (e.g. [[https://github.com/taoliu/MACS][MACS]]), and other multi-sample peak detection methods

@@ -2,6 +2,12 @@ TODOs
 
 test create_track_hub.
 
+2017.09.01
+
+use animint2 instead of animint.
+
+First green build with three jobs on travis: CRAN, input, noinput.
+
 2017.08.11
 
 add bigwig.R and mclapply.R (removed from PeakSegJoint).

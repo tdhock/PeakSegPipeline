@@ -359,10 +359,10 @@ peak.name)]
         low="grey90", high="red")+
       geom_tile(aes(
         mid.peakEnd/1e6, chrom.fac,
-        clickSelects=chrom.box,
         tooltip=paste(
           count, "peaks in", chrom.box),
         fill=log10(count)),
+        clickSelects="chrom.box",
         data=peak.box.counts)+
       scale_x_continuous(
         "position on chromosome (mega bases)")+
@@ -389,8 +389,8 @@ peak.name)]
           chrom,
           as.integer(peakStart-peakBases*zoom.factor),
           as.integer(min.peakEnd+peakBases*zoom.factor)),
-        showSelected=chrom.box),
         size=4,
+        showSelected="chrom.box",
         validate_params=FALSE,
         chunk_vars=c("chrom.box"),
         data=peak.boxes[, rbind(
