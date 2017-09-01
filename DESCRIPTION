@@ -20,4 +20,4 @@ Imports: data.table (>= 1.9.8), PeakError, PeakSegJoint (>= 2017.08.08),
 Suggests: testthat, httr
 Remotes:
  faizan-khan-iit/ggplot2@e62066b462070a3a46f403d6f63531413a3a20ce,
- tdhock/animint2@55d774b7ccabc84d8257894e4013b865deeb9ee2
+ tdhock/animint2@611ff3c1ba7ec3955de966d91b390103328f245d

@@ -23,8 +23,6 @@ before_install:
 
 install:
   - travis-tool.sh r_install devtools RJSONIO hexbin xtable future directlabels
-  - Rscript -e "devtools::install_github('faizan-khan-iit/ggplot2@5fb99d0cece13239bbbc09c6b8a7da7f86ac58e2', dep=TRUE)"
-  - Rscript -e "devtools::install_github('tdhock/animint2', upgrade_dependencies=FALSE)"
   - travis-tool.sh install_deps
   - Rscript -e "devtools::install(dependencies=FALSE)"
 

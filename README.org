@@ -64,7 +64,7 @@ devtools::install_github("tdhock/PeakSegPipeline")
 #+END_SRC
 
 Once everything has been installed, you can test your installation by
-executing [[file:tests/testthat/test-demo.R]] It will first download some
+executing [[file:tests/testthat/test-pipeline-demo.R]] It will first download some
 bigWigs and labels to the =test/demo= directory, then run the
 PeakSegPipeline on them. If everything worked, you can view the
 results by opening =test/demo/index.html= in a web browser, and it
