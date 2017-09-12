@@ -353,6 +353,8 @@ problem.PeakSegFPOP <- function
   penalty_loss.tsv <- paste0(pre, "_loss.tsv")
   penalty_timing.tsv <- paste0(pre, "_timing.tsv")
   already.computed <- tryCatch({
+    timing <- fread(penalty_timing.tsv)
+    setnames(timing, c("penalty", "megabytes", "seconds"))
     first.line <- fread(paste("head -1", penalty_segments.bed))
     setnames(first.line, c("chrom", "chromStart", "chromEnd", "status", "mean"))
     last.line <- fread(paste("tail -1", penalty_segments.bed))
@@ -370,10 +372,7 @@ problem.PeakSegFPOP <- function
   }, error=function(e){
     FALSE
   })
-  if(already.computed){
-    timing <- fread(penalty_timing.tsv)
-    setnames(timing, c("penalty", "megabytes", "seconds"))
-  }else{
+  if(!already.computed){
     penalty.db <- paste0(pre, ".db")
     seconds <- system.time({
       PeakSegFPOP_disk(prob.cov.bedGraph, penalty.str)
