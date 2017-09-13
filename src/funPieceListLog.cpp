@@ -1104,9 +1104,30 @@ void PiecewisePoissonLossLog::push_min_pieces
   }//if(two_roots
   if(second_log_mean != INFINITY){
     // two crossing points.
-    double before_mean = (exp(last_min_log_mean) + exp(first_log_mean))/2;
-    double cost_diff_before = diff_piece.getCost(log(before_mean));
-    if(cost_diff_before < 0){
+    bool it1_larger_before;
+    if(second_log_mean-first_log_mean < first_log_mean-last_min_log_mean){
+      //bigger distance between start of last interval and first root,
+      //so test which function is bigger at a point before the first
+      //root.
+      double before_mean = (exp(last_min_log_mean) + exp(first_log_mean))/2;
+      double cost_diff_before = diff_piece.getCost(log(before_mean));
+      if(cost_diff_before < 0){
+	it1_larger_before = true;
+      }else{
+	it1_larger_before = false;
+      }
+    }else{
+      // more space between the two roots, so test which function is
+      // bigger at a midpoint between the two.
+      double log_mean_between = (first_log_mean+second_log_mean)/2;
+      double cost_diff_between = diff_piece.getCost(log_mean_between);
+      if(cost_diff_between < 0){
+	it1_larger_before = false;
+      }else{
+	it1_larger_before = true;
+      }
+    }
+    if(it1_larger_before){
       push_piece(it1, last_min_log_mean, first_log_mean);
       push_piece(it2, first_log_mean, second_log_mean);
       push_piece(it1, second_log_mean, first_max_log_mean);
