@@ -268,6 +268,19 @@ create_problems_all <- function
   data.dir), "
 ")
   writeLines(script.txt, sh.file)
+  ## Create plotting script.
+  model.RData <- file.path(data.dir, "model.RData")
+  sh.file <- paste0(model.RData, ".sh")
+  script.txt <- paste0(
+    PBS.header, "
+#PBS -o ", model.RData, ".out
+#PBS -e ", model.RData, ".err
+#PBS -N model
+", Rscript(
+  'PeakSegPipeline::problem.train("%s")',
+  data.dir), "
+")
+  writeLines(script.txt, sh.file)
   ## Create track hub script.
   hub <- file.path(data.dir, "hub")
   hub.cmd <- Rscript(
