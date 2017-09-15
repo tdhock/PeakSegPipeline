@@ -94,7 +94,7 @@ problem.train <- function
   size.model[, upper.bases := 10^(upper.lim)]
   size.model[, lower.bases := 10^(lower.lim)]
   cat("Train errors:\n")
-  pred.dt[, list(targets=.N), by=status]
+  print(pred.dt[, list(targets=.N), by=status])
   ## To check if we are extrapolating when predictions are made later,
   ## we save the range of the data 
   model$train.feature.ranges <- apply(
