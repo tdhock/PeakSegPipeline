@@ -41,7 +41,7 @@ problem.train <- function
       features, targets, verbose=0,
       initial.regularization=1e-4,
       min.observations=nrow(features),
-      reg.type=ifelse(nrow(features) < 20, "1sd", "min(mean)"))
+      reg.type=ifelse(nrow(features) < 20, "1sd", "min"))
   }
   model$train.mean.vec <- colMeans(features)
   cat("Learned regularization parameter and weights:\n")
