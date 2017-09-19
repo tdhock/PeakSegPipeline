@@ -282,8 +282,8 @@ problem.coverage <- function
   ## If problemID/coverage.bedGraph has already been computed, than we
   ## have nothing to do.
   if(!coverage.ok){
-    ## Create problemID/coverage.bedGraph from either
-    ## sampleID/coverage.bigWig or sampleID/coverage.bedGraph.
+    ## Create problemID/coverage.bedGraph from
+    ## sampleID/coverage.bigWig.
     coverage.bigWig <- file.path(sample.dir, "coverage.bigWig")
     cov.cmd <- if(file.exists(coverage.bigWig)){
       problem[, sprintf(
@@ -321,8 +321,20 @@ problem.coverage <- function
       count=0L)
     setkey(zero.cov, chromStart)
     zero.cov[J(prob.cov$chromStart), count := prob.cov$count.int]
+    ## The chromStart on the last line of the coverage file should
+    ## match the problemEnd, for caching purposes.
+    last.end <- zero.cov[.N, chromEnd]
+    out.cov <- if(last.end == problem$problemEnd){
+      zero.cov
+    }else{
+      rbind(zero.cov, data.table(
+        chrom=prob.cov$chrom[1],
+        chromStart=last.end,
+        chromEnd=problem$problemEnd,
+        count=0L))
+    }
     fwrite(
-      zero.cov,
+      out.cov,
       prob.cov.bedGraph,
       quote=FALSE,
       sep="\t",
