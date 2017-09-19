@@ -125,7 +125,9 @@ create_problems_joint <- function
   ## the old jointProblems directory.
   jointProblems <- file.path(
     probs.dir, problem.name, "jointProblems")
+  jointProblems.bed <- paste0(jointProblems, ".bed")
   unlink(jointProblems, recursive=TRUE)
+  unlink(jointProblems.bed)
   if(is.data.table(problems) && 0 < nrow(problems)){
     setkey(problems, clusterStart, clusterEnd)
     problems[, bases := clusterEnd - clusterStart]
@@ -224,7 +226,7 @@ create_problems_joint <- function
     nothing <- mclapply.or.stop(1:nrow(problem.info), makeProblem)
     write.table(
       problem.info[, .(chrom, problemStart, problemEnd)],
-      paste0(jointProblems, ".bed"),
+      jointProblems.bed,
       quote=FALSE,
       sep="\t",
       col.names=FALSE,
