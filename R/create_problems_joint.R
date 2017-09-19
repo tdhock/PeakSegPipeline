@@ -121,6 +121,11 @@ create_problems_joint <- function
       clusterEnd=labelEnd-reduce)]
   }
   problems <- do.call(rbind, problems.list)
+  ## Whether or not there are any joint problems now, we should delete
+  ## the old jointProblems directory.
+  jointProblems <- file.path(
+    probs.dir, problem.name, "jointProblems")
+  unlink(jointProblems, recursive=TRUE)
   if(is.data.table(problems) && 0 < nrow(problems)){
     setkey(problems, clusterStart, clusterEnd)
     problems[, bases := clusterEnd - clusterStart]
@@ -153,11 +158,7 @@ create_problems_joint <- function
     }
     coverage.bedGraph.vec <- Sys.glob(file.path(
       samples.dir, "*", "*", "problems", problem.name, "coverage.bedGraph"))
-    jointProblems <- file.path(
-      probs.dir, problem.name, "jointProblems")
-    unlink(jointProblems, recursive=TRUE)
     joint.model.RData <- file.path(data.dir, "joint.model.RData")
-    ## TODO make directories with sh files for each.
     makeProblem <- function(problem.i){
       problem <- problem.info[problem.i,]
       pname <- problem$problem.name
