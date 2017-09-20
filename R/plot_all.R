@@ -57,6 +57,58 @@ plot_all <- function
     ord.vec <- u.vec[orderChrom(u.vec)]
     factor(chrom.vec, ord.vec)
   }
+  ##load all jobPeaks files.
+  joint.glob <- file.path(
+    set.dir, "jobs", "*")
+  jobPeaks.RData.dt <- data.table(
+    jobPeaks.RData=Sys.glob(file.path(joint.glob, "jobPeaks.RData")))
+  if(nrow(jobPeaks.RData.dt)==0){
+    stop(
+      "no predicted joint peaks found; to do joint peak prediction run ",
+      file.path(joint.glob, "jobPeaks.sh"))
+  }
+  cat(
+    "Reading predicted peaks in",
+    nrow(jobPeaks.RData.dt),
+    "jobPeaks.RData files.\n",
+    sep=" ")
+  jobPeaks <- jobPeaks.RData.dt[, {
+    load(jobPeaks.RData)
+    jobPeaks
+  }, by=jobPeaks.RData]
+  jobPeaks[, peak.name := sprintf("%s:%d-%d", chrom, peakStart, peakEnd)]
+  ## height
+  nrow.vec <- sapply(jobPeaks$background.peak.means, nrow)
+  longest.i <- which(nrow.vec==max(nrow.vec))[1]
+  one.mat <- jobPeaks$background.peak.means[[longest.i]]
+  na.vec <- rep(NA, nrow(one.mat))
+  names(na.vec) <- rownames(one.mat)
+  getOrNA <- function(m, col.name){
+    na.vec[rownames(m)] <- m[, col.name]
+    na.vec
+  }
+  background.mat <- sapply(jobPeaks$background.peak.means, getOrNA, "background")
+  peak.mat <- sapply(jobPeaks$background.peak.means, getOrNA, "peak")
+  mean.background.vec <- rowMeans(background.mat, na.rm=TRUE)
+  log10.peak.height.mat <- log10(peak.mat / mean.background.vec)
+  log10.peak.height.mat[is.na(log10.peak.height.mat)] <- 0
+  height.dt <- data.table(
+    peak.name=jobPeaks$peak.name,
+    t(log10.peak.height.mat))
+  peaks_matrix_height.tsv <- file.path(set.dir, "peaks_matrix_height.tsv")
+  cat(
+    "Writing peak height matrix to",
+    peaks_matrix_height.tsv,
+    "(",
+    nrow(height.dt),
+    "peaks x",
+    ncol(height.dt)-1,
+    "samples",
+    sep=" ")
+  fwrite(
+    height.dt,
+    peaks_matrix_height.tsv,
+    sep="\t")
   ## Plot each labeled chunk.
   chunk.dir.vec <- Sys.glob(file.path(
     set.dir, "problems", "*", "chunks", "*"))
@@ -80,26 +132,6 @@ plot_all <- function
   problems[, problem.name := sprintf(
     "%s:%d-%d", chrom, problemStart, problemEnd)]
   problems[, separate.problem := factor(problem.name, problem.name)]
-  joint.glob <- file.path(
-    set.dir, "jobs", "*")
-  jobPeaks.RData.dt <- data.table(
-    jobPeaks.RData=Sys.glob(file.path(joint.glob, "jobPeaks.RData")))
-  if(nrow(jobPeaks.RData.dt)==0){
-    stop(
-      "no predicted joint peaks found; to do joint peak prediction run ",
-      file.path(joint.glob, "jobPeaks.sh"))
-  }
-  cat(
-    "Reading predicted peaks in",
-    nrow(jobPeaks.RData.dt),
-    "jobPeaks.RData files.\n",
-    sep=" ")
-  ##load all jobPeaks files.
-  jobPeaks <- jobPeaks.RData.dt[, {
-    load(jobPeaks.RData)
-    jobPeaks
-  }, by=jobPeaks.RData]
-  jobPeaks[, peak.name := sprintf("%s:%d-%d", chrom, peakStart, peakEnd)]
   ## Count total samples using directories.
   sample.dir.vec <- Sys.glob(file.path(set.dir, "samples", "*", "*"))
   sample.path.vec <- sub(".*samples/", "", sample.dir.vec)
@@ -497,7 +529,8 @@ at least one sample with a peak
 </li>', nrow(input.pred)),
 sprintf('<li>
 %d peaks were detected overall, across %d samples
-(<a href="peaks_matrix.tsv">peaks_matrix.tsv</a>).
+(<a href="peaks_matrix.tsv">peaks_matrix.tsv</a>,
+<a href="peaks_matrix_height.tsv">peaks_matrix_height.tsv</a>).
 </li>',
 nrow(joint.peaks.dt),
 length(sample.path.vec)),
@@ -533,14 +566,7 @@ specific.html.vec
     input.pred,
     file.path(set.dir, "peaks_summary.tsv"),
     sep="\t")
-  height.list <- jobPeaks$peak.height
-  names(height.list) <- jobPeaks$peak.name
-  height.mat <- do.call(rbind, height.list)[peak.mat.dt$peak, rownames(peak.mat)]
-  height.dt <- data.table(peak=rownames(height.mat), height.mat)
-  fwrite(
-    height.dt,
-    file.path(set.dir, "peaks_matrix_height.tsv"),
-    sep="\t")
+  ## summary
   peaks.bed <- file.path(set.dir, "peaks_summary.bed")
   bed.dt <- input.pred[specificity != "non-specific",]
   max.samples <- max(bed.dt$n.samples)
