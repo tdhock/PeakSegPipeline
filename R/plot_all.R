@@ -104,6 +104,7 @@ plot_all <- function
     "peaks x",
     ncol(height.dt)-1,
     "samples",
+    ")\n",
     sep=" ")
   fwrite(
     height.dt,
