@@ -86,10 +86,9 @@ when you run [[file:tests/testthat/test-demo.R]]
 *** Coverage data
 
 Each coverage data file should contain counts of aligned sequence
-reads at every genomic position, for one sample. These files can be in
-either [[https://genome.ucsc.edu/goldenpath/help/bedgraph.html][bedGraph]] or [[https://genome.ucsc.edu/goldenpath/help/bigWig.html][bigWig]] format (bigWig is preferable since it is
-indexed and thus faster to read than bedGraph). For example
-this test downloads 8 files:
+reads at every genomic position, for one sample. These files must be
+in [[https://genome.ucsc.edu/goldenpath/help/bigWig.html][bigWig]] format, since it is indexed for fast lookup of coverage in
+arbitrary genomic regions. For example this test downloads 8 files:
 
 #+BEGIN_SRC 
 test/demo/samples/bcell/MS026601/coverage.bigWig
@@ -108,8 +107,8 @@ project. The =samples= directory contains a sub-directory for each
 sample group (experimental conditions or cell types, e.g. =bcell= or
 =kidney=). Each sample group directory should contain a sub-directory
 for each sample (e.g. =MS002201= or =MS010302=). Each sample
-sub-directory should contain either a =coverage.bedGraph= or
-=coverage.bigWig= file with counts of aligned sequence reads.
+sub-directory should contain a =coverage.bigWig= file with counts of
+aligned sequence reads (non-negative integers).
 
 Note that in this demonstration project, the groups with underscores
 are un-labeled samples (e.g. =bcell_=), and the groups without
@@ -132,10 +131,10 @@ webserver with =project/samples/groupID/sampleID/coverage.bigWig=
 files, then create a track hub using a command such as
 
 #+BEGIN_SRC shell-script
-Rscript create_track_hub.R project http://your.server.com/~user/path- hg19 email@domain.com
+R -e 'PeakSegPipeline::create_track_hub("project_dir", "http://your.server.com/~user/path-", "hg19", "email@domain.com")'
 #+END_SRC
 
-The arguments of the =create_track_hub.R= script are as follows:
+The arguments of the =create_track_hub= function are as follows:
 - The first argument =project= is the data directory. 
 - The second argument =http://your.server.com/~user/path-= is the URL
   prefix (appended before the first argument to obtain URLs for the
