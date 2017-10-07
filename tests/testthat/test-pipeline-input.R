@@ -53,8 +53,8 @@ chr10:38,815,201-38,816,355 peakStart bcell kidney Input
 chr10:38,818,377-38,819,342 peakEnd bcell kidney Input
 "
 
-##test.data.dir <- file.path(Sys.getenv("HOME"), "PeakSegPipeline-test")
-test.data.dir <- file.path(tempdir(), "PeakSegPipeline-test")
+test.data.dir <- file.path(Sys.getenv("HOME"), "PeakSegPipeline-test")
+##test.data.dir <- file.path(tempdir(), "PeakSegPipeline-test")
 non.integer.dir <- file.path(test.data.dir, "non-integer")
 demo.dir <- file.path(test.data.dir, "demo")
 chrom.sizes.file <- tempfile()
