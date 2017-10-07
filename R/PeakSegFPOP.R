@@ -34,12 +34,13 @@ problem.train <- function
   targets <- do.call(rbind, targets.list)
   set.seed(1)
   model <- if(nrow(features) < 10){
+    some.features <- features[, c("log.quartile.100%", "log.data")]
     cat("Feature matrix:\n")
-    print(features)
+    print(some.features)
     cat("Target matrix:\n")
-    print(targets)
+    print(unname(targets))
     penaltyLearning::IntervalRegressionUnregularized(
-      features[, c("log.quartile.100%", "log.data")], targets)
+      some.features, targets)
   }else{
     penaltyLearning::IntervalRegressionCV(
       features, targets, verbose=0,
@@ -390,6 +391,7 @@ problem.PeakSegFPOP <- function
   })
   if(!already.computed){
     penalty.db <- paste0(pre, ".db")
+    unlink(penalty.db)
     seconds <- system.time({
       PeakSegFPOP_disk(prob.cov.bedGraph, penalty.str)
     })[["elapsed"]]
