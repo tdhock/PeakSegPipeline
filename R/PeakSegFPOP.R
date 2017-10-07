@@ -34,6 +34,10 @@ problem.train <- function
   targets <- do.call(rbind, targets.list)
   set.seed(1)
   model <- if(nrow(features) < 10){
+    cat("Feature matrix:\n")
+    print(features)
+    cat("Target matrix:\n")
+    print(targets)
     penaltyLearning::IntervalRegressionUnregularized(
       features[, c("log.quartile.100%", "log.data")], targets)
   }else{
@@ -576,24 +580,30 @@ problem.target <- function
     other.candidates <- do.call(rbind, target.list$candidates[!is.error])
     other.in.target <- other.candidates[done==FALSE &
         target.vec[1] < log(next.pen) & log(next.pen) < target.vec[2],]
-    next.pen <- if(nrow(other.in.target)){
+    next.pen <- if(nrow(other.in.target)==0){
+      cat("No fp/fn min in min(error) interval => refine limits of min(error) interval.\n")
+      print(error.candidates)
+      error.candidates[done==FALSE, unique(next.pen)]
+    }else{      
       ## Inside the minimum error interval, we have found a spot where
       ## the fn or fp reaches a minimum. This means that we should try
       ## exploring a few penalty values between the fp/fn limits.
       pen.vec <- other.candidates[done==FALSE, sort(unique(next.pen))]
+      print(other.candidates)
+      print(pen.vec)
       if(length(pen.vec)==1){
         ## There is only one unique value, so explore it. This is
         ## possible for an error profile of 3 2 1 1 2 3............
         ## (fp = 3 2 1 0 0 0, fn = 0 0 0 1 2 3) in which case we just
         ## want to explore between the ones.
+        cat("FP/FN min in min(error) interval and one unique value to explore.\n")
         pen.vec
       }else{
         ## Rather than simply evaluating the penalties at the borders,
         ## we try a grid of penalties on the log scale.
+        cat("FP/FN min in min(error) interval and several values to explore.\n")
         exp(seq(log(pen.vec[1]), log(pen.vec[2]), l=4))
       }
-    }else{
-      error.candidates[done==FALSE, unique(next.pen)]
     }
     if(FALSE && interactive() && length(next.pen)){
       ## This may cause a crash if executed within mclapply, and it is
