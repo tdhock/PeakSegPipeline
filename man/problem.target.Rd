@@ -12,10 +12,10 @@ interval of minimal error penalty values.}
 
 \value{List of info related to target interval computation: target is the
 interval of log(penalty) values that achieve minimum incorrect
-labels (numeric vector of length 2), models is a data.table with
-one row per model for which the label error was computed, selected
-is a data.frame that describes which penalty values will select
-which models.}
+labels (numeric vector of length 2), target.iterations is a
+data.table with target intervals as a function of iteration,
+models is a data.table with one row per model for which the label
+error was computed.}
 
 \author{Toby Dylan Hocking}
 

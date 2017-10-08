@@ -12,12 +12,10 @@ contains one line that indicates the genomic coordinates of a
 particular segmentation problem.}
 }
 
-\value{Nothing. If necessary, the intersectBed or bigWigToBedGraph
-command line program is used to create problemID/coverage.bedGraph
-and then we (1) stop if there are any negative data, (2) stop if
-the data are not integers, or can not be normalized by the
-smallest non-zero value to obtain integers, and (3) add lines with
-zero counts for missing data.}
+\value{Nothing. If necessary, the bigWigToBedGraph command line program
+is used to create problemID/coverage.bedGraph and then we (1) stop
+if there are any negative or non-integer data and (2) add lines
+with zero counts for missing data.}
 
 \author{Toby Dylan Hocking}
 

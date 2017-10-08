@@ -503,6 +503,7 @@ problem.target <- function
       stop("try deleting _segments.bed and recomputing, error computing number of incorrect labels: ", e)
     })
     with(penalty.error, data.table(
+      iteration,
       result$loss,
       fn=sum(fn),
       fp=sum(fp)))
@@ -561,12 +562,15 @@ problem.target <- function
   }
   error.list <- list()
   next.pen <- c(0, Inf)
+  iteration <- 0
+  target.result.list <- list()
   while(length(next.pen)){
     cat(
       "Next =", paste(next.pen, collapse=", "),
       "mc.cores=", getOption("mc.cores"),
       "\n")
     next.str <- paste(next.pen)
+    iteration <- iteration+1
     error.list[next.str] <- mclapply.or.stop(next.str, getError)
     error.dt <- do.call(rbind, error.list)[order(-penalty),]
     if(!is.numeric(error.dt$penalty)){
@@ -577,6 +581,10 @@ problem.target <- function
     target.vec <- c(
       target.list$candidates[["errors start"]]$min.log.lambda,
       target.list$candidates[["errors end"]]$max.log.lambda)
+    target.result.list[[paste(iteration)]] <- data.table(
+      iteration,
+      min.log.lambda=target.vec[1],
+      max.log.lambda=target.vec[2])
     is.error <- grepl("error", names(target.list$candidates))
     error.candidates <- do.call(rbind, target.list$candidates[is.error])
     other.candidates <- do.call(rbind, target.list$candidates[!is.error])
@@ -633,13 +641,14 @@ problem.target <- function
   problem.features(problem.dir)
   list(
     target=target.vec,
+    target.iterations=do.call(rbind, target.result.list),
     models=error.dt)
 ### List of info related to target interval computation: target is the
 ### interval of log(penalty) values that achieve minimum incorrect
-### labels (numeric vector of length 2), models is a data.table with
-### one row per model for which the label error was computed, selected
-### is a data.frame that describes which penalty values will select
-### which models.
+### labels (numeric vector of length 2), target.iterations is a
+### data.table with target intervals as a function of iteration,
+### models is a data.table with one row per model for which the label
+### error was computed.
 }
 
 problem.predict <- function
