@@ -9,7 +9,11 @@ convert_labels <- function
   ## CRAN check.
   project.dir <- normalizePath(proj.dir, mustWork=TRUE)
   labels.file.vec <- Sys.glob(file.path(project.dir, "labels", "*.txt"))
-
+  if(length(labels.file.vec)==0){
+    stop(
+      "proj.dir=", project.dir,
+      " should be a project directory with proj.dir/labels/*.txt files")
+  }
   g.pos.pattern <-
     paste0("(?<chrom>chr.+?)",
            ":",
@@ -92,8 +96,12 @@ convert_labels <- function
     ## determine total set of sample groups with positive=Peak
     ## annotations.
     stripped <- gsub(" *$", "", gsub("^ *", "", match.df$sample.groups))
-    is.noPeaks <- stripped == ""
-    match.df[is.noPeaks, "annotation"] <- "noPeaks"
+    no.groups <- stripped == ""
+    bad.positive <- match.df$annotation!="noPeaks" & no.groups
+    if(any(bad.positive)){
+      print(match.df[bad.positive,])
+      stop("need at least one sample group up for each positive label")
+    }
     commas <- gsub(" +", ",", stripped)
     sample.group.list <- strsplit(commas, split=",")
     bed.list[[labels.file]] <- 
@@ -110,7 +118,6 @@ convert_labels <- function
         paste(sample.group.vec, collapse=", "),
         "\n",
         sep="")
-
     ## Create some labeled regions for specific/nonspecific peaks.
     groups.up.vec <- sapply(sample.group.list, length)
     file.positive.regions <- match.df[0 < groups.up.vec,]
