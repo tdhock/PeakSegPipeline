@@ -27,5 +27,5 @@ downloadProblems <- function
     }
     file.list[[db]] <- f
   }
-  gap2problems(gap, chromInfo, problems.bed)
+  with(file.list, gap2problems(gap, chromInfo, problems.bed))
 }

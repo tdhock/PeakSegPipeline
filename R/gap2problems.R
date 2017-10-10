@@ -12,10 +12,15 @@ gap2problems <- function
   chrom <- chromStart <- chromEnd <- NULL
   ## above to avoid "no visible binding for global variable" NOTEs in
   ## CRAN check.
+  stopifnot(is.character(gap.bed), length(gap.bed)==1, file.exists(gap.bed))
   gap.all <- fread(gap.bed)
   gap <- gap.all[, 1:3, with=FALSE]
   setnames(gap, c("chrom", "chromStart", "chromEnd"))
   setkey(gap, chrom)
+  stopifnot(
+    is.character(chromInfo.txt),
+    length(chromInfo.txt)==1,
+    file.exists(chromInfo.txt))
   chromInfo <- fread(chromInfo.txt)
   chromSizes <- chromInfo[, 1:2, with=FALSE]
   setnames(chromSizes, c("chrom", "bases"))
