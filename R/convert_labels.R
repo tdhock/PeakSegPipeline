@@ -29,21 +29,27 @@ convert_labels <- function
       peakEnd="255,76,76",
       peaks="164,69,238")
 
+  sample.dir.glob <- file.path(project.dir, "samples", "*", "*")
+  sample.dir.vec <- Sys.glob(sample.dir.glob)
+  if(length(sample.dir.vec)==0){
+    stop(
+      "no sample directories, please create at least one ",
+      file.path(
+        project.dir, "samples", "groupID", "sampleID", "coverage.bigWig")
+    )
+  }
+  sample.id <- basename(sample.dir.vec)
+  sample.group.dir <- dirname(sample.dir.vec)
+  sample.group <- basename(sample.group.dir)
+  sample.df <- data.frame(sample.id, sample.group)
+  samples.by.group <- split(sample.df, sample.df$sample.group)
+
   regions.by.file <- list()
   regions.by.chunk.file <- list()
   chunk.limits.list <- list()
   bed.list <- list()
   positive.regions.list <- list()
   for(labels.file in labels.file.vec){
-    ## there should be bigwig files in subdirectories under the same
-    ## directory as labels.file.
-    sample.dir.vec <- Sys.glob(file.path(project.dir, "samples", "*", "*"))
-    sample.id <- basename(sample.dir.vec)
-    sample.group.dir <- dirname(sample.dir.vec)
-    sample.group <- basename(sample.group.dir)
-    sample.df <- data.frame(sample.id, sample.group)
-    samples.by.group <- split(sample.df, sample.df$sample.group)
-
     cat("Reading ", labels.file, "\n", sep="")
     labels.lines <- readLines(labels.file)
     is.blank <- labels.lines == ""
@@ -56,12 +62,19 @@ convert_labels <- function
     raw.vec <- paste(label.df$line)
     line.vec <- gsub(",", "", raw.vec)
     match.mat <- namedCapture::str_match_named(line.vec, g.pos.pattern)
-    stopifnot(!is.na(match.mat[,1]))
+    if(any(is.bad.line <- is.na(match.mat[,1]))){
+      print(raw.vec[is.bad.line])
+      stop("label line does not match ", g.pos.pattern)
+    }
     not.recognized <- ! match.mat[, "annotation"] %in% names(label.colors)
     if(any(not.recognized)){
       print(raw.vec[not.recognized])
       print(match.mat[not.recognized, , drop=FALSE])
-      stop("unrecognized annotation")
+      stop(
+        "unrecognized annotation; valid values: ",
+        paste(
+          names(label.colors),
+          collapse=", "))
     }
     match.df <-
       data.frame(chrom=match.mat[, "chrom"],
