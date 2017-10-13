@@ -255,7 +255,7 @@ machine learning model that can predict optimal penalty values, even
 for un-labeled samples and genome subsets. To train a model, use
 
 #+BEGIN_SRC shell-script
-Rscript -e 'PeakSegPipeline::train_model("test/demo")'
+Rscript -e 'PeakSegPipeline::problem.train("test/demo")'
 #+END_SRC
 
 which trains a model using
