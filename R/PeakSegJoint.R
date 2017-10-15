@@ -641,110 +641,115 @@ problem.joint.plot <- function
       peakStart="#ffafaf",
       peakEnd="#ff4c4c",
       peaks="#a445ee")
-  gg <- ggplot()+
-    theme_bw()+
-    theme(panel.margin=grid::unit(0, "lines"))+
-    facet_grid(sample.group + sample.id ~ ., scales="free")+
-    scale_y_continuous(
-      "aligned read coverage",
-      breaks=function(limits){
-        lim <- floor(limits[2])
-        if(lim==0){
-          Inf
-        }else{
-          lim
-        }
-      })+
-    scale_x_continuous(paste(
-      "position on",
-      coverage$chrom[1],
-      "(kb = kilo bases)"))+
-    ## geom_tallrect(aes(
-    ##   xmin=problemStart/1e3,
-    ##   xmax=problemEnd/1e3),
-    ##   alpha=0.5,
-    ##   size=3,
-    ##   color="black",
-    ##   fill=NA,
-    ##   data=probs.in.chunk)+
-    geom_segment(aes(
-      problemStart/1e3, 0,
-      xend=problemEnd/1e3, yend=0),
-      size=1,
-      color="blue",
-      data=probs.in.chunk)+
-    geom_point(aes(
-      problemStart/1e3, 0),
-      color="blue",
-      data=probs.in.chunk)+
-    geom_tallrect(aes(
-      xmin=chromStart/1e3, 
-      xmax=chromEnd/1e3,
-      fill=annotation), 
-      alpha=0.5,
-      data=labels)+
-    scale_fill_manual("label", values=ann.colors)+
-    scale_color_manual(values=c(separate="black", joint="deepskyblue"))+
-    scale_size_manual(values=c(separate=2, joint=3))+
-    geom_rect(aes(
-      xmin=chromStart/1e3, xmax=chromEnd/1e3,
-      ymin=0, ymax=count),
-      data=coverage,
-      color="grey50")
-  if(length(joint.peaks)){
-    joint.peaks$peak.type <- "joint"
-    gg <- gg+
-      geom_point(aes(
-        peakStart/1e3, 0,
-        color=peak.type,
-        size=peak.type),
-        data=joint.peaks)+
-      geom_segment(aes(
-        peakStart/1e3, 0,
-        xend=peakEnd/1e3, yend=0,
-        color=peak.type,
-        size=peak.type),
-        data=joint.peaks)
-  }
-  if(length(separate.peaks.list)){
-    separate.peaks <- do.call(rbind, separate.peaks.list)
-    separate.peaks$peak.type <- "separate"
-    gg <- gg+
-      geom_segment(aes(
-        peakStart/1e3, 0,
-        xend=peakEnd/1e3, yend=0,
-        color=peak.type,
-        size=peak.type),
-                   data=separate.peaks)+
-      geom_point(aes(
-        peakStart/1e3, 0,
-        color=peak.type,
-        size=peak.type),
-                 data=separate.peaks)
-  }
-  n.rows <- length(coverage.list) + 2
-  mypng <- function(base, g){
-    f <- file.path(chunk.dir, base)
-    cat("Writing ",
-        f,
-        "\n", sep="")
-    cairo.limit <- 32767
-    h <- 60*n.rows
-    if(cairo.limit < h){
-      h <- floor(cairo.limit / n.rows) * n.rows
+  if(requireNamespace("animint2")){
+    gg <- ggplot2Animint::ggplot()+
+      ggplot2Animint::theme_bw()+
+      ggplot2Animint::theme(panel.margin=grid::unit(0, "lines"))+
+      ggplot2Animint::facet_grid(sample.group + sample.id ~ ., scales="free")+
+      ggplot2Animint::scale_y_continuous(
+        "aligned read coverage",
+        breaks=function(limits){
+          lim <- floor(limits[2])
+          if(lim==0){
+            Inf
+          }else{
+            lim
+          }
+        })+
+      ggplot2Animint::scale_x_continuous(paste(
+        "position on",
+        coverage$chrom[1],
+        "(kb = kilo bases)"))+
+      ## geom_tallrect(aes(
+      ##   xmin=problemStart/1e3,
+      ##   xmax=problemEnd/1e3),
+      ##   alpha=0.5,
+      ##   size=3,
+      ##   color="black",
+      ##   fill=NA,
+      ##   data=probs.in.chunk)+
+      ggplot2Animint::geom_segment(ggplot2Animint::aes(
+        problemStart/1e3, 0,
+        xend=problemEnd/1e3, yend=0),
+        size=1,
+        color="blue",
+        data=probs.in.chunk)+
+      ggplot2Animint::geom_point(ggplot2Animint::aes(
+        problemStart/1e3, 0),
+        color="blue",
+        data=probs.in.chunk)+
+      animint2::geom_tallrect(ggplot2Animint::aes(
+        xmin=chromStart/1e3, 
+        xmax=chromEnd/1e3,
+        fill=annotation), 
+        alpha=0.5,
+        data=labels)+
+      ggplot2Animint::scale_fill_manual(
+        "label", values=ann.colors)+
+      ggplot2Animint::scale_color_manual(
+        values=c(separate="black", joint="deepskyblue"))+
+      ggplot2Animint::scale_size_manual(
+        values=c(separate=2, joint=3))+
+      ggplot2Animint::geom_rect(ggplot2Animint::aes(
+        xmin=chromStart/1e3, xmax=chromEnd/1e3,
+        ymin=0, ymax=count),
+        data=coverage,
+        color="grey50")
+    if(length(joint.peaks)){
+      joint.peaks$peak.type <- "joint"
+      gg <- gg+
+        ggplot2Animint::geom_point(ggplot2Animint::aes(
+          peakStart/1e3, 0,
+          color=peak.type,
+          size=peak.type),
+          data=joint.peaks)+
+        ggplot2Animint::geom_segment(ggplot2Animint::aes(
+          peakStart/1e3, 0,
+          xend=peakEnd/1e3, yend=0,
+          color=peak.type,
+          size=peak.type),
+          data=joint.peaks)
     }
-    png(f, res=100, width=1000, height=h)
-    print(g)
-    dev.off()
-    thumb.png <- sub(".png$", "-thumb.png", f)
-    cmd <- sprintf("convert %s -resize 230 %s", f, thumb.png)
-    system(cmd)
+    if(length(separate.peaks.list)){
+      separate.peaks <- do.call(rbind, separate.peaks.list)
+      separate.peaks$peak.type <- "separate"
+      gg <- gg+
+        ggplot2Animint::geom_segment(ggplot2Animint::aes(
+          peakStart/1e3, 0,
+          xend=peakEnd/1e3, yend=0,
+          color=peak.type,
+          size=peak.type),
+          data=separate.peaks)+
+        ggplot2Animint::geom_point(ggplot2Animint::aes(
+          peakStart/1e3, 0,
+          color=peak.type,
+          size=peak.type),
+          data=separate.peaks)
+    }
+    n.rows <- length(coverage.list) + 2
+    mypng <- function(base, g){
+      f <- file.path(chunk.dir, base)
+      cat("Writing ",
+          f,
+          "\n", sep="")
+      cairo.limit <- 32767
+      h <- 60*n.rows
+      if(cairo.limit < h){
+        h <- floor(cairo.limit / n.rows) * n.rows
+      }
+      png(f, res=100, width=1000, height=h)
+      print(g)
+      dev.off()
+      thumb.png <- sub(".png$", "-thumb.png", f)
+      cmd <- sprintf("convert %s -resize 230 %s", f, thumb.png)
+      system(cmd)
+    }
+    mypng("figure-predictions-zoomout.png", gg)
+    gg.zoom <- gg+
+      ggplot2Animint::coord_cartesian(
+        xlim=chunk[, c(chunkStart, chunkEnd)/1e3],
+        expand=FALSE)
+    mypng("figure-predictions.png", gg.zoom)
   }
-  mypng("figure-predictions-zoomout.png", gg)
-  gg.zoom <- gg+
-    coord_cartesian(
-      xlim=chunk[, c(chunkStart, chunkEnd)/1e3],
-      expand=FALSE)
-  mypng("figure-predictions.png", gg.zoom)
 ### Nothing
 }  

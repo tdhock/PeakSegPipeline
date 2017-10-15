@@ -117,28 +117,31 @@ problem.train <- function
       hjust=c(1, 0.5, 0),
       label=scales::comma(round(10^log10.bases)))
   }]
-  size.plot <- ggplot()+
-    geom_histogram(
-      aes(
-        log10.bases, ..density..),
-      data=correct.peaks)+
-    geom_vline(
-      aes(xintercept=mean),
-      data=size.model,
-      size=1, color="red")+
-    penaltyLearning::geom_tallrect(
-      aes(xmin=lower.lim, xmax=upper.lim),
-      data=size.model, fill="red")+
-    geom_line(
-      aes(log10.bases, prob),
-      data=normal.dens, color="red", size=1)+
-    geom_text(
-      aes(log10.bases, 0, label=label, hjust=hjust),
-      data=base.labels, vjust=1)
+  if(FALSE){
+    size.plot <- ggplot()+
+      geom_histogram(
+        aes(
+          log10.bases, ..density..),
+        data=correct.peaks)+
+      geom_vline(
+        aes(xintercept=mean),
+        data=size.model,
+        size=1, color="red")+
+      penaltyLearning::geom_tallrect(
+        aes(xmin=lower.lim, xmax=upper.lim),
+        data=size.model, fill="red")+
+      geom_line(
+        aes(log10.bases, prob),
+        data=normal.dens, color="red", size=1)+
+      geom_text(
+        aes(log10.bases, 0, label=label, hjust=hjust),
+        data=base.labels, vjust=1)
+  }
   cat("Writing model to", model.RData, "\n")
   save(
     model, features, targets,
-    size.model, size.plot, correct.peaks,
+    size.model,
+    correct.peaks,
     file=model.RData)
 }
 
@@ -615,16 +618,19 @@ problem.target <- function
         exp(seq(log(pen.vec[1]), log(pen.vec[2]), l=4))
       }
     }
-    if(FALSE && interactive() && length(next.pen)){
+    if(FALSE && interactive() && length(next.pen) && requireNamespace("ggplot2Animint")){
       ## This may cause a crash if executed within mclapply, and it is
       ## mostly just for debugging purposes.
-      gg <- ggplot()+
-        geom_abline(aes(slope=peaks, intercept=total.cost),
+      gg <- ggplot2Animint::ggplot()+
+        ggplot2Animint::geom_abline(
+          ggplot2Animint::aes(slope=peaks, intercept=total.cost),
                     data=error.dt)+
-        geom_vline(aes(xintercept=penalty),
+        ggplot2Animint::geom_vline(
+          ggplot2Animint::aes(xintercept=penalty),
                    color="red",
                    data=data.table(penalty=next.pen))+
-        geom_point(aes(penalty, mean.pen.cost*bases),
+        ggplot2Animint::geom_point(
+          ggplot2Animint::aes(penalty, mean.pen.cost*bases),
                    data=error.dt)
       print(gg)
     }

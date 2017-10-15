@@ -11,16 +11,16 @@ sharp H3K4me3 data), jointly using multiple samples and cell types.
   where you have observed presence or absence of peaks in specific
   samples). For more details about labeling see [[#label-data][Input Files -> Label Data]] below.
 - *Single-sample peak calling using PeakSegFPOP.* This repository
-  includes PeakSegFPOP, a command line limited memory PeakSeg
+  includes a limited memory implementation of PeakSegFPOP, a PeakSeg
   functional pruning optimal partitioning algorithm
   ([[https://arxiv.org/abs/1703.03352][arXiv:1703.03352]]), which is used to predict preliminary peaks for
   each sample independently.
 - *Multiple-sample peak calling using PeakSegJoint.* After
-  single-sample analysis, peaks are clustered into genomic regions
-  with overlapping peaks. In each cluster we run [[https://github.com/tdhock/PeakSegJoint][PeakSegJoint]] to find
-  the most likely common peak positions across multiple samples --
-  this includes a prediction of which samples are up and down for each
-  genomic region.
+  single-sample analysis, peaks on different samples are clustered
+  into genomic regions with overlapping peaks. In each cluster we run
+  [[https://github.com/tdhock/PeakSegJoint][PeakSegJoint]] to find the most likely common peak positions across
+  multiple samples -- this includes a prediction of which samples are
+  up and down for each genomic region.
 
 There are two major differences between PeakSegPipeline and all of the
 other peak detection algorithms for ChIP-seq data analysis:

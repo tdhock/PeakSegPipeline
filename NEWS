@@ -4,6 +4,17 @@ warning/error for convert_labels when a chunk has no noPeaks labels.
 
 test create_track_hub.
 
+2017.10.14
+
+In problem.train we got
+Error in plot_clone(p) : attempt to apply non-function
+with ggplot2_2.2.1 installed, and
+Imports: ggplot2Animint, animint2
+I think this has something to do with conflicting S3 methods
+for the gg class.
+For now I fixed it by moving these Imports to Suggests,
+and using requireNamespace and animint2:: and ggplot2Animint::
+
 2017.09.01
 
 use animint2 instead of animint.

@@ -384,44 +384,45 @@ peak.name)]
     if(length(f))range(f) else range(x)
   }
   h.pixels <- (length(unique(peak.box.counts$chrom))+5)*15
-  viz <- list(
-    genome=ggplot()+
-      theme_bw()+
-      theme_animint(height=h.pixels)+
-      scale_fill_continuous(
-        low="grey90", high="red")+
-      geom_tile(aes(
-        mid.peakEnd/1e6, chrom.fac,
-        tooltip=paste(
-          count, "peaks in", chrom.box),
-        fill=log10(count)),
-        clickSelects="chrom.box",
-        data=peak.box.counts)+
-      scale_x_continuous(
-        "position on chromosome (mega bases)")+
-      scale_y_discrete("chromosome"),
-    peakSize=ggplot()+
-      scale_fill_continuous(
-        low="grey90", high="blue", na.value="white",
-        limits=getLim(log10(peak.box.counts$some.input)))+
-      xlab("")+
-      geom_point(aes(
-        xval, log10(n.samples),
-        key=peak.name,
-        tooltip=paste(
-          n.samples, "samples with a",
-          peakBases, "bp peak on",
-          peak.name,
-          ifelse(
-            n.Input==0, "",
-            paste("including", n.Input, "Input")),
-          sample.counts),
-        fill=log10(n.Input),
-        href=sprintf(
-          "http://genome.ucsc.edu/cgi-bin/hgTracks?position=%s:%d-%d",
-          chrom,
-          as.integer(peakStart-peakBases*zoom.factor),
-          as.integer(min.peakEnd+peakBases*zoom.factor))
+  if(requireNamespace("animint2")){
+    viz <- list(
+      genome=ggplot2Animint::ggplot()+
+        ggplot2Animint::theme_bw()+
+        animint2::theme_animint(height=h.pixels)+
+        ggplot2Animint::scale_fill_continuous(
+          low="grey90", high="red")+
+        ggplot2Animint::geom_tile(ggplot2Animint::aes(
+          mid.peakEnd/1e6, chrom.fac,
+          tooltip=paste(
+            count, "peaks in", chrom.box),
+          fill=log10(count)),
+          clickSelects="chrom.box",
+          data=peak.box.counts)+
+        ggplot2Animint::scale_x_continuous(
+          "position on chromosome (mega bases)")+
+        ggplot2Animint::scale_y_discrete("chromosome"),
+      peakSize=ggplot2Animint::ggplot()+
+        ggplot2Animint::scale_fill_continuous(
+          low="grey90", high="blue", na.value="white",
+          limits=getLim(log10(peak.box.counts$some.input)))+
+        ggplot2Animint::xlab("")+
+        ggplot2Animint::geom_point(ggplot2Animint::aes(
+          xval, log10(n.samples),
+          key=peak.name,
+          tooltip=paste(
+            n.samples, "samples with a",
+            peakBases, "bp peak on",
+            peak.name,
+            ifelse(
+              n.Input==0, "",
+              paste("including", n.Input, "Input")),
+            sample.counts),
+          fill=log10(n.Input),
+          href=sprintf(
+            "http://genome.ucsc.edu/cgi-bin/hgTracks?position=%s:%d-%d",
+            chrom,
+            as.integer(peakStart-peakBases*zoom.factor),
+            as.integer(min.peakEnd+peakBases*zoom.factor))
         ),
         size=4,
         showSelected="chrom.box",
@@ -432,11 +433,12 @@ peak.name)]
             peak.boxes,
             x="relative position (mega bases)",
             xval=(peakStart-mid.peakEnd)/1e6))])+
-      theme_bw()+
-      facet_grid(. ~ x, scales="free")+
-      theme(panel.margin=grid::unit(0, "lines"))+
-      theme_animint(width=600, height=h.pixels))
-  animint2dir(viz, file.path(set.dir, "figure-genome"))
+        ggplot2Animint::theme_bw()+
+        ggplot2Animint::facet_grid(. ~ x, scales="free")+
+        ggplot2Animint::theme(panel.margin=grid::unit(0, "lines"))+
+        animint2::theme_animint(width=600, height=h.pixels))
+    animint2::animint2dir(viz, file.path(set.dir, "figure-genome"))
+  }
   figure.png.vec <- Sys.glob(file.path(
     set.dir, "problems", "*", "chunks", "*", "figure-predictions-zoomout.png"))
   if(0 == length(figure.png.vec)){
