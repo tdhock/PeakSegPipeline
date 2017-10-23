@@ -1,6 +1,11 @@
 TODOs
 
+Remove stderr from tail since that confuses some users:
+tail: cannot open .bedGraph file for reading no such file or directory
+
 warning/error for convert_labels when a chunk has no noPeaks labels.
+
+error in convert_labels for noPeaks label with sample groups up?
 
 test create_track_hub.
 
