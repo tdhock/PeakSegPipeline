@@ -148,21 +148,35 @@ problem.joint.targets <- function
  ){
   labels.tsv.vec <- Sys.glob(file.path(
     problem.dir, "jointProblems", "*", "labels.tsv"))
-  mclapply.or.stop(seq_along(labels.tsv.vec), function(labels.i){
-    labels.tsv <- labels.tsv.vec[[labels.i]]
-    jprob.dir <- dirname(labels.tsv)
-    cat(sprintf(
-      "%4d / %4d labeled joint problems %s\n",
-      labels.i, length(labels.tsv.vec),
-      jprob.dir))
-    target.tsv <- file.path(jprob.dir, "target.tsv")
-    if(file.exists(target.tsv)){
-      cat("Skipping since target.tsv exists.\n")
-    }else{
-      problem.joint.target(jprob.dir)
-    }
-  })
-### Nothing.
+  targets.features.list <- mclapply.or.stop(
+    seq_along(labels.tsv.vec), function(labels.i){
+      labels.tsv <- labels.tsv.vec[[labels.i]]
+      jprob.dir <- dirname(labels.tsv)
+      cat(sprintf(
+        "%4d / %4d labeled joint problems %s\n",
+        labels.i, length(labels.tsv.vec),
+        jprob.dir))
+      target.tsv <- file.path(jprob.dir, "target.tsv")
+      if(file.exists(target.tsv)){
+        cat("Skipping since target.tsv exists.\n")
+      }else{
+        problem.joint.target(jprob.dir)
+      }
+      target.vec <- scan(target.tsv, numeric(), quiet=TRUE)
+      if(any(is.finite(target.vec))){
+        segmentations.RData <- file.path(jprob.dir, "segmentations.RData")
+        load(segmentations.RData)
+        data.table(
+          target=list(target.vec),
+          features=list(colSums(segmentations$features)))
+      }
+    })
+  targets.features <- do.call(rbind, targets.features.list)
+  jointTargets.list <- lapply(targets.features, function(L)do.call(rbind, L))
+  jointTargets.rds <- file.path(problem.dir, "jointTargets.rds")
+  saveRDS(jointTargets.list, jointTargets.rds)
+  jointTargets.list
+### Named list of two matrices: targets and features.
 }
 
 problem.joint.targets.train <- function
@@ -200,24 +214,17 @@ problem.joint.train <- function
   ## above to avoid "no visible binding for global variable" NOTEs in
   ## CRAN check.
   joint.model.RData <- file.path(data.dir, "joint.model.RData")
-  target.tsv.vec <- Sys.glob(file.path(
-    data.dir, "problems", "*", "jointProblems", "*", "target.tsv"))
-  cat("Found", length(target.tsv.vec), "target.tsv files for training.\n")
-  target.mat.list <- list()
-  feature.mat.list <- list()
-  for(target.tsv.i in seq_along(target.tsv.vec)){
-    target.tsv <- target.tsv.vec[[target.tsv.i]]
-    target.vec <- scan(target.tsv, quiet=TRUE)
-    problem.dir <- dirname(target.tsv)
-    segmentations.RData <- file.path(problem.dir, "segmentations.RData")
-    load(segmentations.RData)
-    if(any(is.finite(target.vec))){
-      target.mat.list[[problem.dir]] <- target.vec
-      feature.mat.list[[problem.dir]] <- colSums(segmentations$features)
-    }
-  }
-  feature.mat <- do.call(rbind, feature.mat.list)
-  target.mat <- do.call(rbind, target.mat.list)
+  jointTargets.rds.vec <- Sys.glob(file.path(
+    data.dir, "problems", "*", "jointTargets.rds"))
+  ## Below we read the features and targets into a data.table with
+  ## list columns.
+  jointDT <- data.table(jointTargets.rds=Sys.glob(file.path(
+    data.dir, "problems", "*", "jointTargets.rds")))[, {
+      L <- readRDS(jointTargets.rds)
+      lapply(L, list)
+    }, by=list(jointTargets.rds)]
+  feature.mat <- do.call(rbind, jointDT$features)
+  target.mat <- do.call(rbind, jointDT$target)
   cat("Training using", nrow(target.mat), "finite targets.\n")
   set.seed(1)
   joint.model <- penaltyLearning::IntervalRegressionCV(
@@ -540,7 +547,7 @@ problem.joint.target <- function
     target.tsv,
     "\n", sep="")
   write(fit.error$target, target.tsv, sep="\t")
-### list of output from PeakSegJointError.
+### Nothing.
 }
 
 problem.joint.plot <- function

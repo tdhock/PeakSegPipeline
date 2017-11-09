@@ -9,6 +9,14 @@ error in convert_labels for noPeaks label with sample groups up?
 
 test create_track_hub.
 
+2017.11.08
+
+problem.joint.targets now saves problem/problemID/jointTargets.rds
+which problem.joint.train now looks for. This is (1) faster than
+looking for all problem/problemID/jointProblems/jointID/target.tsv
+files, and (2) it gives a file output to problem.joint.targets which
+did not have one before.
+
 2017.10.14
 
 In problem.train we got
