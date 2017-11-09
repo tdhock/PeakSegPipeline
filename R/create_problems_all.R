@@ -197,16 +197,6 @@ create_problems_all <- function
     writeLines(script.txt, sh.file)
     if(file.exists(chunk.limits.RData) &&
        problem$problem.name %in% chunks.with.problems$problem.name){
-      ## jointTargets.sh
-      jointTargets <- file.path(prob.dir, "jointTargets")
-      sh.file <- paste0(jointTargets, ".sh")
-      script.txt <- paste0(PBS.header, "
-#PBS -o ", jointTargets, ".out
-#PBS -e ", jointTargets, ".err
-#PBS -N JT", problem$problem.name, "
-", joint.targets.cmd, "
-")
-      writeLines(script.txt, sh.file)
       ## write a directory for every chunk.
       problem.chunks <- chunks.with.problems[problem$problem.name]
       cat("Writing ", nrow(problem.chunks),
