@@ -11,6 +11,16 @@ test create_track_hub.
 
 2017.11.08
 
+problem.predict and problem.predict.allSamples now return a data.table
+of peaks with sample.id and sample.group columns -- this can now be
+passed to create_problems_joint to avoid hitting the file system
+again.
+
+New problem.pred.cluster.targets which, for one problem, does separate
+peak prediction for all samples, then clusters peaks across all
+samples to create joint problems, then computes joint target intervals
+for labeled joint problems.
+
 problem.joint.targets now saves problem/problemID/jointTargets.rds
 which problem.joint.train now looks for. This is (1) faster than
 looking for all problem/problemID/jointProblems/jointID/target.tsv

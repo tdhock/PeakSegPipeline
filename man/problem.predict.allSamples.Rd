@@ -7,7 +7,7 @@
   \item{prob.dir}{project/problems/problemID directory.}
 }
 
-\value{List of data tables (predicted peaks).}
+\value{data.table of predicted peaks.}
 
 \author{Toby Dylan Hocking}
 

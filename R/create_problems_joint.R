@@ -1,8 +1,13 @@
 create_problems_joint <- function
 ### Create joint problems for one separate problem, after separate
 ### peak prediction.
-(prob.dir
+(prob.dir,
 ### proj.dir/problems/problemID
+  peaks=NULL
+### data.table of peaks predicted in all samples for this problem (if
+### it has already been computed by problem.predict.allSamples), or
+### NULL which means to read predicted peaks from
+### proj.dir/samples/*/*/problemID/peaks.bed files.
 ){
   chromStart <- chromEnd <- clusterStart1 <- clusterStart <-
     clusterEnd <- . <- annotation <- labelStart <- labelEnd <-
@@ -35,31 +40,32 @@ create_problems_joint <- function
   }
   separate.problem <- fread(problem.bed.vec[1])
   setnames(separate.problem, c("chrom", "chromStart", "chromEnd"))
-  peaks.glob <- file.path(
-    samples.dir, "*", "*", "problems", problem.name, "peaks.bed")
-  peaks.bed.vec <- Sys.glob(peaks.glob)
-  cat("Found", length(peaks.bed.vec), peaks.glob, "files.\n")
-  peaks.list <- list()
-  for(sample.i in seq_along(peaks.bed.vec)){
-    peaks.bed <- peaks.bed.vec[[sample.i]]
-    problem.dir <- dirname(peaks.bed)
-    problems.dir <- dirname(problem.dir)
-    sample.dir <- dirname(problems.dir)
-    sample.id <- basename(sample.dir)
-    group.dir <- dirname(sample.dir)
-    sample.group <- basename(group.dir)
-    peaks.list[[peaks.bed]] <- tryCatch({
-      sample.peaks <- fread(peaks.bed)
-      setnames(
-        sample.peaks,
-        c("chrom", "chromStart", "chromEnd", "status", "mean"))
-      data.table(sample.id, sample.group, sample.peaks)
-    }, error=function(e){
-      ## do nothing
-    })
+  if(is.null(peaks)){
+    peaks.glob <- file.path(
+      samples.dir, "*", "*", "problems", problem.name, "peaks.bed")
+    peaks.bed.vec <- Sys.glob(peaks.glob)
+    cat("Found", length(peaks.bed.vec), peaks.glob, "files.\n")
+    peaks.list <- list()
+    for(sample.i in seq_along(peaks.bed.vec)){
+      peaks.bed <- peaks.bed.vec[[sample.i]]
+      problem.dir <- dirname(peaks.bed)
+      problems.dir <- dirname(problem.dir)
+      sample.dir <- dirname(problems.dir)
+      sample.id <- basename(sample.dir)
+      group.dir <- dirname(sample.dir)
+      sample.group <- basename(group.dir)
+      peaks.list[[peaks.bed]] <- tryCatch({
+        sample.peaks <- fread(peaks.bed)
+        setnames(
+          sample.peaks,
+          c("chrom", "chromStart", "chromEnd", "status", "mean"))
+        data.table(sample.id, sample.group, sample.peaks)
+      }, error=function(e){
+        ## do nothing
+      })
+    }
+    peaks <- do.call(rbind, peaks.list)
   }
-  peaks <- do.call(rbind, peaks.list)
-  ##load("weird.peaks.RData")
   problems.list <- if(is.data.frame(peaks) && 0 < nrow(peaks)){
     multi.clustered <- multiClusterPeaks(peaks)
     overlap <- data.table(multi.clustered)[, list(

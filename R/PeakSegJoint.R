@@ -204,6 +204,18 @@ problem.joint.targets.train <- function
 ### Nothing.
 }
 
+problem.pred.cluster.targets <- function
+### For a given problem, predict independently for each sample, then
+### cluster peaks across samples, then compute joint target intervals.
+(proj.dir
+### project directory.
+){
+  peaks.dt <- problem.predict.allSamples(proj.dir)
+  create_problems_joint(proj.dir, peaks.dt)
+  problem.joint.targets(proj.dir)
+### List of features and target matrices (same as problem.joint.target).
+}
+
 problem.joint.train <- function
 ### Learn a penalty function for joint peak prediction.
 (data.dir

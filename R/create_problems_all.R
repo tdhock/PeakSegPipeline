@@ -157,21 +157,13 @@ create_problems_all <- function
     jointProblems.bed <- file.path(prob.dir, "jointProblems.bed")
     sh.file <- paste0(jointProblems.bed, ".sh")
     pred.cmd <- Rscript(
-      'PeakSegPipeline::problem.predict.allSamples("%s")',
-      prob.dir)
-    joint.prob.cmd <- Rscript(
-      'PeakSegPipeline::create_problems_joint("%s")',
-      prob.dir)
-    joint.targets.cmd <- Rscript(
-      'PeakSegPipeline::problem.joint.targets("%s")',
+      'PeakSegPipeline::problem.pred.cluster.targets("%s")',
       prob.dir)
     script.txt <- paste0(PBS.header, "
 #PBS -o ", jointProblems.bed, ".out
 #PBS -e ", jointProblems.bed, ".err
 #PBS -N P", problem$problem.name, "
 ", pred.cmd, " 
-", joint.prob.cmd, "
-", joint.targets.cmd, "
 ")
     writeLines(script.txt, sh.file)
     ## joint prediction script.

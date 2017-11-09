@@ -251,8 +251,9 @@ problem.predict.allSamples <- function
   problem.name <- basename(prob.dir)
   problem.vec <- Sys.glob(file.path(
     set.dir, "samples", "*", "*", "problems", problem.name))
-  mclapply.or.stop(problem.vec, problem.predict)
-### List of data tables (predicted peaks).
+  peaks.list <- mclapply.or.stop(problem.vec, problem.predict)
+  do.call(rbind, peaks.list)
+### data.table of predicted peaks.
 }
 
 problem.coverage <- function
@@ -673,6 +674,8 @@ problem.predict <- function
   group.dir <- dirname(sample.dir)
   samples.dir <- dirname(group.dir)
   data.dir <- dirname(samples.dir)
+  sample.id <- basename(sample.dir)
+  sample.group <- basename(group.dir)
   cov.result <- try(problem.coverage(problem.dir))
   if(inherits(cov.result, "try-error")){
     cat("Could not compute coverage in", problem.dir,
@@ -739,6 +742,6 @@ problem.predict <- function
     sep="\t",
     col.names=FALSE,
     row.names=FALSE)
-  peaks
+  data.table(sample.id, sample.group, peaks)
 ### data.table of peak predictions.
 }

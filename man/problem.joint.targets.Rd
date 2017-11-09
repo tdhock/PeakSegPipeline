@@ -7,7 +7,7 @@
   \item{problem.dir}{project/problems/problemID}
 }
 
-\value{Nothing.}
+\value{Named list of two matrices: targets and features.}
 
 \author{Toby Dylan Hocking}
 
