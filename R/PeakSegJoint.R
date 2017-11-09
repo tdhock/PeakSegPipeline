@@ -146,6 +146,8 @@ problem.joint.targets <- function
 (problem.dir
 ### project/problems/problemID
  ){
+  segmentations <- NULL
+  ## above variable defined in RData file.
   labels.tsv.vec <- Sys.glob(file.path(
     problem.dir, "jointProblems", "*", "labels.tsv"))
   targets.features.list <- mclapply.or.stop(
@@ -222,7 +224,7 @@ problem.joint.train <- function
 ### project directory.
 ){
   segmentations <- status <- too.lo <- too.hi <- jprobs.bed <- job <-
-    . <- chrom <- problemStart <- problemEnd <- NULL
+    . <- chrom <- problemStart <- problemEnd <- jointTargets.rds <- NULL
   ## above to avoid "no visible binding for global variable" NOTEs in
   ## CRAN check.
   joint.model.RData <- file.path(data.dir, "joint.model.RData")
