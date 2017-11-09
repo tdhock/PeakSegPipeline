@@ -742,6 +742,8 @@ problem.predict <- function
     sep="\t",
     col.names=FALSE,
     row.names=FALSE)
-  data.table(sample.id, sample.group, peaks)
+  if(nrow(peaks)){
+    data.table(sample.id, sample.group, peaks)
+  }
 ### data.table of peak predictions.
 }
