@@ -14,7 +14,7 @@ License: GPL-3
 SystemRequirements: db_stl, bedGraphToBigWig, bigWigToBedGraph, bedToBigBed
 Depends: R (>= 2.10)
 Imports: data.table (>= 1.9.8), PeakError, PeakSegJoint (>= 2017.08.08),
- penaltyLearning, namedCapture, xtable, WeightedROC,
+ penaltyLearning (>= 2017.07.11), namedCapture, xtable, WeightedROC,
  parallel, scales
 Suggests: testthat, httr, animint2, ggplot2Animint
 Remotes:
