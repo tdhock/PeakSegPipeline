@@ -9,6 +9,10 @@ error in convert_labels for noPeaks label with sample groups up?
 
 test create_track_hub.
 
+2017.11.21
+
+downloadBigWigs function.
+
 2017.11.08
 
 problem.predict and problem.predict.allSamples now return a data.table
