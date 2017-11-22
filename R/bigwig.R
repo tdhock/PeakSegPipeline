@@ -64,7 +64,7 @@ bigWigInfo <- function
   stopifnot(length(bigwig.file) == 1)
   cmd <- paste("bigWigInfo", bigwig.file, "-chroms | grep '^\\s'")
   chroms <- fread(cmd, header=FALSE, sep=" ")
-  setnames(chroms, c("chrom", "chromStart", "chromEnd"))
+  setnames(chroms, c("chrom", "chrom.int", "chromEnd"))
   chroms$chrom <- sub("\\s*", "", chroms$chrom)
   chroms
 }

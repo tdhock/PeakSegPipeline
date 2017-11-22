@@ -1,14 +1,9 @@
 /* -*- compile-command: "R CMD INSTALL .." -*- */
 
-#include <vector>
-#include <cmath>
-#include <iostream>
-#include <iomanip>
-#include <fstream>
-#include <string>
+#include <iomanip> //for setprecision.
+#include <fstream> //for ifstream etc.
 // http://docs.oracle.com/cd/E17076_05/html/programmer_reference/arch_apis.html
 #include <dbstl_vector.h>
-//#include <db_cxx.h>
 #include <R.h>
 
 #include "funPieceListLog.h"

@@ -1,6 +1,7 @@
 /* -*- compile-command: "R CMD INSTALL .." -*- */
 
 #include "PeakSegFPOPLog.h"
+#include "denormalize.h"
 #include <R.h>
 #include <R_ext/Rdynload.h>
 
@@ -32,10 +33,37 @@ void PeakSegFPOP_interface
   }
 }
   
+void denormalize_interface
+(char **bedGraph_file_vec, char **out_file_vec){
+  int status = denormalize(bedGraph_file_vec[0], out_file_vec[0]);
+  if(status==ERROR_CANT_OPEN_INPUT_FILE){
+    error("Unable to open input file");
+  }
+  if(status==ERROR_UNEXPECTED_INPUT_DATA){
+    error("Unexpected input data");
+  }
+  if(status==ERROR_NON_NUMERIC_COVERAGE){
+    error("Coverage data (fourth column) should be numeric");
+  }
+  if(status==ERROR_NEGATIVE_COVERAGE){
+    error("Coverage data (fourth column) should be non-negative");
+  }
+  if(status==ERROR_CANT_OPEN_OUT_FILE){
+    error("Unable to open out file");
+  }
+  if(status != 0){
+    error("error code %d", status);
+  }
+}
+  
 R_CMethodDef cMethods[] = {
   {"PeakSegFPOP_interface",
    (DL_FUNC) &PeakSegFPOP_interface, 2
    //,{REALSXP, REALSXP, INTSXP, INTSXP, REALSXP}
+  },
+  {"denormalize_interface",
+   (DL_FUNC) &denormalize_interface, 2
+   //,{CHARSXP, CHARSXP}
   },
   {NULL, NULL, 0}
 };

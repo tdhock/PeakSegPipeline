@@ -9,6 +9,12 @@ error in convert_labels for noPeaks label with sample groups up?
 
 test create_track_hub.
 
+negative test cases for denormalize* functions.
+
+2017.11.22
+
+denormalize* functions.
+
 2017.11.21
 
 downloadBigWigs function.
