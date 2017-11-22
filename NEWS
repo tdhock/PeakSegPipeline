@@ -11,6 +11,11 @@ test create_track_hub.
 
 negative test cases for denormalize* functions.
 
+use popen in C to pipe bigWigToBedGraph stdout to our coverage
+counting function, which should be much faster than using an
+intermediate bedGraph
+file. http://www.cs.uleth.ca/~holzmann/C/system/shell_commands.html
+
 2017.11.22
 
 denormalize* functions.

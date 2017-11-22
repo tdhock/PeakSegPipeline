@@ -2,6 +2,7 @@
 
 #include "PeakSegFPOPLog.h"
 #include "denormalize.h"
+#include "coverage.h"
 #include <R.h>
 #include <R_ext/Rdynload.h>
 
@@ -56,6 +57,26 @@ void denormalize_interface
   }
 }
   
+void coverage_interface
+(char **bedGraph_file_vec, double *coverage_vec){
+  int status = coverage(bedGraph_file_vec[0], coverage_vec);
+  if(status==ERROR_COVERAGE_CANT_OPEN_INPUT_FILE){
+    error("Unable to open input file");
+  }
+  if(status==ERROR_COVERAGE_UNEXPECTED_INPUT){
+    error("Unexpected input data");
+  }
+  if(status==ERROR_COVERAGE_NON_INTEGER){
+    error("Coverage data (fourth column) should be integer");
+  }
+  if(status==ERROR_COVERAGE_NEGATIVE){
+    error("Coverage data (fourth column) should be non-negative");
+  }
+  if(status != 0){
+    error("error code %d", status);
+  }
+}
+  
 R_CMethodDef cMethods[] = {
   {"PeakSegFPOP_interface",
    (DL_FUNC) &PeakSegFPOP_interface, 2
@@ -63,6 +84,10 @@ R_CMethodDef cMethods[] = {
   },
   {"denormalize_interface",
    (DL_FUNC) &denormalize_interface, 2
+   //,{CHARSXP, CHARSXP}
+  },
+  {"coverage_interface",
+   (DL_FUNC) &coverage_interface, 2
    //,{CHARSXP, CHARSXP}
   },
   {NULL, NULL, 0}

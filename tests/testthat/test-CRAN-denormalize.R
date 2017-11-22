@@ -1,7 +1,7 @@
 library(testthat)
 context("denormalize")
 library(PeakSegPipeline)
-
+library(data.table)
 norm.dt <- fread("
 chrom	chromStart	chromEnd	coverage
 chr1	9979	9993	0.07
