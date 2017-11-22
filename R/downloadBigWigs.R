@@ -28,10 +28,12 @@ downloadBigWigs <- function(trackDb.txt){
       sample.id <- track.mat["shortLabel", "value"]
       sample.dir <- file.path(data.dir, "samples", cell.type, sample.id)
       dir.create(sample.dir, showWarnings=FALSE)
-      bigWig.path <- file.path(sample.dir, "coverage.bigWig")
-      if(!file.exists(bigWig.path)){
+      coverage.bigWig <- file.path(sample.dir, "coverage.bigWig")
+      if(!file.exists(coverage.bigWig)){
+        norm.bigWig <- file.path(sample.dir, "norm.bigWig")
         dir.create(sample.dir, showWarnings=FALSE, recursive=TRUE)
-        download.file(u, bigWig.path)
+        download.file(u, norm.bigWig)
+        denormalizeBigWig(norm.bigWig, coverage.bigWig)
       }
     }
   }
