@@ -15,13 +15,13 @@ work.dir <- tempdir()
 chromInfo.txt <- file.path(work.dir, "chromInfo.txt")
 fwrite(chromInfo, chromInfo.txt, sep="\t", col.names=FALSE)
 input.bedGraph <- file.path(work.dir, "input.bedGraph")
+fwrite(count.dt, input.bedGraph, col.names=FALSE, sep="\t")
 bedGraph.dt <- bedGraphCoverage(input.bedGraph)
 
 test_that("bedGraphCoverage says total coverage is 40", {
   expect_equal(bedGraph.dt$total.coverage, 40)
 })
 
-fwrite(count.dt, input.bedGraph, col.names=FALSE, sep="\t")
 count.bigWig <- file.path(work.dir, "count.bigWig")
 system.or.stop(paste(
   "bedGraphToBigWig",

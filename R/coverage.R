@@ -4,7 +4,7 @@ bigWigCoverage <- function
 ### Input bigWig file.
 ){
   stopifnot(is.character(input.bigWig))
-  input.path <- normalizePath(input.bedGraph, mustWork=TRUE)
+  input.path <- normalizePath(input.bigWig, mustWork=TRUE)
   input.bedGraph <- sub("bigWig$", "bedGraph", input.bigWig)
   if(input.bedGraph==input.bigWig){
     stop("input.bigWig must be a filename that ends with bigWig")
