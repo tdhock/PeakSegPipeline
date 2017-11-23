@@ -16,7 +16,7 @@ bigWigCoverage <- function
   cov.dt <- bedGraphCoverage(input.bedGraph)
   info.dt <- bigWigInfo(input.bigWig)
   unlink(input.bedGraph)
-  cov.dt[, total.bases := sum(info.dt$chromEnd)]
+  cov.dt[, total.bases := sum(as.numeric(info.dt$chromEnd))]
   cov.dt[, mean.coverage := total.coverage/total.bases]
   data.table(input.bigWig, cov.dt)
 ### one row data.table with columns total.bases, mean.coverage,
