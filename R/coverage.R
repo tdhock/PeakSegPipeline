@@ -3,6 +3,8 @@ bigWigCoverage <- function
 (input.bigWig
 ### Input bigWig file.
 ){
+  total.bases <- mean.coverage <- total.coverage <- NULL
+  ## above to avoid CRAN check NOTE.
   stopifnot(is.character(input.bigWig))
   input.path <- normalizePath(input.bigWig, mustWork=TRUE)
   input.bedGraph <- sub("bigWig$", "bedGraph", input.bigWig)

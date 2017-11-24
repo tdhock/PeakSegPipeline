@@ -28,6 +28,8 @@ denormalizeBigWig <- function
   output.bigWig
 ### Output bigWig file with integer data.
 ){
+  chrom <- chromEnd <- NULL
+  ## Above to avoid CRAN check NOTE.
   if(!(
     is.character(input.bigWig) &&
     length(input.bigWig) == 1 &&

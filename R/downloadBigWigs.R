@@ -1,4 +1,8 @@
-downloadBigWigs <- function(trackDb.txt){
+downloadBigWigs <- function
+### Download bigWig files from a trackDb file.
+(trackDb.txt
+### trackDb text file.
+){
   track.pattern <- paste0(
     "    ",
     "(?<name>.*?)",
@@ -22,7 +26,7 @@ downloadBigWigs <- function(trackDb.txt){
       subGroup.mat <- str_match_all_named(
         track.mat["subGroups", "value"],
         subGroup.pattern)[[1]]
-      cell.type <- subGroup.mat["sampleType", "value"]
+      cell.type <- subGroup.mat[group.key, "value"]
       u <- track.mat["bigDataUrl", "value"]
       bigWig.base <- sub("[.][^.]+$", ".bigWig", basename(u))
       sample.id <- track.mat["shortLabel", "value"]
@@ -37,4 +41,5 @@ downloadBigWigs <- function(trackDb.txt){
       }
     }
   }
+### Nothing.
 }
