@@ -26,7 +26,7 @@ downloadBigWigs <- function
       subGroup.mat <- str_match_all_named(
         track.mat["subGroups", "value"],
         subGroup.pattern)[[1]]
-      cell.type <- subGroup.mat[group.key, "value"]
+      cell.type <- subGroup.mat["sampleType", "value"]
       u <- track.mat["bigDataUrl", "value"]
       bigWig.base <- sub("[.][^.]+$", ".bigWig", basename(u))
       sample.id <- track.mat["shortLabel", "value"]
