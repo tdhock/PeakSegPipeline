@@ -59,8 +59,6 @@ int denormalize(char *in_filename, char *out_filename){//data_count x 2
        "%s %d %d %lf\n",
        chrom, &chromStart, &chromEnd, &coverage);
     int int_coverage = round(coverage/min_coverage);
-    printf("line_i=%d coverage=%f min_coverage=%f int_coverage=%d\n",
-	   line_i, coverage, min_coverage, int_coverage);
     out_file << chrom <<
       "\t" << chromStart <<
       "\t" << chromEnd <<
