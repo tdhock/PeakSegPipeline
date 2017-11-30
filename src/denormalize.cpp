@@ -1,7 +1,7 @@
 /* -*- compile-command: "R CMD INSTALL .." -*- */
  
 #include <fstream>
-#include <math.h> //for INFINITY
+#include <math.h> //for INFINITY, round
 #include "denormalize.h"
 #include <R.h> //for Rprintf
 
