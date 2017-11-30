@@ -16,6 +16,10 @@ counting function, which should be much faster than using an
 intermediate bedGraph
 file. http://www.cs.uleth.ca/~holzmann/C/system/shell_commands.html
 
+2017.11.30
+
+denormalize rounds to nearest integer, test case for 0.1, 0.2, etc.
+
 2017.11.22
 
 denormalize* functions.

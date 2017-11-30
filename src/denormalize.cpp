@@ -1,5 +1,5 @@
 /* -*- compile-command: "R CMD INSTALL .." -*- */
-
+ 
 #include <fstream>
 #include <math.h> //for INFINITY
 #include "denormalize.h"
@@ -51,13 +51,16 @@ int denormalize(char *in_filename, char *out_filename){//data_count x 2
   if(!out_file.is_open()){
     return ERROR_CANT_OPEN_OUT_FILE;
   }
+  line_i=0;
   while(std::getline(bedGraph_file, line)){
     line_i++;
     items = sscanf
       (line.c_str(),
        "%s %d %d %lf\n",
        chrom, &chromStart, &chromEnd, &coverage);
-    int int_coverage = coverage/min_coverage;
+    int int_coverage = round(coverage/min_coverage);
+    printf("line_i=%d coverage=%f min_coverage=%f int_coverage=%d\n",
+	   line_i, coverage, min_coverage, int_coverage);
     out_file << chrom <<
       "\t" << chromStart <<
       "\t" << chromEnd <<
