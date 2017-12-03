@@ -491,12 +491,45 @@ void PiecewisePoissonLossLog::set_to_min_more_of
 	}
 	double this_cost_left = it->getCost(it->min_log_mean);
 	if(it->max_log_mean <= mu){
+	  double this_cost_right = it->getCost(it->max_log_mean);
+	  // the cost diff below is for the case when the min is to the
+	  // right of the interval, in which case the coefficients say
+	  // that the function is decreasing on this entire
+	  // interval. however we need to test if it is numerically
+	  // decreasing or constant, so we compare the cost on the left
+	  // of the interval to the cost on the right. this_cost_diff
+	  // should always be positive, but if it is numerically very
+	  // close to zero we treat the interval as constant.
+	  double this_cost_diff = this_cost_left-this_cost_right;
+	  if(verbose){
+	    Rprintf("min after this interval\n");
+	    Rprintf("cost_left_right=[%f,%f] diff=%f\n",
+		    this_cost_left, this_cost_right, this_cost_diff);
+	  }
+	  if(NEWTON_EPSILON < this_cost_diff){
 	  /* The minimum is achieved after this interval, so this
-	     function is always decreasing in this interval. We don't
-	     need to store it. */
-	  if(verbose)Rprintf("min after this interval\n");
-	  prev_min_cost = it->getCost(it->max_log_mean);
-	  prev_best_log_mean = it->max_log_mean;
+	     function is always decreasing in this interval. This
+	     happens when the minimum occurs exactly on the right of
+	     this interval (the previous step -- the next interval --
+	     must have concluded that there was a min before the
+	     interval). We don't need to store this interval, because
+	     we start creating a constant piece here. */
+	    if(verbose)Rprintf("decreasing interval, starting constant piece from right.\n");
+	    prev_min_cost = this_cost_right;
+	    prev_best_log_mean = it->max_log_mean;
+	  }else{
+	  /* NOTE: if we test only it->max_log_mean <= mu, then that
+	     is bad for intervals that are numerically constant. For
+	     example sometimes we have three intervals: increasing,
+	     decreasing, increasing according to the coefficients, but
+	     we should test the cost values at the edges and treat it
+	     as increasing, constant, increasing. */
+	    if(verbose)Rprintf("constant interval, storing numerically constant convex piece.\n");
+	    piece_list.emplace_front
+	      (it->Linear, it->Log, it->Constant, it->min_log_mean, prev_max_log_mean,
+	       PREV_NOT_SET, INFINITY); // equality constraint active on convex piece.
+	    prev_max_log_mean = it->min_log_mean;
+	  }
 	}else if(it->min_log_mean < mu && NEWTON_EPSILON < this_cost_left-mu_cost && prev_ok){
 	  // Minimum in this interval, so add a convex piece up to the
 	  // min, and keep track of the min cost to create a constant
