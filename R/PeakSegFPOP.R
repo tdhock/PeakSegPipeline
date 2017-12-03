@@ -467,7 +467,11 @@ problem.features <- function
 }
 
 problem.target <- function
-### Compute target interval for a segmentation problem.
+### Compute target interval for a segmentation problem. This function
+### repeated calls problem.PeakSegFPOP with different penalty values,
+### until it finds an interval of penalty values with minimal label
+### error. The calls to PeakSegFPOP are parallelized using mclapply if
+### you set options(mc.cores).
 (problem.dir
 ### problemID directory in which coverage.bedGraph has already been
 ### computed. If there is a labels.bed file then the number of
