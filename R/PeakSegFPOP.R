@@ -340,15 +340,28 @@ problem.coverage <- function
     ## The chromStart on the last line of the coverage file should
     ## match the problemEnd, for caching purposes.
     last.end <- zero.cov[.N, chromEnd]
-    out.cov <- if(last.end == problem$problemEnd){
-      zero.cov
+    first.start <- zero.cov[1, chromStart]
+    dup.cov <- rbind(if(problem$problemStart==first.start){
+      NULL
     }else{
-      rbind(zero.cov, data.table(
+      data.table(
+        chrom=prob.cov$chrom[1],
+        chromStart=problem$problemStart,
+        chromEnd=first.start,
+        count=0L)
+    }, zero.cov, if(last.end == problem$problemEnd){
+      NULL
+    }else{
+      data.table(
         chrom=prob.cov$chrom[1],
         chromStart=last.end,
         chromEnd=problem$problemEnd,
-        count=0L))
-    }
+        count=0L)
+    })
+    ## dup.cov has chromStart and End the same as problemStart and
+    ## end, but maybe has some rows which could be compressed.
+    out.cov <- dup.cov[c(diff(count), Inf)!=0]
+    out.cov[, chromStart := c(problem$problemStart, chromEnd[-.N])]
     fwrite(
       out.cov,
       prob.cov.bedGraph,
