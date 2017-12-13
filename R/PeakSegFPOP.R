@@ -27,8 +27,11 @@ problem.train <- function
       cat(sprintf("%4d / %4d Computing %s\n", target.tsv.i, length(target.tsv.vec), features.tsv))
       problem.features(problem.dir)
     }
-    features.list[[problem.dir]] <- fread(features.tsv)
-    targets.list[[problem.dir]] <- scan(target.tsv, quiet=TRUE)
+    target.vec <- scan(target.tsv, quiet=TRUE)
+    if(any(is.finite(target.vec)){
+      features.list[[problem.dir]] <- fread(features.tsv)
+      targets.list[[problem.dir]] <- target.vec
+    }
   }
   features <- as.matrix(do.call(rbind, features.list))
   targets <- do.call(rbind, targets.list)
