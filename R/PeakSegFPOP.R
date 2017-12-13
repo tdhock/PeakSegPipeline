@@ -485,7 +485,7 @@ problem.target <- function
   ## CRAN check.
   stopifnot(is.character(problem.dir))
   stopifnot(length(problem.dir)==1)
-  c.info <- problem.coverage(problem.dir)
+  problem.coverage(problem.dir)
   ## Check if problem/labels.bed exists.
   problem.labels <- tryCatch({
     prob.lab.bed <- file.path(problem.dir, "labels.bed")
