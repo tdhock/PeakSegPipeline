@@ -56,7 +56,7 @@ problem.train <- function
   print(model$pred.param.mat)
   pred.log.penalty <- as.numeric(model$predict(features))
   pred.dt <- data.table(
-    problem.dir=dirname(target.tsv.vec),
+    problem.dir=rownames(targets),
     too.lo=as.logical(pred.log.penalty < targets[,1]),
     lower.limit=targets[,1],
     pred.log.penalty,
