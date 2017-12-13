@@ -281,10 +281,14 @@ problem.coverage <- function
   ## First check if problem/coverage.bedGraph has been created.
   prob.cov.bedGraph <- file.path(problem.dir, "coverage.bedGraph")
   coverage.ok <- tryCatch({
+    head.cmd <- paste("head -1", prob.cov.bedGraph) 
+    first.cov <- fread(head.cmd)
+    setnames(first.cov, c("chrom", "chromStart", "chromEnd", "coverage"))
     tail.cmd <- paste("tail -1", prob.cov.bedGraph)
     last.cov <- fread(tail.cmd)
     setnames(last.cov, c("chrom", "chromStart", "chromEnd", "coverage"))
-    last.cov$chromEnd == problem$problemEnd
+    last.cov$chromEnd == problem$problemEnd &&
+      first.cov$chromStart == problem$problemStart
   }, error=function(e){
     FALSE
   })
