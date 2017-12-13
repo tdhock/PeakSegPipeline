@@ -28,7 +28,7 @@ problem.train <- function
       problem.features(problem.dir)
     }
     target.vec <- scan(target.tsv, quiet=TRUE)
-    if(any(is.finite(target.vec)){
+    if(any(is.finite(target.vec))){
       features.list[[problem.dir]] <- fread(features.tsv)
       targets.list[[problem.dir]] <- target.vec
     }
@@ -392,11 +392,20 @@ problem.PeakSegFPOP <- function
       "penalty", "segments", "peaks", "bases",
       "mean.pen.cost", "total.cost", "status",
       "mean.intervals", "max.intervals"))
-    if(first.line$chromEnd-last.line$chromStart == penalty.loss$bases){
-      TRUE
-    }else{
-      FALSE
-    }
+    loss.segments.consistent <-
+      first.line$chromEnd-last.line$chromStart == penalty.loss$bases
+    pattern <- paste0(
+      "(?<chrom>chr[^:]+)",
+      ":",
+      "(?<chromStart>[0-9]+)",
+      "-",
+      "(?<chromEnd>[0-9]+)")
+    problem <- str_match_named(basename(problem.dir), pattern, list(
+      chromStart=as.integer,
+      chromEnd=as.integer))
+    start.ok <- problem$chromStart == last.line$chromStart
+    end.ok <- problem$chromEnd == first.line$chromEnd
+    loss.segments.consistent && start.ok && end.ok
   }, error=function(e){
     FALSE
   })
