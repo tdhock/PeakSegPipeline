@@ -1,7 +1,11 @@
 \name{problem.target}
 \alias{problem.target}
 \title{problem target}
-\description{Compute target interval for a segmentation problem.}
+\description{Compute target interval for a segmentation problem. This function
+repeated calls problem.PeakSegFPOP with different penalty values,
+until it finds an interval of penalty values with minimal label
+error. The calls to PeakSegFPOP are parallelized using mclapply if
+you set options(mc.cores).}
 \usage{problem.target(problem.dir)}
 \arguments{
   \item{problem.dir}{problemID directory in which coverage.bedGraph has already been
