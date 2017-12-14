@@ -86,12 +86,18 @@ http://cbio.mines-paristech.fr/~thocking/hubs/test/input/
 PeakSegPipeline uses PeakSegFPOP + PeakSegJoint to predict common and
 different peaks in multiple samples. It requires three kinds of input
 data:
-- coverage data under =project/samples=,
-- labels in =project/labels=,
-- genomic segmentation problems in =project/problems.bed=.
+- coverage data under =project_dir/samples=,
+- labels in =project_dir/labels=,
+- genomic segmentation problems in =project_dir/problems.bed=.
 
 To give a concrete example, let us consider the data set that is used
-when you run [[file:tests/testthat/test-demo.R]]
+when you run [[file:tests/testthat/test-pipeline-demo.R]] -- you can do
+this via the shell command below: (note that this is not
+systematically run as a test since its runtime is usually over one hour).
+
+#+BEGIN_SRC shell-script
+R -e 'source("https://raw.githubusercontent.com/tdhock/PeakSegPipeline/master/tests/testthat/test-pipeline-demo.R")'
+#+END_SRC
 
 *** Coverage data
 
@@ -129,7 +135,7 @@ demonstrate the prediction accuracy of the learning algorithm.
 
 *** Label Data
 
-The =project/labels/*.txt= files contain genomic regions with or without
+The =project_dir/labels/*.txt= files contain genomic regions with or without
 peaks. These labels will be used to train the peak prediction models
 (automatically select model parameters that yield optimal peak
 prediction accuracy). A quick and easy way to create labels is by
@@ -137,28 +143,32 @@ visual inspection as in the [[http://cbio.mines-paristech.fr/~thocking/chip-seq-
 (for details please read [[http://bioinformatics.oxfordjournals.org/content/early/2016/10/23/bioinformatics.btw672.abstract][Hocking et al, Bioinformatics 2016]]).
 
 *To visually label your data* first create a project directory on a
-webserver with =project/samples/groupID/sampleID/coverage.bigWig=
-files, then create a track hub using a command such as
+webserver. For example if your project directory is in your
+=~/public_html= directory, your directory structure should be
+=~/public_html/project_dir/samples/groupID/sampleID/coverage.bigWig=.
+To create a track hub, set the working directory to =~/public_html=
+and then execute [[file:R/create_track_hub.R]]:
 
 #+BEGIN_SRC shell-script
-R -e 'PeakSegPipeline::create_track_hub("project_dir", "http://your.server.com/~user/path-", "hg19", "email@domain.com")'
+cd ~/public_html
+R -e 'PeakSegPipeline::create_track_hub("project_dir", "http://your.server.com/~user/", "hg19", "email@domain.com")'
 #+END_SRC
 
 The arguments of the =create_track_hub= function are as follows:
-- The first argument =project= is the data directory. 
-- The second argument =http://your.server.com/~user/path-= is the URL
+- The first argument ="project_dir"= is the data directory. 
+- The second argument ="http://your.server.com/~user/"= is the URL
   prefix (appended before the first argument to obtain URLs for the
   trackDb.txt file).
-- The third argument =hg19= is the UCSC genome ID for the genomes.txt file. 
-- The fourth argument =email@domain.com= is the email address for the
-  hub.txt file.
+- The third argument ="hg19"= is the UCSC genome ID for the genomes.txt file. 
+- The fourth argument ="email@domain.com"= is your email address,
+  which will be written to the hub.txt file.
 
 If that command worked, then you should see a message =Created
-http://your.server.com/~user/path-project/hub.txt= and then you can
+http://your.server.com/~user/project_dir/hub.txt= and then you can
 paste that URL into [[http://genome.ucsc.edu/cgi-bin/hgHubConnect#unlistedHubs][My Data -> Track Hubs -> My Hubs]] then click Add
-Hub to tell the UCSC genome browser to display your data.  Navigate
+Hub to tell the UCSC genome browser to display your data. Navigate
 around the genome until you have found some peaks, then add positive
-and negative labels in =project/labels/*.txt= files.
+and negative labels in =project_dir/labels/*.txt= files.
 
 *For example* the test data set contains only one
 labels file,
@@ -200,8 +210,8 @@ label). Ideally, each chunk should contain
   significant difference between up and down).
 
 *Visualizing labels.* After having added some labels in
-=project/labels/*.txt= files, run =Rscript convert_labels.R project=
-to create =project/all_labels.bed=.  Then when you re-run =Rscript
+=project_dir/labels/*.txt= files, run =Rscript convert_labels.R project_dir=
+to create =project_dir/all_labels.bed=.  Then when you re-run =Rscript
 create_track_hub.R ...= it will create a new hub with a track
 "Manually labeled regions with and without peaks" that displays the
 labels you have created.
@@ -241,16 +251,30 @@ Rscript -e 'PeakSegPipeline::convert_labels("test/demo")'
 #+END_SRC
 
 Since the human genome is so large, we recommend to do model training
-and peak prediction in parallel. To use a PBS/qsub cluster such as
-Compute Canada's [[http://www.hpc.mcgill.ca/index.php/guillimin-status][guillimin]], call
-[[file:create_problems_all.R][PeakSegPipeline::create_problems_all]] with a =PBS.header= argument that
-reflects your cluster configuration:
+and peak prediction in parallel. To use a PBS cluster/batch job system,
+specify your configuration/script headers via the  
+[[file:create_problems_all.R][PeakSegPipeline::create_problems_all]] with a =PBS.header= argument.
+For example I use the following header on Compute Canada's [[http://www.hpc.mcgill.ca/index.php/guillimin-status][guillimin]]:
 
 #+BEGIN_SRC shell-script
-Rscript -e 'PeakSegPipeline::create_problems_all("test/demo")'
+cat << EOF > ~/TDH-PBS.txt
+#!/bin/bash
+#PBS -l nodes=1:ppn=4
+#PBS -l walltime=24:00:00
+#PBS -A bws-221-ae
+#PBS -m ae
+#PBS -M tdhock5@gmail.com
+#PBS -V
+EOF
+Rscript -e 'PeakSegPipeline::create_problems_all("test/demo", PBS.header=paste(readLines("~/TDH-PBS.txt"), collapse="\n"))'
 #+END_SRC
 
-That will create problem sub-directories in
+NOTE: PeakSegPipeline does not directly support other cluster/batch
+job systems yet (e.g. SLURM), but if you are interested in helping
+implement/test that, please get in touch! (toby.hocking@mail.mcgill.ca) The
+plan is to use [[https://bitbucket.org/mugqic/mugqic_pipelines][MUGQIC pipelines]].
+
+=PeakSegPipeline::create_problems_all= will create problem sub-directories in
 =test/demo/samples/*/*/problems/*=. Begin model training by computing
 =target.tsv= files:
 
