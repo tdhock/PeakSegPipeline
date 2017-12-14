@@ -156,12 +156,12 @@ R -e 'PeakSegPipeline::create_track_hub("project_dir", "http://your.server.com/~
 #+END_SRC
 
 The arguments of the =create_track_hub= function are as follows:
-- The first argument ="project_dir"= is the data directory. 
-- The second argument ="http://your.server.com/~user/"= is the URL
+- The first argument =project_dir= is the data directory. 
+- The second argument =http://your.server.com/~user/= is the URL
   prefix (appended before the first argument to obtain URLs for the
   trackDb.txt file).
-- The third argument ="hg19"= is the UCSC genome ID for the genomes.txt file. 
-- The fourth argument ="email@domain.com"= is your email address,
+- The third argument =hg19= is the UCSC genome ID for the genomes.txt file. 
+- The fourth argument =email@domain.com= is your email address,
   which will be written to the hub.txt file.
 
 If that command worked, then you should see a message =Created
