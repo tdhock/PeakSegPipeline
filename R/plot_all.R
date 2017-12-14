@@ -582,4 +582,6 @@ specific.html.vec
     peaks.bed,
     sep="\t",
     col.names=FALSE)
+  ## finally, create track hub.
+  system(paste("bash", file.path(set.dir, "hub.sh")))
 }
