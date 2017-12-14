@@ -613,7 +613,7 @@ problem.target <- function
     if(!is.numeric(error.dt$penalty)){
       stop("penalty column is not numeric -- check loss in _loss.tsv files")
     }
-    print(error.dt[,.(penalty, peaks, status, fp, fn)])
+    print(error.dt[,.(penalty, peaks, status, fp, fn, errors=fp+fn)])
     target.list <- getTarget(error.dt)
     target.vec <- c(
       target.list$candidates[["errors start"]]$min.log.lambda,
