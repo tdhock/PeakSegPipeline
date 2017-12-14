@@ -52,7 +52,7 @@ chr10:38,750,960-38,790,663 noPeaks
 test.data.dir <- file.path(Sys.getenv("HOME"), "PeakSegPipeline-test")
 ##test.data.dir <- file.path(tempdir(), "PeakSegPipeline-test")
 non.integer.dir <- file.path(test.data.dir, "non-integer")
-demo.dir <- file.path(test.data.dir, "demo")
+demo.dir <- file.path(test.data.dir, "noinput")
 chrom.sizes.file <- tempfile()
 chrom.sizes <- data.table(chrom="chr10", bases=128616069)
 fwrite(chrom.sizes, chrom.sizes.file, sep="\t", col.names=FALSE)
@@ -63,7 +63,7 @@ for(bigWig.part in bigWig.part.vec){
     bigWig.part, "coverage.bigWig")
   bigWig.url <- paste0(repos.url, bigWig.part, ".bigwig")
   download.to(bigWig.url, bigWig.file)
-  demo.bigWig <- sub("non-integer", "demo", bigWig.file)
+  demo.bigWig <- sub("non-integer", "noinput", bigWig.file)
   if(!file.exists(demo.bigWig)){
     dir.create(dirname(demo.bigWig), showWarnings=FALSE, recursive=TRUE)
     bw.dt <- readBigWig(bigWig.file, "chr10", 0, 128616069)
