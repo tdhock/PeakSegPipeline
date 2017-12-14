@@ -629,14 +629,14 @@ problem.target <- function
         target.vec[1] < log(next.pen) & log(next.pen) < target.vec[2],]
     next.pen <- if(nrow(other.in.target)==0){
       cat("No fp/fn min in min(error) interval => refine limits of min(error) interval.\n")
-      print(error.candidates)
+      ##print(error.candidates)
       error.candidates[done==FALSE, unique(next.pen)]
     }else{      
       ## Inside the minimum error interval, we have found a spot where
       ## the fn or fp reaches a minimum. This means that we should try
       ## exploring a few penalty values between the fp/fn limits.
       pen.vec <- other.candidates[done==FALSE, sort(unique(next.pen))]
-      print(other.candidates)
+      ##print(other.candidates)
       print(pen.vec)
       if(length(pen.vec)==1){
         ## There is only one unique value, so explore it. This is
