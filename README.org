@@ -150,9 +150,9 @@ webserver. For example if your project directory is in your
 To create a track hub, set the working directory to =~/public_html=
 and then use [[file:R/create_track_hub.R][PeakSegPipeline::create_track_hub]]:
 
-#+BEGIN_SRC shell-script
-cd ~/public_html
-R -e 'PeakSegPipeline::create_track_hub("project_dir", "http://your.server.com/~user/", "hg19", "email@domain.com")'
+#+BEGIN_SRC R
+setwd("~/public_html")
+PeakSegPipeline::create_track_hub("project_dir", "http://your.server.com/~user/", "hg19", "email@domain.com")
 #+END_SRC
 
 The arguments of the =create_track_hub= function are as follows:
@@ -230,15 +230,15 @@ gaps, i.e. contigs). This file should be in [[https://genome.ucsc.edu/FAQ/FAQfor
 If you don't use hg19, but you do use another standard genome that is
 hosted on UCSC, then you can use [[file:R/downloadProblems.R][PeakSegPipeline::downloadProblems]].
 
-#+BEGIN_SRC shell-script
-Rscript -e 'PeakSegPipeline::downloadProblems("hg38", "hg38_problems.bed")'
+#+BEGIN_SRC R
+PeakSegPipeline::downloadProblems("hg38", "hg38_problems.bed")
 #+END_SRC
 
 If your reference genome does not exist on UCSC, you can use
 [[file:R/gap2problems.R][PeakSegPipeline::gap2problems]] to make a =problems.bed= file.
 
-#+BEGIN_SRC shell-script
-Rscript -e 'PeakSegPipeline::gap2problems("yourGenome_gap.bed", "yourGenome_chromInfo.txt", "yourGenome_problems.bed")'
+#+BEGIN_SRC R
+PeakSegPipeline::gap2problems("yourGenome_gap.bed", "yourGenome_chromInfo.txt", "yourGenome_problems.bed")
 #+END_SRC
 
 where the chromInfo file contains one line for every chromosome, and
@@ -255,10 +255,11 @@ directory, =~/PeakSegPipeline-test/demo=.
 *** Step 1: convert labels, create problem directories, and shell scripts
 
 Convert labels from =~/PeakSegPipeline-test/demo/labels/*.txt= files
-to =~/PeakSegPipeline-test/demo/samples/*/*/labels.bed= files.
+to =~/PeakSegPipeline-test/demo/samples/*/*/labels.bed= files using
+the following R command:
 
-#+BEGIN_SRC shell-script
-Rscript -e 'PeakSegPipeline::convert_labels("~/PeakSegPipeline-test/demo")'
+#+BEGIN_SRC R
+PeakSegPipeline::convert_labels("~/PeakSegPipeline-test/demo")
 #+END_SRC
 
 Since the human genome is so large, we recommend to do model training
