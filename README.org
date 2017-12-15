@@ -148,7 +148,7 @@ webserver. For example if your project directory is in your
 =~/public_html= directory, your directory structure should be
 =~/public_html/project_dir/samples/groupID/sampleID/coverage.bigWig=.
 To create a track hub, set the working directory to =~/public_html=
-and then execute [[file:R/create_track_hub.R]]:
+and then use [[file:R/create_track_hub.R][PeakSegPipeline::create_track_hub]]:
 
 #+BEGIN_SRC shell-script
 cd ~/public_html
@@ -211,17 +211,20 @@ label). Ideally, each chunk should contain
   significant difference between up and down).
 
 *Visualizing labels.* After having added some labels in
-=project_dir/labels/*.txt= files, run =Rscript convert_labels.R project_dir=
-to create =project_dir/all_labels.bed=.  Then when you re-run =Rscript
-create_track_hub.R ...= it will create a new hub with a track
-"Manually labeled regions with and without peaks" that displays the
-labels you have created.
+=project_dir/labels/*.txt= files, run the R command
+#+BEGIN_SRC R
+PeakSegPipeline::convert_labels("project_dir")
+#+END_SRC
+to create =project_dir/all_labels.bed=. Then when you re-create the
+track hub, it will include a new track "Manually labeled
+regions with and without peaks" that displays the labels you have
+created.
 
 *** Genomic segmentation problems
 
 The last input file that you need to provide is a list of separate
 segmentation problems for your reference genome (regions without
-gaps). This file should be in [[https://genome.ucsc.edu/FAQ/FAQformat#format1][BED]] format
+gaps, i.e. contigs). This file should be in [[https://genome.ucsc.edu/FAQ/FAQformat#format1][BED]] format
 (e.g. [[https://raw.githubusercontent.com/tdhock/PeakSegFPOP/master/hg19_problems.bed][hg19_problems.bed]]).
 
 If you don't use hg19, but you do use another standard genome that is
@@ -281,7 +284,7 @@ cat << EOF > ~/TDH-PBS.txt
 #PBS -M tdhock5@gmail.com
 #PBS -V
 EOF
-Rscript -e 'PeakSegPipeline::create_problems_all("~/PeakSegPipeline-test/demo", PBS.header=paste(readLines("~/TDH-PBS.txt"), collapse="\n"))'
+R -e 'PeakSegPipeline::create_problems_all("~/PeakSegPipeline-test/demo", PBS.header=paste(readLines("~/TDH-PBS.txt"), collapse="\n"))'
 #+END_SRC
 
 =PeakSegPipeline::create_problems_all= creates sub-directories and
