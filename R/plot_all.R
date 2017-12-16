@@ -309,12 +309,16 @@ peak.name)]
   if(nrow(input.labels)){
     setkey(input.pred, chrom, peakStart, peakEnd)
     labeled.input <- foverlaps(input.pred, input.labels, nomatch=0L)
-    thresh.dt <- labeled.input[, data.table(WeightedROC::WeightedROC(
-      n.Input, ifelse(prop.noPeaks==0, 1, -1)))]
-    thresh.best <- thresh.dt[which.min(FP+FN),]
-    ## threshold is smallest n.Input that is classified as non-specific.
-    input.pred[, specificity := ifelse(
-      n.Input >= thresh.best$threshold, "non-specific", "specific")]
+    tryCatch({
+      thresh.dt <- labeled.input[, data.table(WeightedROC::WeightedROC(
+        n.Input, ifelse(prop.noPeaks==0, 1, -1)))]
+      thresh.best <- thresh.dt[which.min(FP+FN),]
+      ## threshold is smallest n.Input that is classified as non-specific.
+      input.pred[, specificity := ifelse(
+        n.Input >= thresh.best$threshold, "non-specific", "specific")]
+    }, error=function(e){
+      input.pred[, specificity := "unknown"]
+    })
   }else{
     input.pred[, specificity := "unknown"]
   }
