@@ -165,7 +165,21 @@ problem.joint.targets.train <- function
 (data.dir
 ### project directory.
 ){
-  problem.joint.targets(data.dir)
+  problem.dir.vec <- Sys.glob(file.path(
+    data.dir, "problems", "*"))
+  mclapply.or.stop(seq_along(problem.dir.vec), function(problem.i){
+    problem.dir <- problem.dir.vec[[problem.i]]
+    cat(sprintf(
+      "%4d / %4d problems %s\n",
+      problem.i, length(problem.dir.vec),
+      problem.dir))
+    jointTargets.rds <- file.path(problem.dir, "jointTargets.rds")
+    if(file.exists(jointTargets.rds)){
+      cat("Skipping since jointTargets.rds exists.\n")
+    }else{
+      problem.joint.targets(problem.dir)
+    }
+  })
   problem.joint.train(data.dir)
 ### Nothing.
 }
