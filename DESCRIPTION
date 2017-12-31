@@ -1,7 +1,7 @@
 Package: PeakSegPipeline
 Type: Package
 Title: Genome-Wide Peak Calling Using PeakSegFPOP and PeakSegJoint
-Version: 2017.12.03
+Version: 2017.12.30
 Author: Toby Dylan Hocking
 Maintainer: Toby Dylan Hocking <toby.hocking@r-project.org>
 Description: Implementations of supervised machine learning
@@ -13,10 +13,9 @@ Description: Implementations of supervised machine learning
 License: GPL-3
 SystemRequirements: db_stl, bedGraphToBigWig, bigWigToBedGraph, bedToBigBed
 Depends: R (>= 2.10)
-Imports: data.table (>= 1.9.8), PeakError, PeakSegJoint (>= 2017.08.08),
- penaltyLearning (>= 2017.07.11), namedCapture, xtable, WeightedROC,
- parallel, scales
-Suggests: testthat, httr, animint2, ggplot2Animint
+Imports: data.table (>= 1.9.8), PeakError, PeakSegJoint (>= 2017.12.23),
+ penaltyLearning (>= 2017.07.11), namedCapture, xtable, 
+ parallel, scales, Matrix, ggplot2
+Suggests: testthat, httr
 Remotes:
- faizan-khan-iit/ggplot2@e62066b462070a3a46f403d6f63531413a3a20ce,
- tdhock/animint2@4a8f481ea5ee6b8bf1711d0ae14a87eb9a6687ca
+ tdhock/PeakSegJoint@3d0089843b2df939ad5f5db336685e6412953a36

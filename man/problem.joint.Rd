@@ -7,7 +7,7 @@
   \item{jointProblem.dir}{path/to/jointProblem}
 }
 
-\value{Model from ConvertModelList.}
+\value{Model from PeakSegJointFaster.}
 
 \author{Toby Dylan Hocking}
 

@@ -86,50 +86,26 @@ problem.joint.predict.job <- function
       "%4d / %4d joint prediction problems %s\n",
       joint.dir.i, nrow(jobProblems),
       joint.dir))
-    jpeaks.bed <- file.path(joint.dir, "peaks.bed")
-    already.computed <- if(!file.exists(jpeaks.bed)){
+    peakInfo.rds <- file.path(joint.dir, "peakInfo.rds")
+    already.computed <- if(!file.exists(peakInfo.rds)){
       FALSE
     }else{
-      if(0 == file.size(jpeaks.bed)){
-        jprob.peaks <- data.table()
-        loss.dt <- data.table()
-        background.peak.means <- NULL
+      tryCatch({
+        pred.row <- readRDS(peakInfo.rds)
         TRUE
-      }else{
-        tryCatch({
-          jprob.peaks <- fread(jpeaks.bed)
-          setnames(
-            jprob.peaks,
-            c("chrom", "chromStart", "chromEnd", "name", "mean"))
-          load(file.path(joint.dir, "peakInfo.RData"))
-          TRUE
-        }, error=function(e){
-          FALSE
-        })
-      }
+      }, error=function(e){
+        FALSE
+      })
     }
-    gc()
-    jmodel <- if(already.computed){
-      cat("Skipping since peaks.bed already exists.\n")
-      list(peaks=jprob.peaks, loss=loss.dt,
-           background.peak.means=background.peak.means)
+    if(already.computed){
+      cat("Skipping since peakInfo.rds already exists.\n")
     }else{
-      problem.joint.predict(joint.dir)
+      pred.row <- problem.joint.predict(joint.dir)
     }
-    if(nrow(jmodel$peaks)){
-      with(jmodel, data.table(
-        chrom=peaks$chrom[1],
-        peakStart=peaks$chromStart[1],
-        peakEnd=peaks$chromEnd[1],
-        ## means is for predicted peaks.
-        means=list(peaks[, structure(mean, names=name)]),
-        ## background.peak.means is for all peaks,
-        ## even those for which we do not predict peaks!
-        ## It is for the peak height matrix later.
-        background.peak.means=list(background.peak.means),
-        loss.diff=loss$loss.diff,
-        problem.name=prob$problem.name
-      ))
+    if(pred.row[, sample.loss.diff==0 && group.loss.diff==0]){
+      data.table()
+    }else{
+      prob[, data.table(problem.name, jprob.name, pred.row)]
     }
   }
   jmodel.list <- mclapply.or.stop(1:nrow(jobProblems), prob.progress)
@@ -137,8 +113,8 @@ problem.joint.predict.job <- function
   jobPeaks.RData <- file.path(job.dir, "jobPeaks.RData")
   save(jobPeaks, file=jobPeaks.RData)
   jobPeaks
-### data.table of predicted loss, peak positions, means per sample
-### (in a list column), and peak height (in a list column).
+### data.table of predicted peaks, one row for each job, same columns
+### as from problem.joint.predict.
 }
 
 problem.joint.targets <- function
@@ -164,14 +140,16 @@ problem.joint.targets <- function
       }else{
         problem.joint.target(jprob.dir)
       }
-      target.vec <- scan(target.tsv, numeric(), quiet=TRUE)
-      if(any(is.finite(target.vec))){
-        segmentations.RData <- file.path(jprob.dir, "segmentations.RData")
-        load(segmentations.RData)
-        data.table(
-          target=list(target.vec),
-          features=list(colSums(segmentations$features)))
-      }
+      target.dt <- fread(target.tsv)
+      setkey(target.dt, model)
+      segmentations.RData <- file.path(jprob.dir, "segmentations.RData")
+      load(segmentations.RData)
+      data.table(
+        sample.target=list(
+          target.dt["sample", c(min.log.lambda, max.log.lambda)]),
+        group.target=list(
+          target.dt["group", c(min.log.lambda, max.log.lambda)]),
+        features=list(colSums(segmentations$features)))
     })
   targets.features <- do.call(rbind, targets.features.list)
   jointTargets.list <- lapply(targets.features, function(L)do.call(rbind, L))
@@ -232,29 +210,40 @@ problem.joint.train <- function
     data.dir, "problems", "*", "jointTargets.rds"))
   ## Below we read the features and targets into a data.table with
   ## list columns.
-  jointDT <- data.table(jointTargets.rds=Sys.glob(file.path(
-    data.dir, "problems", "*", "jointTargets.rds")))[, {
+  jointDT <- data.table(jointTargets.rds=jointTargets.rds.vec)[, {
       L <- readRDS(jointTargets.rds)
       lapply(L, list)
-    }, by=list(jointTargets.rds)]
-  feature.mat <- do.call(rbind, jointDT$features)
-  target.mat <- do.call(rbind, jointDT$target)
-  cat("Training using", nrow(target.mat), "finite targets.\n")
-  set.seed(1)
-  joint.model <- penaltyLearning::IntervalRegressionCV(
-    feature.mat, target.mat,
-    min.observations=nrow(feature.mat))
-  joint.model$train.mean.vec <- colMeans(feature.mat)
-  pred.log.penalty <- joint.model$predict(feature.mat)
-  pred.dt <- data.table(
-    too.lo=as.logical(pred.log.penalty < target.mat[,1]),
-    too.hi=as.logical(target.mat[,2] < pred.log.penalty))
-  pred.dt[, status := ifelse(
-    too.lo, "low", ifelse(
-      too.hi, "high", "correct"))]
-  cat("Train errors:\n")
-  print(pred.dt[, list(targets=.N), by=status])
-  save(joint.model, feature.mat, target.mat, file=joint.model.RData)
+  }, by=list(jointTargets.rds)]
+  mat.list <- lapply(jointDT[,-1,with=FALSE], function(L)do.call(rbind, L))
+  model.list <- list()
+  for(model.name in c("sample", "group")){
+    target.name <- paste0(model.name, ".target")
+    all.target.mat <- mat.list[[target.name]]
+    keep <- apply(is.finite(all.target.mat), 1, any)
+    n.keep <- sum(keep)
+    if(n.keep<2){
+      stop("need at least two targets to train model")
+    }
+    cat("Training", model.name, "model using", n.keep, "finite targets.\n")
+    target.mat <- all.target.mat[keep,]
+    feature.mat <- mat.list$features[keep,]
+    set.seed(1)
+    joint.model <- penaltyLearning::IntervalRegressionCV(
+      feature.mat, target.mat,
+      min.observations=n.keep)
+    joint.model$train.mean.vec <- colMeans(feature.mat)
+    pred.log.penalty <- joint.model$predict(feature.mat)
+    pred.dt <- data.table(
+      too.lo=as.logical(pred.log.penalty < target.mat[,1]),
+      too.hi=as.logical(target.mat[,2] < pred.log.penalty))
+    pred.dt[, status := ifelse(
+      too.lo, "low", ifelse(
+        too.hi, "high", "correct"))]
+    cat("Train errors:\n")
+    print(pred.dt[, list(targets=.N), by=status])
+    model.list[[model.name]] <- joint.model
+  }
+  save(model.list, mat.list, file=joint.model.RData)
   cat("Saved ", joint.model.RData, "\n", sep="")
   jprobs.bed.dt <- data.table(jprobs.bed=Sys.glob(file.path(
     data.dir, "problems", "*", "jointProblems.bed")))
@@ -314,17 +303,24 @@ problem.joint <- function
     coverage.list[[problem.dir]] <- save.coverage
   }
   coverage <- do.call(rbind, coverage.list)
-  profile.list <- ProfileList(coverage)
-  fit <- PeakSegJointSeveral(coverage)
-  rownames(fit$mean_mat) <- names(profile.list)
-  segmentations <- ConvertModelList(fit)
+  if(FALSE){
+    ggplot()+
+      geom_rect(aes(
+        xmin=chromStart/1e3, xmax=chromEnd/1e3,
+        ymin=0, ymax=count),
+        data=coverage)+
+      facet_grid(sample.id + sample.group ~ .)+
+      theme_bw()+
+      theme(panel.spacing=grid::unit(0, "lines"))
+  }
+  profile.list <- PeakSegJoint::ProfileList(coverage)
+  segmentations <- PeakSegJoint::PeakSegJointFaster(profile.list)
   segmentations$features <- PeakSegJoint::featureMatrixJoint(profile.list)
-  segmentations$mean.mat <- fit$mean_mat
   cat("Writing segmentation and features to", segmentations.RData, "\n")
   save(segmentations, file=segmentations.RData)
   segmentations$coverage <- coverage
   segmentations
-### Model from ConvertModelList.
+### Model from PeakSegJointFaster.
 }
 
 readCoverage <- function
@@ -380,8 +376,8 @@ readCoverage <- function
   ## problem.coverage[chromStart < : Item 3 has no length.
   if(is.data.table(save.coverage) && 0 < nrow(save.coverage)){
     sample.id <- basename(sample.dir)
-    group.dir <- dirname(sample.dir)
-    sample.group <- basename(group.dir)
+    group.path <- dirname(sample.dir)
+    sample.group <- basename(group.path)
     data.table(sample.id, sample.group, save.coverage)
   }
 ### Either the data.table of coverage, or NULL if no coverage data exists.
@@ -402,69 +398,79 @@ problem.joint.predict <- function
   }else{
     segmentations <- problem.joint(jointProblem.dir)
   }
-  chrom <- sub(":.*", "", basename(jointProblem.dir))
+  joint.prob <- basename(jointProblem.dir)
+  chrom <- sub(":.*", "", joint.prob)
   jprobs.dir <- dirname(jointProblem.dir)
   prob.dir <- dirname(jprobs.dir)
   probs.dir <- dirname(prob.dir)
   set.dir <- dirname(probs.dir)
   joint.model.RData <- file.path(set.dir, "joint.model.RData")
-  load(joint.model.RData)
+  objs <- load(joint.model.RData)
   feature.mat <- rbind(colSums(segmentations$features))
   stopifnot(nrow(feature.mat)==1)
-  if(length(feature.mat)==length(joint.model$train.mean.vec)){
-    is.bad <- !is.finite(feature.mat)
-    feature.mat[is.bad] <- joint.model$train.mean.vec[is.bad]
-  }else{
-    stop(
-      "feature.mat has ", length(feature.mat),
-      " columns but ", length(joint.model$train.mean.vec),
-      " features were used to train the joint model")
-  }    
-  log.penalty <- as.numeric(joint.model$predict(feature.mat))
-  stopifnot(length(log.penalty)==1)
-  stopifnot(is.finite(log.penalty))
-  selected <- subset(
-    segmentations$modelSelection,
-    min.log.lambda < log.penalty & log.penalty < max.log.lambda)
-  peakInfo.RData <- file.path(jointProblem.dir, "peakInfo.RData")
-  if(selected$peaks == 0){
-    unlink(peakInfo.RData)
-    pred.dt <- data.table()
-    loss.dt <- data.table()
-    background.peak.means <- NULL
-  }else{
-    selected.loss <- segmentations$loss[paste(selected$peaks), "loss"]
-    flat.loss <- segmentations$loss["0", "loss"]
-    loss.dt <- data.table(
-      loss.diff=flat.loss-selected.loss)
-    background.peak.means <- with(segmentations, {
-      cbind(
-        background=(mean.mat[,1]+mean.mat[,3])/2,
-        peak=mean.mat[,2])
-    })
-    save(loss.dt, background.peak.means, file=peakInfo.RData)
-    pred.df <- subset(segmentations$peaks, peaks==selected$peaks)
-    pred.dt <- with(pred.df, data.table(
-      chrom,
-      chromStart,
-      chromEnd,
-      name=paste0(sample.group, "/", sample.id),
-      mean))
+  bkg.vec <- with(segmentations, rowMeans(mean_mat[,c(1,3)]))
+  bkg.vec[!segmentations$is.feasible] <- NA
+  peak.str <- with(segmentations, {
+    sprintf("%s:%d-%d", chrom, peak_start_end[1], peak_start_end[2])
+  })
+  listmat <- function(x, N=names(x)){
+    list(Matrix(x, length(N), 1, dimnames=list(
+      N, peak.str)))
   }
-  peaks.bed <- file.path(jointProblem.dir, "peaks.bed")
-  cat("Writing ",
-      nrow(pred.dt), " peaks to ",
-      peaks.bed,
-      "\n", sep="")
-  write.table(
-    pred.dt, peaks.bed,
-    quote=FALSE,
-    sep="\t",
-    col.names=FALSE,
-    row.names=FALSE)
-  list(peaks=pred.dt, loss=loss.dt,
-       background.peak.means=background.peak.means)
-### list of peaks and loss.
+  pred.dt <- with(segmentations, data.table(
+    ## Need to save mean values of all peaks,
+    ## to compute peak height matrix later.
+    chrom,
+    peakStart=peak_start_end[1],
+    peakEnd=peak_start_end[2],
+    peak.mean.vec=listmat(mean_mat[,2]),
+    sample.loss.diff.vec=listmat(flat_loss_vec-peak_loss_vec, sample.id),
+    ## Also save mean values of background which is lower than the peak mean,
+    ## to compute peak height matrix.
+    background.mean.vec=listmat(bkg.vec),
+    ## sample.peaks and group.peaks start out all FALSE
+    ## but below we will set some entries to TRUE
+    ## based on where we predict peaks.
+    sample.peaks.vec=listmat(FALSE, sample.id),
+    group.peaks.vec=listmat(FALSE, names(group.list))))
+  for(model.name in names(model.list)){
+    joint.model <- model.list[[model.name]]
+    if(length(feature.mat)==length(joint.model$train.mean.vec)){
+      is.bad <- !is.finite(feature.mat)
+      feature.mat[is.bad] <- joint.model$train.mean.vec[is.bad]
+    }else{
+      stop(
+        "feature.mat has ", length(feature.mat),
+        " columns but ", length(joint.model$train.mean.vec),
+        " features were used to train the joint model")
+    }
+    log.penalty <- as.numeric(joint.model$predict(feature.mat))
+    stopifnot(length(log.penalty)==1)
+    stopifnot(is.finite(log.penalty))
+    m <- function(suffix)paste0(model.name, suffix)
+    selected <- subset(
+      segmentations[[m(".modelSelection")]],
+      min.log.lambda < log.penalty & log.penalty < max.log.lambda)
+    loss.diff <- if(selected$complexity == 0){
+      0
+    }else{
+      with.peaks <- segmentations[[m(".loss.diff.vec")]][1:selected$complexity]
+      pred.dt[[m(".peaks.vec")]][[1]][names(with.peaks), ] <- TRUE
+      -sum(with.peaks)
+    }
+    pred.dt[[paste0(model.name, ".loss.diff")]] <- loss.diff
+  }
+  peakInfo.rds <- file.path(jointProblem.dir, "peakInfo.rds")
+  cat("Writing ", peakInfo.rds, "\n", sep="")
+  saveRDS(pred.dt, peakInfo.rds)
+  pred.dt
+### data.table with one row, describing predicted peaks for both group
+### and sample models. Columns are chrom, peakStart, peakEnd,
+### peak.mean.vec, background.mean.vec (for computing normalized peak
+### height relative to background), sample.loss.diff.vec (for ranking
+### peaks in a given sample from most to least likely), sample.peaks,
+### group.peaks, sample.loss.diff, group.loss.diff (for ranking
+### likelihood of peak regions in joint model).
 }
 
 problem.joint.target <- function
@@ -499,7 +505,50 @@ problem.joint.target <- function
     (annotation=="peakEnd" & chromStart < jprob$problemStart) |
       (annotation=="peakStart" & jprob$problemEnd < chromEnd)
   }, annotation := "noPeaks"]
-  fit.error <- PeakSegJointError(segmentations, labels)
+  labels[, sample.path := paste0(sample.group, "/", sample.id)]
+  peaks.dt <- data.table(
+    sample.path=names(segmentations$sample.loss.diff.vec))
+  setkey(peaks.dt, sample.path)
+  ## we assign chromStart/end after to avoid error "Item 3 has no length"
+  peaks.dt[, chromStart := segmentations$peak_start_end[1] ]
+  peaks.dt[, chromEnd := segmentations$peak_start_end[2] ]
+  group.dt <- with(segmentations, {
+    data.table(sample.group=names(group.list))[, list(
+      sample.path=group.list[[sample.group]]
+    ), by=sample.group]
+  })
+  setkey(group.dt, sample.path)
+  peak.errors.dt <- labels[, {
+    sample.peaks <- peaks.dt[sample.path, nomatch=0L]
+    error.df <- PeakError::PeakErrorChrom(sample.peaks, .SD)
+    with(error.df, data.table(peak.errors=sum(fp+fn)))
+  }, by=sample.path]
+  setkey(peak.errors.dt, sample.path)
+  flat.errors.dt <- labels[, {
+    error.df <- PeakError::PeakErrorChrom(PeakError::Peaks(), .SD)
+    with(error.df, data.table(flat.errors=sum(fp+fn)))
+  }, by=sample.path]
+  setkey(flat.errors.dt, sample.path)
+  errors.all.samples <- flat.errors.dt[peak.errors.dt[group.dt]]
+  errors.all.samples[is.na(flat.errors), flat.errors := 0]
+  errors.all.samples[is.na(peak.errors), peak.errors := 0]
+  errors.selected.samples <-
+    errors.all.samples[names(segmentations$sample.loss.diff.vec)]
+  errors.all.groups <- errors.all.samples[, list(
+    flat.errors=sum(flat.errors),
+    peak.errors=sum(peak.errors)
+  ), by=sample.group]
+  errors.selected.groups <-
+    errors.all.groups[names(segmentations$group.loss.diff.vec)]
+  flat.errors.total <- sum(flat.errors.dt$flat.errors)
+  sample.errors.vec <- flat.errors.total + errors.selected.samples[, c(
+    0, cumsum(peak.errors)-cumsum(flat.errors))]
+  sample.select <- data.table(segmentations$sample.modelSelection)
+  sample.select[, errors := sample.errors.vec[complexity+1] ]
+  group.errors.vec <- flat.errors.total + errors.selected.groups[, c(
+    0, cumsum(peak.errors)-cumsum(flat.errors))]
+  group.select <- data.table(segmentations$group.modelSelection)
+  group.select[, errors := group.errors.vec[complexity+1] ]
   if(FALSE){
     show.peaks <- 8
     show.peaks.df <- subset(segmentations$peaks, peaks==show.peaks)
@@ -511,7 +560,7 @@ problem.joint.target <- function
         peaks="#a445ee")
     ggplot()+
       theme_bw()+
-      theme(panel.margin=grid::unit(0, "lines"))+
+      theme(panel.spacing=grid::unit(0, "lines"))+
       facet_grid(sample.group + sample.id ~ ., scales="free")+
       scale_fill_manual(values=ann.colors)+
       geom_tallrect(aes(
@@ -550,17 +599,24 @@ problem.joint.target <- function
     ##              data=
     ##              color="green")
   }
-  cat("Train error:\n")
-  print(fit.error$modelSelection[, c(
-    "min.log.lambda", "max.log.lambda", "peaks", "errors")])
+  cat("Train error for samples:\n")
+  print(sample.select[, c(
+    "min.log.lambda", "max.log.lambda", "complexity", "errors")])
+  cat("Train error for groups:\n")
+  print(group.select[, c(
+    "min.log.lambda", "max.log.lambda", "complexity", "errors")])
+  both.select <- rbind(
+    data.table(sample.select, model="sample"),
+    data.table(group.select, model="group"))
+  target.dt <- penaltyLearning::targetIntervals(both.select, "model")
+  cat("Target intervals of minimum error penalty values:\n")
+  print(target.dt)
   target.tsv <- file.path(jointProblem.dir, "target.tsv")
   cat(
-    "Writing target interval (",
-    paste(fit.error$target, collapse=", "),
-    ") to ", 
+    "Writing target intervals to ", 
     target.tsv,
     "\n", sep="")
-  write(fit.error$target, target.tsv, sep="\t")
+  fwrite(target.dt, target.tsv)
 ### Nothing.
 }
 
@@ -642,135 +698,141 @@ problem.joint.plot <- function
   joint.peaks.list <- list()
   for(joint.i in 1:nrow(probs.in.chunk)){
     prob <- probs.in.chunk[joint.i,]
-    tryCatch({
-      peaks <- fread(file.path(
-        prob.dir, "jointProblems", prob$problem.name, "peaks.bed"))
-      setnames(peaks, c("chrom", "peakStart", "peakEnd", "sample.path", "mean"))
-      peaks[, sample.id := sub(".*/", "", sample.path)]
-      peaks[, sample.group := sub("/.*", "", sample.path)]
-      joint.peaks.list[[prob$problem.name]] <- peaks
-    }, error=function(e){
-      NULL
-    })
+    peakInfo <- readRDS(file.path(
+      prob.dir, "jointProblems", prob$problem.name, "peakInfo.rds"))
+    joint.peaks.list[[prob$problem.name]] <- peakInfo[, {
+      is.peak <- as.logical(sample.peaks.vec[[1]])
+      if(any(is.peak)){
+        mean.vec <- peak.mean.vec[[1]]
+        sample.path <- rownames(mean.vec)[is.peak]
+        data.table(
+          chrom, peakStart, peakEnd,
+          sample.path,
+          mean=mean.vec[is.peak],
+          sample.id=sub(".*/", "", sample.path),
+          sample.group=sub("/.*", "", sample.path))
+      }
+    }]
   }
-  cat("Read",
-      length(joint.peaks.list),
-      "joint peak predictions.\n")
   joint.peaks <- do.call(rbind, joint.peaks.list)
+  cat(
+    "Read joint peak predictions:",
+    nrow(joint.peaks), "peaks in",
+    length(joint.peaks.list), "genomic regions,",
+    nrow(probs.in.chunk), "peakInfo.RData files.\n"
+  )
   ann.colors <-
     c(noPeaks="#f6f4bf",
       peakStart="#ffafaf",
       peakEnd="#ff4c4c",
       peaks="#a445ee")
-  if(requireNamespace("animint2")){
-    gg <- ggplot2Animint::ggplot()+
-      ggplot2Animint::theme_bw()+
-      ggplot2Animint::theme(panel.margin=grid::unit(0, "lines"))+
-      ggplot2Animint::facet_grid(sample.group + sample.id ~ ., scales="free")+
-      ggplot2Animint::scale_y_continuous(
-        "aligned read coverage",
-        breaks=function(limits){
-          lim <- floor(limits[2])
-          if(lim==0){
-            Inf
-          }else{
-            lim
-          }
-        })+
-      ggplot2Animint::scale_x_continuous(paste(
-        "position on",
-        coverage$chrom[1],
-        "(kb = kilo bases)"))+
-      ## geom_tallrect(aes(
-      ##   xmin=problemStart/1e3,
-      ##   xmax=problemEnd/1e3),
-      ##   alpha=0.5,
-      ##   size=3,
-      ##   color="black",
-      ##   fill=NA,
-      ##   data=probs.in.chunk)+
-      ggplot2Animint::geom_segment(ggplot2Animint::aes(
-        problemStart/1e3, 0,
-        xend=problemEnd/1e3, yend=0),
-        size=1,
-        color="blue",
-        data=probs.in.chunk)+
-      ggplot2Animint::geom_point(ggplot2Animint::aes(
-        problemStart/1e3, 0),
-        color="blue",
-        data=probs.in.chunk)+
-      animint2::geom_tallrect(ggplot2Animint::aes(
-        xmin=chromStart/1e3, 
-        xmax=chromEnd/1e3,
-        fill=annotation), 
-        alpha=0.5,
-        data=labels)+
-      ggplot2Animint::scale_fill_manual(
-        "label", values=ann.colors)+
-      ggplot2Animint::scale_color_manual(
-        values=c(separate="black", joint="deepskyblue"))+
-      ggplot2Animint::scale_size_manual(
-        values=c(separate=2, joint=3))+
-      ggplot2Animint::geom_rect(ggplot2Animint::aes(
-        xmin=chromStart/1e3, xmax=chromEnd/1e3,
-        ymin=0, ymax=count),
-        data=coverage,
-        color="grey50")
-    if(length(joint.peaks)){
-      joint.peaks$peak.type <- "joint"
-      gg <- gg+
-        ggplot2Animint::geom_point(ggplot2Animint::aes(
-          peakStart/1e3, 0,
-          color=peak.type,
-          size=peak.type),
-          data=joint.peaks)+
-        ggplot2Animint::geom_segment(ggplot2Animint::aes(
-          peakStart/1e3, 0,
-          xend=peakEnd/1e3, yend=0,
-          color=peak.type,
-          size=peak.type),
-          data=joint.peaks)
-    }
-    if(length(separate.peaks.list)){
-      separate.peaks <- do.call(rbind, separate.peaks.list)
-      separate.peaks$peak.type <- "separate"
-      gg <- gg+
-        ggplot2Animint::geom_segment(ggplot2Animint::aes(
-          peakStart/1e3, 0,
-          xend=peakEnd/1e3, yend=0,
-          color=peak.type,
-          size=peak.type),
-          data=separate.peaks)+
-        ggplot2Animint::geom_point(ggplot2Animint::aes(
-          peakStart/1e3, 0,
-          color=peak.type,
-          size=peak.type),
-          data=separate.peaks)
-    }
-    n.rows <- length(coverage.list) + 2
-    mypng <- function(base, g){
-      f <- file.path(chunk.dir, base)
-      cat("Writing ",
-          f,
-          "\n", sep="")
-      cairo.limit <- 32767
-      h <- 60*n.rows
-      if(cairo.limit < h){
-        h <- floor(cairo.limit / n.rows) * n.rows
-      }
-      png(f, res=100, width=1000, height=h)
-      print(g)
-      dev.off()
-      thumb.png <- sub(".png$", "-thumb.png", f)
-      cmd <- sprintf("convert %s -resize 230 %s", f, thumb.png)
-      system(cmd)
-    }
-    mypng("figure-predictions-zoomout.png", gg)
-    gg.zoom <- gg+
-      ggplot2Animint::coord_cartesian(
-        xlim=chunk[, c(chunkStart, chunkEnd)/1e3],
-        expand=FALSE)
-    mypng("figure-predictions.png", gg.zoom)
+  gg <- ggplot()+
+    theme_bw()+
+    theme(panel.spacing=grid::unit(0, "lines"))+
+    facet_grid(sample.group + sample.id ~ ., scales="free")+
+    scale_y_continuous(
+      "aligned read coverage",
+      breaks=function(limits){
+        lim <- floor(limits[2])
+        if(lim==0){
+          Inf
+        }else{
+          lim
+        }
+      })+
+    scale_x_continuous(paste(
+      "position on",
+      coverage$chrom[1],
+      "(kb = kilo bases)"))+
+    ## geom_tallrect(aes(
+    ##   xmin=problemStart/1e3,
+    ##   xmax=problemEnd/1e3),
+    ##   alpha=0.5,
+    ##   size=3,
+    ##   color="black",
+    ##   fill=NA,
+    ##   data=probs.in.chunk)+
+    geom_segment(aes(
+      problemStart/1e3, 0,
+      xend=problemEnd/1e3, yend=0),
+      size=1,
+      color="blue",
+      data=probs.in.chunk)+
+    geom_point(aes(
+      problemStart/1e3, 0),
+      color="blue",
+      data=probs.in.chunk)+
+    geom_tallrect(aes(
+      xmin=chromStart/1e3, 
+      xmax=chromEnd/1e3,
+      fill=annotation), 
+      alpha=0.5,
+      data=labels)+
+    scale_fill_manual(
+      "label", values=ann.colors)+
+    scale_color_manual(
+      values=c(separate="black", joint="deepskyblue"))+
+    scale_size_manual(
+      values=c(separate=2, joint=3))+
+    geom_rect(aes(
+      xmin=chromStart/1e3, xmax=chromEnd/1e3,
+      ymin=0, ymax=count),
+      data=coverage,
+      color="grey50")
+  if(length(joint.peaks)){
+    joint.peaks$peak.type <- "joint"
+    gg <- gg+
+      geom_point(aes(
+        peakStart/1e3, 0,
+        color=peak.type,
+        size=peak.type),
+        data=joint.peaks)+
+      geom_segment(aes(
+        peakStart/1e3, 0,
+        xend=peakEnd/1e3, yend=0,
+        color=peak.type,
+        size=peak.type),
+        data=joint.peaks)
   }
+  if(length(separate.peaks.list)){
+    separate.peaks <- do.call(rbind, separate.peaks.list)
+    separate.peaks$peak.type <- "separate"
+    gg <- gg+
+      geom_segment(aes(
+        peakStart/1e3, 0,
+        xend=peakEnd/1e3, yend=0,
+        color=peak.type,
+        size=peak.type),
+        data=separate.peaks)+
+      geom_point(aes(
+        peakStart/1e3, 0,
+        color=peak.type,
+        size=peak.type),
+        data=separate.peaks)
+  }
+  n.rows <- length(coverage.list) + 2
+  mypng <- function(base, g){
+    f <- file.path(chunk.dir, base)
+    cat("Writing ",
+        f,
+        "\n", sep="")
+    cairo.limit <- 32767
+    h <- 60*n.rows
+    if(cairo.limit < h){
+      h <- floor(cairo.limit / n.rows) * n.rows
+    }
+    png(f, res=100, width=1000, height=h)
+    print(g)
+    dev.off()
+    thumb.png <- sub(".png$", "-thumb.png", f)
+    cmd <- sprintf("convert %s -resize 230 %s", f, thumb.png)
+    system(cmd)
+  }
+  ##mypng("figure-predictions-zoomout.png", gg)
+  gg.zoom <- gg+
+    coord_cartesian(
+      xlim=chunk[, c(chunkStart, chunkEnd)/1e3],
+      expand=FALSE)
+  mypng("figure-predictions.png", gg.zoom)
 ### Nothing
 }  
