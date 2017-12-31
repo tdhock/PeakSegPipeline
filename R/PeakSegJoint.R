@@ -160,26 +160,12 @@ problem.joint.targets <- function
 }
 
 problem.joint.targets.train <- function
-### Compute all target intervals then learn a penalty function.
+### Compute all joint target intervals then learn joint penalty
+### functions.
 (data.dir
 ### project directory.
 ){
-  labels.tsv.vec <- Sys.glob(file.path(
-    data.dir, "problems", "*", "jointProblems", "*", "labels.tsv"))
-  mclapply.or.stop(seq_along(labels.tsv.vec), function(labels.i){
-    labels.tsv <- labels.tsv.vec[[labels.i]]
-    prob.dir <- dirname(labels.tsv)
-    cat(sprintf(
-      "%4d / %4d labeled joint problems %s\n",
-      labels.i, length(labels.tsv.vec),
-      prob.dir))
-    target.tsv <- file.path(prob.dir, "target.tsv")
-    if(file.exists(target.tsv)){
-      cat("Skipping since target.tsv exists.\n")
-    }else{
-      problem.joint.target(prob.dir)
-    }
-  })
+  problem.joint.targets(data.dir)
   problem.joint.train(data.dir)
 ### Nothing.
 }
