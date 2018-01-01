@@ -176,12 +176,16 @@ plot_all <- function
     "%s:%d-%d", chrom, problemStart, problemEnd)]
   problems[, problem.name := factor(problem.name, problem.name)]
   ## Save samples/groupID/sampleID/joint_peaks.bedGraph files.
-  header.dt <- fread(
-    "zcat ~/PeakSegPipeline-test/demo/peaks_matrix_sample.tsv.gz", nrows=1)
+  zcat <- function(suffix, ...){
+    base.tsv.gz <- paste0(
+      "peaks_matrix_", suffix, ".tsv.gz")
+    path.tsv.gz <- file.path(set.dir, base.tsv.gz)
+    cmd <- paste("zcat", path.tsv.gz)
+    fread(cmd, ...)
+  }
+  header.dt <- zcat("sample", nrows=1)
   col.name.vec <- names(header.dt)
-  peak.name.dt <- fread(
-    "zcat ~/PeakSegPipeline-test/demo/peaks_matrix_sample.tsv.gz",
-    select=1)
+  peak.name.dt <- zcat("sample", select=1)
   pos.pattern <- paste0(
     "(?<chrom>[^:]+)",
     ":",
@@ -195,16 +199,9 @@ plot_all <- function
   ord.vec <- pos.dt[, orderChrom(chrom, peakStart, peakEnd)]
   pos.ord.dt <- pos.dt[ord.vec]
   for(sample.i in 2:length(col.name.vec)){
-    presence.dt <- fread(
-      "zcat ~/PeakSegPipeline-test/demo/peaks_matrix_sample.tsv.gz",
-      select=sample.i)[ord.vec]
-    lik.dt <- fread(
-      "zcat ~/PeakSegPipeline-test/demo/peaks_matrix_likelihood.tsv.gz",
-      select=sample.i)[ord.vec]
+    presence.dt <- zcat("sample", select=sample.i)[ord.vec]
     has.peak <- presence.dt[[1]]
-    mean.vec <- fread(
-      "zcat ~/PeakSegPipeline-test/demo/peaks_matrix_meanCoverage.tsv.gz",
-      select=sample.i)[ord.vec][[1]]
+    mean.vec <- zcat("meanCoverage", select=sample.i)[ord.vec][[1]]
     bg.dt <- data.table(
       pos.ord.dt,
       meanCoverage=sprintf("%.2f", mean.vec)
