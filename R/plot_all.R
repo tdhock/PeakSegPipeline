@@ -146,7 +146,7 @@ plot_all <- function
       if("Input" %in% rownames(out.mat.list$group.peaks.vec)){
         job.summary.dt[, Input.up := out.mat.list$group.peaks.vec["Input",] ]
       }else{
-        job.summary.dt[, specificity := NA ]
+        job.summary.dt[, Input.up := FALSE ]
       }
       summary.dt.list[[jobPeaks.RData]] <- job.summary.dt
     }#if(nrow(jobPeaks
