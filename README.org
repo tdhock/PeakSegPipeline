@@ -37,8 +37,8 @@ other peak detection algorithms for ChIP-seq data analysis:
   that can NOT be corrected using labels.
 - *Joint peak detection in any number of samples or cell types* so the
   model can be easily interpreted to find similarities or differences
-  between samples (PeakSegPipeline outputs a binary matrix, samples x
-  peaks). In contrast, it is not easy to find similarities and
+  between samples (PeakSegPipeline outputs a binary matrix, peaks x
+  samples). In contrast, it is not easy to find similarities and
   differences between samples using single-sample peak detection
   methods (e.g. [[https://github.com/taoliu/MACS][MACS]]), and other multi-sample peak detection methods
   are limited to one (e.g. [[https://github.com/mahmoudibrahim/jamm][JAMM]]) or two (e.g. [[https://code.google.com/p/pepr-chip-seq/][PePr]]) cell types
@@ -431,23 +431,22 @@ calls as horizontal black line segments).
 
 The [[file:plot_all.R][PeakSegPipeline::plot_all]] function creates
 - =index.html= a web page which summarizes the results,
-- =peaks_matrix.tsv= a binary matrix (peaks x samples) in which 1
-  means peak and 0 means no peak.
+- =peaks_matrix_sample.tsv.gz= a binary matrix (peaks x samples) in which TRUE
+  means peak and FALSE means no peak.
+- =peaks_matrix_group.tsv.gz= a binary matrix (peaks x groups) in which TRUE
+  means peak and FALSE means no peak.
+- =peaks_matrix_likelihood.tsv.gz= a numeric matrix (peaks x samples)
+  of likelihood values, larger means a more likely peak.
+- =peaks_matrix_meanCoverage.tsv.gz= a numeric matrix (peaks x samples)
+  of mean coverage in peaks.
 - =peaks_summary.tsv= is a table with a row for each genomic region
   that has a peak in at least one sample. The columns are
   - =chrom=, =peakStart=, =peakEnd= genomic region of peak.
-  - =specificity= if you have labeled peaks in Input samples, the
-    model labels each peak as either specific (few Input samples up),
-    or non-specific (many Input samples up). If you want to filter
-    non-specific Input peaks yourself, you can use the =n.Input=
-    column, which is the number of Input samples with a peak in this
-    region.
-  - =loss.diff= the likelihood of the peak (larger values mean taller
-    and wider peaks in more samples).
-  - =chisq.pvalue=, =fisher.pvalue= P-Values from Chi-Squared
-    (=chisq.test=) and Fisher's exact test (=fisher.test=) for whether
-    or not this peak is group-specific (lower values mean strong
-    correlation between peak calls and groups).
+  - =Input.up= if there is an Input group, then this is TRUE for rows
+    where the Input group is predicted to have a peak. This can be
+    useful for filtering/removing peaks which are non-specific.
+  - =group.loss.diff= and =sample.loss.diff= the likelihood of the
+    peak (larger values mean taller and wider peaks in more samples).
 
 ** Related work
 
