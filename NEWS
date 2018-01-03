@@ -16,6 +16,12 @@ counting function, which should be much faster than using an
 intermediate bedGraph
 file. http://www.cs.uleth.ca/~holzmann/C/system/shell_commands.html
 
+2017.12.30
+
+remove animint2 dep
+
+use new PeakSegJoint with Faster algo.
+
 2017.12.13
 
 in problem.coverage:

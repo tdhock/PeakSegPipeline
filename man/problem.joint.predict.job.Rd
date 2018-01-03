@@ -8,8 +8,8 @@ in jobProblems.bed}
   \item{job.dir}{project/jobs/jobID}
 }
 
-\value{data.table of predicted loss, peak positions, means per sample
-(in a list column), and peak height (in a list column).}
+\value{data.table of predicted peaks, one row for each job, same columns
+as from problem.joint.predict.}
 
 \author{Toby Dylan Hocking}
 

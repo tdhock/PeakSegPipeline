@@ -37,8 +37,8 @@ other peak detection algorithms for ChIP-seq data analysis:
   that can NOT be corrected using labels.
 - *Joint peak detection in any number of samples or cell types* so the
   model can be easily interpreted to find similarities or differences
-  between samples (PeakSegPipeline outputs a binary matrix, samples x
-  peaks). In contrast, it is not easy to find similarities and
+  between samples (PeakSegPipeline outputs a binary matrix, peaks x
+  samples). In contrast, it is not easy to find similarities and
   differences between samples using single-sample peak detection
   methods (e.g. [[https://github.com/taoliu/MACS][MACS]]), and other multi-sample peak detection methods
   are limited to one (e.g. [[https://github.com/mahmoudibrahim/jamm][JAMM]]) or two (e.g. [[https://code.google.com/p/pepr-chip-seq/][PePr]]) cell types
@@ -64,24 +64,41 @@ devtools::install_github("tdhock/PeakSegPipeline")
 #+END_SRC
 
 Once everything has been installed, you can test your installation by
-executing [[file:tests/testthat/test-pipeline-demo.R]] It will first download some
-bigWigs and labels to the =test/demo= directory, then run the
+executing the test script [[file:tests/testthat/test-pipeline-input.R]] --
+in the shell, run:
+
+#+BEGIN_SRC shell-script
+R -e 'source("https://raw.githubusercontent.com/tdhock/PeakSegPipeline/master/tests/testthat/test-pipeline-input.R")'
+#+END_SRC
+
+This is the TEST_SUITE=pipeline-input test that is run by [[https://travis-ci.org/tdhock/PeakSegPipeline][Travis-CI]]
+after every push to this repo -- it should take 30-60 minutes to run,
+depending on the speed of your computer ([[https://github.com/tdhock/PeakSegPipeline/wiki/test-pipeline-input][for debugging on your
+computer, it may be useful to look at the expected terminal
+output]]). The test script will first download some bigWigs and labels
+to the =~/PeakSegPipeline-test/input= directory, then run the
 PeakSegPipeline on them. If everything worked, you can view the
-results by opening =test/demo/index.html= in a web browser, and it
-should be the same as the results shown on
-http://cbio.mines-paristech.fr/~thocking/hubs/test/demo/
+results by opening =~/PeakSegPipeline-test/input/index.html= in a web
+browser, and it should be the same as the results shown on
+http://members.cbio.mines-paristech.fr/~thocking/hubs/test/input/
 
 ** Input Files
 
 PeakSegPipeline uses PeakSegFPOP + PeakSegJoint to predict common and
 different peaks in multiple samples. It requires three kinds of input
 data:
-- coverage data under =project/samples=,
-- labels in =project/labels=,
-- genomic segmentation problems in =project/problems.bed=.
+- coverage data under =project_dir/samples=,
+- labels in =project_dir/labels=,
+- genomic segmentation problems in =project_dir/problems.bed=.
 
 To give a concrete example, let us consider the data set that is used
-when you run [[file:tests/testthat/test-demo.R]]
+when you run [[file:tests/testthat/test-pipeline-demo.R]] -- you can do
+this via the shell command below: (note that this is not
+systematically run as a test since its runtime is usually over one hour).
+
+#+BEGIN_SRC shell-script
+R -e 'source("https://raw.githubusercontent.com/tdhock/PeakSegPipeline/master/tests/testthat/test-pipeline-demo.R")'
+#+END_SRC
 
 *** Coverage data
 
@@ -91,17 +108,17 @@ in [[https://genome.ucsc.edu/goldenpath/help/bigWig.html][bigWig]] format, since
 arbitrary genomic regions. For example this test downloads 8 files:
 
 #+BEGIN_SRC 
-test/demo/samples/bcell/MS026601/coverage.bigWig
-test/demo/samples/bcell_/MS010302/coverage.bigWig
-test/demo/samples/Input/MS002201/coverage.bigWig
-test/demo/samples/Input/MS026601/coverage.bigWig
-test/demo/samples/Input_/MS002202/coverage.bigWig
-test/demo/samples/Input_/MS010302/coverage.bigWig
-test/demo/samples/kidney/MS002201/coverage.bigWig
-test/demo/samples/kidney_/MS002202/coverage.bigWig
+~/PeakSegPipeline-test/demo/samples/bcell/MS026601/coverage.bigWig
+~/PeakSegPipeline-test/demo/samples/bcell_/MS010302/coverage.bigWig
+~/PeakSegPipeline-test/demo/samples/Input/MS002201/coverage.bigWig
+~/PeakSegPipeline-test/demo/samples/Input/MS026601/coverage.bigWig
+~/PeakSegPipeline-test/demo/samples/Input_/MS002202/coverage.bigWig
+~/PeakSegPipeline-test/demo/samples/Input_/MS010302/coverage.bigWig
+~/PeakSegPipeline-test/demo/samples/kidney/MS002201/coverage.bigWig
+~/PeakSegPipeline-test/demo/samples/kidney_/MS002202/coverage.bigWig
 #+END_SRC
 
-In the example above we have the =test/demo= directory which will
+In the example above we have the =~/PeakSegPipeline-test/demo= directory which will
 contain all data sets, labels, and peak calls for this particular
 project. The =samples= directory contains a sub-directory for each
 sample group (experimental conditions or cell types, e.g. =bcell= or
@@ -119,7 +136,7 @@ demonstrate the prediction accuracy of the learning algorithm.
 
 *** Label Data
 
-The =project/labels/*.txt= files contain genomic regions with or without
+The =project_dir/labels/*.txt= files contain genomic regions with or without
 peaks. These labels will be used to train the peak prediction models
 (automatically select model parameters that yield optimal peak
 prediction accuracy). A quick and easy way to create labels is by
@@ -127,34 +144,38 @@ visual inspection as in the [[http://cbio.mines-paristech.fr/~thocking/chip-seq-
 (for details please read [[http://bioinformatics.oxfordjournals.org/content/early/2016/10/23/bioinformatics.btw672.abstract][Hocking et al, Bioinformatics 2016]]).
 
 *To visually label your data* first create a project directory on a
-webserver with =project/samples/groupID/sampleID/coverage.bigWig=
-files, then create a track hub using a command such as
+webserver. For example if your project directory is in your
+=~/public_html= directory, your directory structure should be
+=~/public_html/project_dir/samples/groupID/sampleID/coverage.bigWig=.
+To create a track hub, set the working directory to =~/public_html=
+and then use [[file:R/create_track_hub.R][PeakSegPipeline::create_track_hub]]:
 
-#+BEGIN_SRC shell-script
-R -e 'PeakSegPipeline::create_track_hub("project_dir", "http://your.server.com/~user/path-", "hg19", "email@domain.com")'
+#+BEGIN_SRC R
+setwd("~/public_html")
+PeakSegPipeline::create_track_hub("project_dir", "http://your.server.com/~user/", "hg19", "email@domain.com")
 #+END_SRC
 
 The arguments of the =create_track_hub= function are as follows:
-- The first argument =project= is the data directory. 
-- The second argument =http://your.server.com/~user/path-= is the URL
+- The first argument =project_dir= is the data directory. 
+- The second argument =http://your.server.com/~user/= is the URL
   prefix (appended before the first argument to obtain URLs for the
   trackDb.txt file).
 - The third argument =hg19= is the UCSC genome ID for the genomes.txt file. 
-- The fourth argument =email@domain.com= is the email address for the
-  hub.txt file.
+- The fourth argument =email@domain.com= is your email address,
+  which will be written to the hub.txt file.
 
 If that command worked, then you should see a message =Created
-http://your.server.com/~user/path-project/hub.txt= and then you can
+http://your.server.com/~user/project_dir/hub.txt= and then you can
 paste that URL into [[http://genome.ucsc.edu/cgi-bin/hgHubConnect#unlistedHubs][My Data -> Track Hubs -> My Hubs]] then click Add
-Hub to tell the UCSC genome browser to display your data.  Navigate
+Hub to tell the UCSC genome browser to display your data. Navigate
 around the genome until you have found some peaks, then add positive
-and negative labels in =project/labels/*.txt= files.
+and negative labels in =project_dir/labels/*.txt= files.
 
 *For example* the test data set contains only one
 labels file,
 
 #+BEGIN_SRC 
-test/demo/labels/some_labels.txt
+~/PeakSegPipeline-test/demo/labels/some_labels.txt
 #+END_SRC
 
 which contains lines such as the following
@@ -190,31 +211,34 @@ label). Ideally, each chunk should contain
   significant difference between up and down).
 
 *Visualizing labels.* After having added some labels in
-=project/labels/*.txt= files, run =Rscript convert_labels.R project=
-to create =project/all_labels.bed=.  Then when you re-run =Rscript
-create_track_hub.R ...= it will create a new hub with a track
-"Manually labeled regions with and without peaks" that displays the
-labels you have created.
+=project_dir/labels/*.txt= files, run the R command
+#+BEGIN_SRC R
+PeakSegPipeline::convert_labels("project_dir")
+#+END_SRC
+to create =project_dir/all_labels.bed=. Then when you re-create the
+track hub, it will include a new track "Manually labeled
+regions with and without peaks" that displays the labels you have
+created.
 
 *** Genomic segmentation problems
 
 The last input file that you need to provide is a list of separate
 segmentation problems for your reference genome (regions without
-gaps). This file should be in [[https://genome.ucsc.edu/FAQ/FAQformat#format1][BED]] format
+gaps, i.e. contigs). This file should be in [[https://genome.ucsc.edu/FAQ/FAQformat#format1][BED]] format
 (e.g. [[https://raw.githubusercontent.com/tdhock/PeakSegFPOP/master/hg19_problems.bed][hg19_problems.bed]]).
 
 If you don't use hg19, but you do use another standard genome that is
 hosted on UCSC, then you can use [[file:R/downloadProblems.R][PeakSegPipeline::downloadProblems]].
 
-#+BEGIN_SRC shell-script
-Rscript -e 'PeakSegPipeline::downloadProblems("hg38", "hg38_problems.bed")'
+#+BEGIN_SRC R
+PeakSegPipeline::downloadProblems("hg38", "hg38_problems.bed")
 #+END_SRC
 
 If your reference genome does not exist on UCSC, you can use
 [[file:R/gap2problems.R][PeakSegPipeline::gap2problems]] to make a =problems.bed= file.
 
-#+BEGIN_SRC shell-script
-Rscript -e 'PeakSegPipeline::gap2problems("yourGenome_gap.bed", "yourGenome_chromInfo.txt", "yourGenome_problems.bed")'
+#+BEGIN_SRC R
+PeakSegPipeline::gap2problems("yourGenome_gap.bed", "yourGenome_chromInfo.txt", "yourGenome_problems.bed")
 #+END_SRC
 
 where the chromInfo file contains one line for every chromosome, and
@@ -224,111 +248,205 @@ the gap file contains one line for every gap in the reference (unknown
 
 ** Running steps of the pipeline in parallel
 
-The first step is to convert label text files to bed files:
+The PeakSegPipeline consists of seven steps. Below we give the command
+lines for the [[file:tests/testthat/test-pipeline-demo.R]] project
+directory, =~/PeakSegPipeline-test/demo=.
 
-#+BEGIN_SRC shell-script
-Rscript -e 'PeakSegPipeline::convert_labels("test/demo")'
+*** Step 1: convert labels, create problem directories, and shell scripts
+
+Convert labels from =~/PeakSegPipeline-test/demo/labels/*.txt= files
+to =~/PeakSegPipeline-test/demo/samples/*/*/labels.bed= files using
+the following R command:
+
+#+BEGIN_SRC R
+PeakSegPipeline::convert_labels("~/PeakSegPipeline-test/demo")
 #+END_SRC
 
 Since the human genome is so large, we recommend to do model training
-and peak prediction in parallel. To use a PBS/qsub cluster such as
-Compute Canada's [[http://www.hpc.mcgill.ca/index.php/guillimin-status][guillimin]], call
-[[file:create_problems_all.R][PeakSegPipeline::create_problems_all]] with a =PBS.header= argument that
-reflects your cluster configuration:
+and peak prediction in parallel. To use a PBS cluster/batch job
+system, specify your configuration/script headers via the
+[[file:create_problems_all.R][PeakSegPipeline::create_problems_all]]
+with a =PBS.header= argument.  For example I use the following header
+on Compute Canada's
+[[http://www.hpc.mcgill.ca/index.php/guillimin-status][guillimin]]. NOTE:
+PeakSegPipeline does not directly support other cluster/batch job
+systems yet (e.g. SLURM), but if you are interested in helping
+implement/test that, please get in touch!
+(toby.hocking@mail.mcgill.ca) The plan is to use
+[[https://bitbucket.org/mugqic/mugqic_pipelines][MUGQIC pipelines]].
 
 #+BEGIN_SRC shell-script
-Rscript -e 'PeakSegPipeline::create_problems_all("test/demo")'
+cat << EOF > ~/TDH-PBS.txt
+#!/bin/bash
+#PBS -l nodes=1:ppn=4
+#PBS -l walltime=24:00:00
+#PBS -A bws-221-ae
+#PBS -m ae
+#PBS -M tdhock5@gmail.com
+#PBS -V
+EOF
+R -e 'PeakSegPipeline::create_problems_all("~/PeakSegPipeline-test/demo", PBS.header=paste(readLines("~/TDH-PBS.txt"), collapse="\n"))'
 #+END_SRC
 
-That will create problem sub-directories in
-=test/demo/samples/*/*/problems/*=. Begin model training by computing
-=target.tsv= files:
+=PeakSegPipeline::create_problems_all= creates sub-directories and
+shell scripts that can be used to launch the following steps of the
+PeakSegPipeline.
 
-#+BEGIN_SRC shell-script
-for lbed in test/demo/samples/*/*/problems/*/labels.bed;do qsub $(echo $lbed|sed 's/labels.bed/target.tsv.sh/');done
-#+END_SRC
+*** Step 2: target interval computation for each labeled sample and problem
 
-The target is the largest interval of log(penalty) values for which
+Begin model training by computing
+=~/PeakSegPipeline-test/demo/samples/*/*/problems/*/target.tsv=
+files. The target is the largest interval of log(penalty) values for which
 PeakSegFPOP returns peak models that have the minimum number of
-incorrect labels. The =target.tsv= files are used for training a
-machine learning model that can predict optimal penalty values, even
-for un-labeled samples and genome subsets. To train a model, use
+incorrect labels. The R code to do this for one sample and problem is, for
+example:
+
+#+BEGIN_SRC R
+PeakSegPipeline::problem.target("~/PeakSegPipeline-test/demo/samples/kidney/MS002201/problems/chr10:18024675-38818835")
+#+END_SRC
+
+To do it in parallel for all labeled problems, submit the shell scripts via the
+following shell command:
 
 #+BEGIN_SRC shell-script
-Rscript -e 'PeakSegPipeline::problem.train("test/demo")'
+for lbed in ~/PeakSegPipeline-test/demo/samples/*/*/problems/*/labels.bed;do qsub $(echo $lbed|sed 's/labels.bed/target.tsv.sh/');done
 #+END_SRC
 
-which trains a model using
-=test/demo/samples/*/*/problems/*/target.tsv= files, and saves it to
-=test/demo/model.RData=. To compute peak predictions independently for
-each sample and genomic segmentation problem,
+*** Step 3: train a model that predicts a penalty for each sample and genomic segmentation problem
+
+The =target.tsv= files computed in Step 2 are used in this step to
+train a machine learning model that can predict optimal penalty
+values, even for un-labeled samples and genome subsets. To train a
+model, use the R code:
+
+#+BEGIN_SRC R
+PeakSegPipeline::problem.train("~/PeakSegPipeline-test/demo")
+#+END_SRC
+
+Or the shell command below: (note that this step typically takes less than 10
+minutes, so there is no need to run it on the qsub/batch system, so I
+use bash to run it interactively)
 
 #+BEGIN_SRC shell-script
-for sh in test/demo/problems/*/jointProblems.bed.sh;do qsub $sh;done
+bash ~/PeakSegPipeline-test/demo/model.RData.sh
 #+END_SRC
 
-which will launch one job for each genomic segmentation problem. Each
-job will make peak predictions in all samples, then write
-=test/demo/problems/*/jointProblems/*= directories with
-=target.tsv.sh= and =peaks.bed.sh= scripts. One directory and joint
-segmentation problem will be created for each genomic region which has
-at least one sample with a predicted peak. To train a joint peak
-calling model, run
+A model is trained using
+=~/PeakSegPipeline-test/demo/samples/*/*/problems/*/target.tsv= files,
+and saved to =~/PeakSegPipeline-test/demo/model.RData=. 
+
+*** Step 4: peak predictions for each sample independently, joint problem creation via peak clustering
+
+The next step is to compute peak predictions independently for each
+sample and genomic segmentation problem, and then cluster the peaks
+into joint segmentation problems. This step is parallelized on genomic
+segmentation problems. Each job computes peak predictions for every
+sample in one genomic segmentation problem
+(PeakSegPipeline::problem.predict.allSamples), then clusters the
+predicted peaks to obtain joint segmentation problems
+(PeakSegPipeline::create_problems_joint), then computes joint target
+intervals (PeakSegPipeline::problem.joint.targets). To run one of
+these jobs on a single genomic segmentation problem, use an
+R command as below:
+
+#+BEGIN_SRC R
+PeakSegPipeline::problem.pred.cluster.targets("~/PeakSegPipeline-test/demo/problems/chr10:18024675-38818835")
+#+END_SRC
+
+To do that in parallel for all genomic segmentation problems, use the
+following shell command:
 
 #+BEGIN_SRC shell-script
-qsub test/demo/joint.model.RData.sh
+for sh in ~/PeakSegPipeline-test/demo/problems/*/jointProblems.bed.sh;do qsub $sh;done
 #+END_SRC
 
-which will compute =test/demo/joint.model.RData= and
-=test/demo/jobs/*/jobProblems.bed= files. To make joint peak
-predictions, run
+The outputs of this step are:
+- Joint segmentation problems files, e.g. ~/PeakSegPipeline-test/demo/problems/chr10:18024675-38818835/jointProblems.bed 
+- Joint target interval files, e.g. ~/PeakSegPipeline-test/demo/problems/chr10:18024675-38818835/jointProblems/chr10:35182819-35261002/target.tsv
+
+*** Step 5: train a model that predicts a penalty for each joint segmentation problem
+
+In this step we use the joint target interval files computed in Step 4
+to train a joint model, which will be used to predict joint penalty
+for each joint segmentation problem. The R command is:
+
+#+BEGIN_SRC R
+PeakSegPipeline::problem.joint.train("~/PeakSegPipeline-test/demo")
+#+END_SRC
+
+The shell command is below: (again note here I use bash rather than
+qsub since this is a short step, <10 minutes)
 
 #+BEGIN_SRC shell-script
-for sh in test/demo/jobs/*/jobPeaks.sh;do qsub $sh;done
+bash ~/PeakSegPipeline-test/demo/joint.model.RData.sh
 #+END_SRC
 
-To gather all the peak predictions in a summary on
-=test/demo/index.html=, run
+This step computes:
+- a joint model, =~/PeakSegPipeline-test/demo/joint.model.RData=
+- a list of joint segmentation problems for each job in the next step,
+  =~/PeakSegPipeline-test/demo/jobs/*/jobProblems.bed= 
+
+*** Step 6: joint peak predictions
+
+To make joint peak predictions for one job, which consists of several
+joint segmentation problems, use the R code below:
+
+#+BEGIN_SRC R
+PeakSegPipeline::problem.joint.predict.job("~/PeakSegPipeline-test/demo/jobs/1")
+#+END_SRC
+
+To do that in parallel for all jobs use the shell command below:
 
 #+BEGIN_SRC shell-script
-qsub test/demo/peaks_matrix.tsv.sh
+for sh in ~/PeakSegPipeline-test/demo/jobs/*/jobPeaks.sh;do qsub $sh;done
 #+END_SRC
 
-Finally, you can create =test/demo/hub.txt= which can be used as a
-track hub on the UCSC genome browser:
+The outputs of this step are the
+~/PeakSegPipeline-test/demo/jobs/*/jobPeaks.RData files, which contain
+joint peak predictions.
 
-#+BEGIN_SRC shell
-Rscript test/demo/hub.sh
+*** Step 7: gather and summarize results
+
+To gather all the peak predictions in the summary web page
+=~/PeakSegPipeline-test/demo/index.html=, run the R code:
+
+#+BEGIN_SRC R
+PeakSegPipeline::plot_all("~/PeakSegPipeline-test/demo")
 #+END_SRC
 
-The script will create
-=test/demo/samples/*/*/coverage.bigWig= and
-=test/demo/samples/*/*/joint_peaks.bigWig= files that will be shown
-together on the track hub in a multiWig container (for each sample, a
-colored coverage profile with superimposed peak calls as horizontal
-black line segments).
+#+BEGIN_SRC shell-script
+qsub ~/PeakSegPipeline-test/demo/peaks_matrix.tsv.sh
+#+END_SRC
+
+This last step includes creation of
+=~/PeakSegPipeline-test/demo/hub.txt= which can be used as a track hub
+on the UCSC genome browser, with
+=~/PeakSegPipeline-test/demo/samples/*/*/coverage.bigWig= and
+=~/PeakSegPipeline-test/demo/samples/*/*/joint_peaks.bigWig= files
+that will be shown together on the track hub in a multiWig container
+(for each sample, a colored coverage profile with superimposed peak
+calls as horizontal black line segments).
 
 ** Output Files
 
 The [[file:plot_all.R][PeakSegPipeline::plot_all]] function creates
 - =index.html= a web page which summarizes the results,
-- =peaks_matrix.tsv= a binary matrix (peaks x samples) in which 1
-  means peak and 0 means no peak.
+- =peaks_matrix_sample.tsv.gz= a binary matrix (peaks x samples) in which TRUE
+  means peak and FALSE means no peak.
+- =peaks_matrix_group.tsv.gz= a binary matrix (peaks x groups) in which TRUE
+  means peak and FALSE means no peak.
+- =peaks_matrix_likelihood.tsv.gz= a numeric matrix (peaks x samples)
+  of likelihood values, larger means a more likely peak.
+- =peaks_matrix_meanCoverage.tsv.gz= a numeric matrix (peaks x samples)
+  of mean coverage in peaks.
 - =peaks_summary.tsv= is a table with a row for each genomic region
   that has a peak in at least one sample. The columns are
   - =chrom=, =peakStart=, =peakEnd= genomic region of peak.
-  - =specificity= if you have labeled peaks in Input samples, the
-    model labels each peak as either specific (few Input samples up),
-    or non-specific (many Input samples up). If you want to filter
-    non-specific Input peaks yourself, you can use the =n.Input=
-    column, which is the number of Input samples with a peak in this
-    region.
-  - =loss.diff= the likelihood of the peak (larger values mean taller
-    and wider peaks in more samples).
-  - =chisq.pvalue=, =fisher.pvalue= P-Values from Chi-Squared
-    (=chisq.test=) and Fisher's exact test (=fisher.test=) for whether
-    or not this peak is group-specific (lower values mean strong
-    correlation between peak calls and groups).
+  - =Input.up= if there is an Input group, then this is TRUE for rows
+    where the Input group is predicted to have a peak. This can be
+    useful for filtering/removing peaks which are non-specific.
+  - =group.loss.diff= and =sample.loss.diff= the likelihood of the
+    peak (larger values mean taller and wider peaks in more samples).
 
 ** Related work
 

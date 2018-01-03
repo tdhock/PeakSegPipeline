@@ -1,14 +1,13 @@
 create_track_hub <- function
 ### Create track hub for a project.
-(data.dir,
-### data/project directory.
-  url.prefix,
-### Prefix to use for links to bigWig/bigBed files, data.dir will be
-### appended after this. e.g. if
-### url.prefix="http://some.domain/~user/foo-" and
-### data.dir="test/input" then URLS will be
-### http://some.domain/~user/foo-test/input/samples/groupID/sampleID/coverage.bigWig,
-### etc.
+(data.dir.path,
+### data/project directory path on local filesystem.
+  data.dir.url,
+### URL for data/project directory, for constructing URLs to
+### bigWig/bigBed files in the trackDb.txt file, e.g. if
+### data.dir.url="http://some.domain/~user/demo_project" then your
+### trackDb.txt file will contain URLs like
+### http://some.domain/~user/demo_project/samples/groupID/sampleID/coverage.bigWig
   genome,
 ### genome string as defined at UCSC, e.g. "hg19"
   email,
@@ -31,7 +30,7 @@ create_track_hub <- function
   }
   ## Then create bedGraph files if necessary.
   bedGraph.file.vec <- Sys.glob(file.path(
-    data.dir, "samples", "*", "*", "coverage.bedGraph"))
+    data.dir.path, "samples", "*", "*", "coverage.bedGraph"))
   for(bedGraph.file in bedGraph.file.vec){
     bigWig <- sub("bedGraph$", "bigWig", bedGraph.file)
     if(!file.exists(bigWig)){
@@ -39,12 +38,15 @@ create_track_hub <- function
       system.or.stop(cmd)
     }
   }
-  bigWig.glob <- file.path(data.dir, "samples", "*", "*", "coverage.bigWig")
+  bigWig.glob <- file.path(data.dir.path, "samples", "*", "*", "coverage.bigWig")
   bigWig.file.vec <- Sys.glob(bigWig.glob)
   if(length(bigWig.file.vec)==0){
     stop("no ", bigWig.glob, " files")
   }
-  url.vec <- paste0(url.prefix, bigWig.file.vec)
+  getURL <- function(file.vec){
+    paste0(data.dir.url, sub(data.dir.path, "", file.vec))
+  }
+  url.vec <- getURL(bigWig.file.vec)
   sample.path.vec <- dirname(bigWig.file.vec)
   sample.id.vec <- basename(sample.path.vec)
   group.path.vec <- dirname(sample.path.vec)
@@ -61,7 +63,7 @@ create_track_hub <- function
   )
   group.colors <- rep(maybe.short, l=length(group.names))
   names(group.colors) <- group.names
-  data.name <- basename(data.dir)
+  data.name <- basename(data.dir.path)
   joint_peaks.bedGraph.vec <- sub(
     "coverage.bigWig$", "joint_peaks.bedGraph", bigWig.file.vec)
   joint.bigWig.list <- list()
@@ -81,22 +83,22 @@ create_track_hub <- function
   writeLines(paste0("
 genome ", genome, "
 trackDb trackDb.txt
-"), file.path(data.dir, "genomes.txt"))
+"), file.path(data.dir.path, "genomes.txt"))
   ## Write hub.txt
   writeLines(paste0("
 hub ", data.name, "
 shortLabel ", data.name, "
 longLabel ", data.name, "
 genomesFile genomes.txt
-email ", email), file.path(data.dir, "hub.txt"))
+email ", email), file.path(data.dir.path, "hub.txt"))
   ## create jointProblems.bigBed
-  jproblems.glob <- file.path(data.dir, "problems", "*", "jointProblems.bed")
+  jproblems.glob <- file.path(data.dir.path, "problems", "*", "jointProblems.bed")
   jprobs <- tryCatch({
     fread(paste("cat", jproblems.glob))
   }, error=function(e){
     data.table()
   })
-  jointProblems.bed <- file.path(data.dir, "jointProblems.bed")
+  jointProblems.bed <- file.path(data.dir.path, "jointProblems.bed")
   if(nrow(jprobs)){
     setnames(jprobs, c("chrom", "problemStart", "problemEnd"))
     sizes.dt <- fread(chromInfo.txt)
@@ -120,6 +122,11 @@ email ", email), file.path(data.dir, "hub.txt"))
     if(4 <= ncol(bed.long)){
       names(bed.long)[4] <- "name"
       bed.long[, name := substr(name, 1, 255)]
+    }
+    if(6 <= ncol(bed.long) && is.numeric(bed.long[[6]])){
+      ## a column of all . is read as numeric 0 by fread.
+      names(bed.long)[6] <- "strand"
+      bed.long[, strand := rep(".", .N)]
     }
     short <- sub(".bed$", "-short.bed", bed)
     setkey(bed.long, chrom, chromStart)
@@ -151,7 +158,7 @@ email ", email), file.path(data.dir, "hub.txt"))
     peaks_summary="Regions with a peak in at least one sample")
   bigBed.list <- list()
   for(bed.name in names(bed.num.vec)){
-    bed.file <- file.path(data.dir, paste0(bed.name, ".bed"))
+    bed.file <- file.path(data.dir.path, paste0(bed.name, ".bed"))
     if(file.exists(bed.file)){
       bigBed.list[[bed.name]] <- bedToBigBed(bed.file)
     }
@@ -167,7 +174,7 @@ longLabel ", long.name.vec[names(bigBed.list)], "
 visibility pack
 itemRgb ", ifelse(names(bigBed.list)=="all_labels", "on", "off"), "
 spectrum ", ifelse(names(bigBed.list)=="peaks_summary", "on", "off"), "
-bigDataUrl ", paste0(url.prefix, unlist(bigBed.list)))
+bigDataUrl ", getURL(unlist(bigBed.list)))
   }
 
   group.track.vec <- paste0("
@@ -212,7 +219,7 @@ longLabel ", group.names, " ChIP-seq samples
     ""
   }else{
     track(
-      paste0(url.prefix, joint.bigWig.list),
+      getURL(joint.bigWig.list),
       "Peaks",
       "0,0,0"
     )
@@ -226,7 +233,7 @@ longLabel ", group.names, " ChIP-seq samples
     paste(track.vec, collapse="\n"),
     sep="\n\n")
 
-  writeLines(track.content, file.path(data.dir, "trackDb.txt"))
+  writeLines(track.content, file.path(data.dir.path, "trackDb.txt"))
 
-  cat("Created ", url.prefix, data.dir, "/hub.txt\n", sep="")
+  cat("Created ", getURL("/hub.txt"), "\n", sep="")
 }

@@ -32,7 +32,7 @@ int coverage(char *in_filename, double *coverage_vec){
       Rprintf("error: non-integer coverage data on line %d\n%s\n", line_i, line.c_str());
       return ERROR_COVERAGE_NON_INTEGER;
     }
-    if(coverage < 0){
+    if(count < 0){
       Rprintf("error: negative coverage on line %d\n%s\n", line_i, line.c_str());
       return ERROR_COVERAGE_NEGATIVE;
     }else{
