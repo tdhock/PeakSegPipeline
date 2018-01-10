@@ -343,44 +343,22 @@ readCoverage <- function
   problems.dir <- dirname(problem.dir)
   sample.dir <- dirname(problems.dir)
   coverage.bigWig <- file.path(sample.dir, "coverage.bigWig")
-  coverage.bedGraph <- file.path(problem.dir, "coverage.bedGraph")
-  save.coverage <- if(file.exists(coverage.bigWig)){
-    ## If bigWig file has already been computed, then it is much
-    ## faster to read it since it is indexed!
-    jprob[, readBigWig(
-      coverage.bigWig, chrom, problemStart, problemEnd)]
-  }else if(0 < file.size(coverage.bedGraph)){#otherwise fread gives error.
-    sample.coverage <- fread(
-      coverage.bedGraph,
-      colClasses=list(NULL=1, integer=2:4))
-    setnames(sample.coverage, c("chromStart", "chromEnd", "count"))
-    sample.coverage[, chromStart1 := chromStart + 1L]
-    setkey(sample.coverage, chromStart1, chromEnd)
-    jprob[, problemStart1 := problemStart + 1L]
-    setkey(jprob, problemStart1, problemEnd)
-    problem.coverage <- foverlaps(sample.coverage, jprob, nomatch=0L)
-    problem.coverage[chromStart < problemStart, chromStart := problemStart]
-    problem.coverage[problemEnd < chromEnd, chromEnd := problemEnd]
-    problem.coverage[chromStart < chromEnd,]
-    ## Note that problem.coverage (from coverage.bedGraph) is
-    ## guaranteed to have rows with 0 coverage -- this is required for
-    ## PeakSegFPOP! but readBigWig really just returns what is stored
-    ## in the bigWig -- if there are no rows with 0 coverage, then
-    ## there will be none in the output save.coverage. This is no
-    ## problem for running the PeakSegJoint model, but it could be a
-    ## problem for plotting (error in geom_step if only one row to
-    ## plot).
-  }
+  save.coverage <- jprob[, readBigWig(
+    coverage.bigWig, chrom, problemStart, problemEnd)]
   ## If we don't have the if() below, we get Error in
   ## data.table(sample.id, sample.group,
   ## problem.coverage[chromStart < : Item 3 has no length.
-  if(is.data.table(save.coverage) && 0 < nrow(save.coverage)){
-    sample.id <- basename(sample.dir)
-    group.path <- dirname(sample.dir)
-    sample.group <- basename(group.path)
-    data.table(sample.id, sample.group, save.coverage)
+  if(nrow(save.coverage)==0){
+    save.coverage <- data.table(chromStart=start, chromEnd=end, count=0L)
   }
-### Either the data.table of coverage, or NULL if no coverage data exists.
+  sample.id <- basename(sample.dir)
+  group.path <- dirname(sample.dir)
+  sample.group <- basename(group.path)
+  data.table(sample.id, sample.group, save.coverage)
+### The data.table of coverage, which can be 1 row with 0 coverage if
+### no coverage data exists. (this is necessary for standard output of
+### the right number of samples for each joint problem, even those
+### with no coverage in some samples)
 }
 
 problem.joint.predict <- function
