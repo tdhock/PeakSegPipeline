@@ -413,9 +413,13 @@ problem.PeakSegFPOP <- function
       "(?<chromStart>[0-9]+)",
       "-",
       "(?<chromEnd>[0-9]+)")
-    problem <- str_match_named(basename(problem.dir), pattern, list(
+    problem.base <- basename(problem.dir)
+    problem <- str_match_named(problem.base, pattern, list(
       chromStart=as.integer,
       chromEnd=as.integer))
+    if(is.na(problem$chrom)){
+      stop("problem.dir=", problem.base, " does not match regex ", pattern)
+    }
     start.ok <- problem$chromStart == last.line$chromStart
     end.ok <- problem$chromEnd == first.line$chromEnd
     loss.segments.consistent && start.ok && end.ok
@@ -652,19 +656,19 @@ problem.target <- function
         exp(seq(log(pen.vec[1]), log(pen.vec[2]), l=4))
       }
     }
-    if(FALSE && interactive() && length(next.pen) && requireNamespace("ggplot2Animint")){
+    if(FALSE){
       ## This may cause a crash if executed within mclapply, and it is
       ## mostly just for debugging purposes.
-      gg <- ggplot2Animint::ggplot()+
-        ggplot2Animint::geom_abline(
-          ggplot2Animint::aes(slope=peaks, intercept=total.cost),
+      gg <- ggplot()+
+        geom_abline(
+          aes(slope=peaks, intercept=total.cost),
                     data=error.dt)+
-        ggplot2Animint::geom_vline(
-          ggplot2Animint::aes(xintercept=penalty),
+        geom_vline(
+          aes(xintercept=penalty),
                    color="red",
                    data=data.table(penalty=next.pen))+
-        ggplot2Animint::geom_point(
-          ggplot2Animint::aes(penalty, mean.pen.cost*bases),
+        geom_point(
+          aes(penalty, mean.pen.cost*bases),
                    data=error.dt)
       print(gg)
     }
