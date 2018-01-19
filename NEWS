@@ -22,6 +22,16 @@ remove animint2 dep
 
 use new PeakSegJoint with Faster algo.
 
+2017.12.13
+
+in problem.coverage:
+- caching now also checks that start of
+  first line of coverage is equal to problem start.
+- we compress data after inserting zeros.
+
+in problem.train, remove targets with two infinite limits before
+training.
+
 2017.12.03
 
 bugfix for numerical issue in min-more C++ code: when looking for a
