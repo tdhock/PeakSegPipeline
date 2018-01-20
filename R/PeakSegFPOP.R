@@ -554,31 +554,27 @@ problem.target <- function
     peaks.tab <- table(dt$peaks)
     error.sorted <- dt[order(peaks), ][c(TRUE, diff(peaks) != 0),]
     error.sorted[, errors := fp + fn]
-    setkey(error.sorted, peaks)
-    ##error.sorted[, model.complexity := oracleModelComplexity(bases, segments)]
     path <- penaltyLearning::modelSelection(
       error.sorted, "total.cost", "peaks")
     path.dt <- data.table(path)
-    setkey(path.dt, peaks)
-    join.dt <- error.sorted[path.dt][order(penalty),]
     direction.list <- list(start=1, end=-1)
     side.vec.list <- list(fn="end", fp="start", errors=c("start", "end"))
     result <- list(models=path, candidates=list())
     for(error.col in c("fp", "fn", "errors")){
       indices <- penaltyLearning::largestContinuousMinimumC(
-        join.dt[[error.col]],
-        join.dt[, max.log.lambda-min.log.lambda]
+        path.dt[[error.col]],
+        path.dt[, max.log.lambda-min.log.lambda]
         )
       side.vec <- side.vec.list[[error.col]]
       for(side in side.vec){
         direction <- direction.list[[side]]
         index <- indices[[side]]
-        model <- join.dt[index,]
+        model <- path.dt[index,]
         index.outside <- index - direction
         neighboring.peaks <- model$peaks + direction
-        found.neighbor <- neighboring.peaks %in% join.dt$peaks
-        multiple.penalties <- if(index.outside %in% seq_along(join.dt$peaks)){
-          model.outside <- join.dt[index.outside,]
+        found.neighbor <- neighboring.peaks %in% path.dt$peaks
+        multiple.penalties <- if(index.outside %in% seq_along(path.dt$peaks)){
+          model.outside <- path.dt[index.outside,]
           peaks.num <- c(model.outside$peaks, model$peaks)
           peaks.str <- paste(peaks.num)
           peaks.counts <- peaks.tab[peaks.str]
@@ -631,46 +627,13 @@ problem.target <- function
     other.candidates <- do.call(rbind, target.list$candidates[!is.error])
     other.in.target <- other.candidates[done==FALSE &
         target.vec[1] < log(next.pen) & log(next.pen) < target.vec[2],]
-    next.pen <- if(nrow(other.in.target)==0){
-      cat("No fp/fn min in min(error) interval => refine limits of min(error) interval.\n")
-      ##print(error.candidates)
-      error.candidates[done==FALSE, unique(next.pen)]
-    }else{      
-      ## Inside the minimum error interval, we have found a spot where
-      ## the fn or fp reaches a minimum. This means that we should try
-      ## exploring a few penalty values between the fp/fn limits.
-      pen.vec <- other.candidates[done==FALSE, sort(unique(next.pen))]
-      ##print(other.candidates)
-      print(pen.vec)
-      if(length(pen.vec)==1){
-        ## There is only one unique value, so explore it. This is
-        ## possible for an error profile of 3 2 1 1 2 3............
-        ## (fp = 3 2 1 0 0 0, fn = 0 0 0 1 2 3) in which case we just
-        ## want to explore between the ones.
-        cat("FP/FN min in min(error) interval and one unique value to explore.\n")
-        pen.vec
-      }else{
-        ## Rather than simply evaluating the penalties at the borders,
-        ## we try a grid of penalties on the log scale.
-        cat("FP/FN min in min(error) interval and several values to explore.\n")
-        exp(seq(log(pen.vec[1]), log(pen.vec[2]), l=4))
-      }
-    }
-    if(FALSE){
-      ## This may cause a crash if executed within mclapply, and it is
-      ## mostly just for debugging purposes.
-      gg <- ggplot()+
-        geom_abline(
-          aes(slope=peaks, intercept=total.cost),
-                    data=error.dt)+
-        geom_vline(
-          aes(xintercept=penalty),
-                   color="red",
-                   data=data.table(penalty=next.pen))+
-        geom_point(
-          aes(penalty, mean.pen.cost*bases),
-                   data=error.dt)
-      print(gg)
+    next.pen <- if(
+      any(nrow(other.in.target)) || any(error.candidates$done==FALSE)){
+      ## Here the idea is that if there is any more exploration to do
+      ## for the target interval, we can also explore the fp/fn
+      ## boundaries for free in parallel.
+      rbind(
+        error.candidates, other.candidates)[done==FALSE, unique(next.pen)]
     }
   }#while(!is.null(pen))
   write.table(

@@ -16,6 +16,34 @@ counting function, which should be much faster than using an
 intermediate bedGraph
 file. http://www.cs.uleth.ca/~holzmann/C/system/shell_commands.html
 
+2017.01.19
+
+---- FPOP target does not find zero error model -- need to explore fp,
+we can do that in parallel without losing any time.
+This is H3K36me3_AM_immune/McGill0004
+      penalty peaks     status fp fn errors
+1:        Inf     0   feasible  0  3      3
+2: 24195.6886     4   feasible  1  1      2
+3: 13706.5254     5   feasible  1  0      1
+4: 10354.2183    10   feasible  1  0      1
+5:  6219.2421    17   feasible  1  0      1
+6:  3580.6824    44   feasible  1  0      1
+7:   322.9294   399 infeasible  1  0      1
+8:     0.0000  4683 infeasible  1  0      1
+--- The corresponding PDPA model has 0 errors for 1 and 2 peaks,
+which where not explored by the current FPOP target algo.
+     sample.id peaks       loss errors
+ 1: McGill0101     0  -16289.63      3
+ 2: McGill0101     1 -700673.64      0
+ 3: McGill0101     2 -751953.96      0
+ 4: McGill0101     3 -792692.07      1
+ 5: McGill0101     4 -831639.35      2
+ 6: McGill0101     5 -853440.37      1
+ 7: McGill0101     6 -866254.31      1
+ 8: McGill0101     7 -880097.83      1
+ 9: McGill0101     8 -892845.31      1
+10: McGill0101     9 -903400.20      1
+
 2017.12.30
 
 remove animint2 dep
