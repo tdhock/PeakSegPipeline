@@ -1052,7 +1052,9 @@ void PiecewisePoissonLossLog::push_min_pieces
       // at log_mean=-Inf (mean=0) we can just test the Log
       // coefficient to determine which function is greater. If
       // cost(log_mean)=Linear*exp(log_mean)+Log*log_mean+Constant
-      // then 0<Log implies it1<it2.
+      // then cost(-Inf)=Linear*0+Log*-Inf+Constant so
+      // cost(-Inf)=f1-f2<0 implies Log*-Inf<0 implies 0<Log implies
+      // it1<it2.
       bool it1_smaller_at_mean0 = 0 < diff_piece.Log;
       if(log_mean_at_crossing < last_min_log_mean){
 	if(verbose)Rprintf("equal on the right, cross before interval\n");
