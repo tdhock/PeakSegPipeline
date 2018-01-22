@@ -16,6 +16,15 @@ counting function, which should be much faster than using an
 intermediate bedGraph
 file. http://www.cs.uleth.ca/~holzmann/C/system/shell_commands.html
 
+2017.01.22
+
+Fix optimization bug in
+PeakSegPipeline::problem.PeakSegFPOP("~/PeakSegPipeline-test/input/samples/kidney/MS002201/problems/chr10:18024675-38818835",
+"18299537.4379804") by adding a special case when the functions are
+equal on the right, with no crossing points before that, by using the
+fact that the Log coefficient can be used to test which function is
+greater at log_mean=-Inf.
+
 2017.01.19
 
 ---- FPOP target does not find zero error model -- need to explore fp,

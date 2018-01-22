@@ -1016,6 +1016,7 @@ void PiecewisePoissonLossLog::push_min_pieces
   if(two_roots){
     smaller_log_mean = diff_piece.get_smaller_root(0.0);
     larger_log_mean = diff_piece.get_larger_root(0.0);
+    if(verbose)Rprintf("Computed crossing points: %e %e\n", smaller_log_mean, larger_log_mean);
   }
   if(same_at_right){
     // they are equal on the right, but we don't know if there is
@@ -1027,6 +1028,8 @@ void PiecewisePoissonLossLog::push_min_pieces
       double cost_between_zeros = diff_piece.getCost(log_mean_between_zeros);
       double log_mean_at_optimum = diff_piece.argmin();
       if(verbose){
+	Rprintf("Determining if there is a crossing point in interval...\n", last_min_log_mean, cost_diff_left);
+	diff_piece.print();
 	Rprintf("cost_diff(left:%e)=%e\n", last_min_log_mean, cost_diff_left);
 	Rprintf("cost_diff(cross:%e)=%e\n", log_mean_at_crossing, diff_piece.getCost(log_mean_at_crossing));
 	Rprintf("cost_diff(between:%e)=%e\n", log_mean_between_zeros, cost_between_zeros);
@@ -1034,8 +1037,7 @@ void PiecewisePoissonLossLog::push_min_pieces
 	Rprintf("cost_diff(right:%e)=%e\n", first_max_log_mean, cost_diff_right);
       }
       if(last_min_log_mean < log_mean_at_crossing &&
-	 log_mean_at_crossing < log_mean_at_optimum &&
-	 log_mean_at_optimum < first_max_log_mean){
+	 log_mean_at_crossing < log_mean_at_optimum && log_mean_at_optimum < first_max_log_mean){
 	//the cross point is in the interval.
 	if(cost_diff_left < 0){
 	  push_piece(it1, last_min_log_mean, log_mean_at_crossing);
@@ -1047,15 +1049,36 @@ void PiecewisePoissonLossLog::push_min_pieces
 	if(verbose)Rprintf("equal on the right with one crossing in interval\n");
 	return;
       }
+      // at log_mean=-Inf (mean=0) we can just test the Log
+      // coefficient to determine which function is greater. If
+      // cost(log_mean)=Linear*exp(log_mean)+Log*log_mean+Constant
+      // then 0<Log implies it1<it2.
+      bool it1_smaller_at_mean0 = 0 < diff_piece.Log;
+      if(log_mean_at_crossing < last_min_log_mean){
+	if(verbose)Rprintf("equal on the right, cross before interval\n");
+	if(it1_smaller_at_mean0){
+	  push_piece(it2, last_min_log_mean, first_max_log_mean);
+	}else{
+	  push_piece(it1, last_min_log_mean, first_max_log_mean);
+	}
+      }else{
+	if(verbose)Rprintf("equal on the right, no cross before interval\n");
+	if(it1_smaller_at_mean0){
+	  push_piece(it1, last_min_log_mean, first_max_log_mean);
+	}else{
+	  push_piece(it2, last_min_log_mean, first_max_log_mean);
+	}
+      }
+      return;
     }//if(two_roots
-    // Test the cost at the midpoint, since the cost may be equal on
-    // both the left and the right.
+    if(verbose){
+      Rprintf("equal on the right, but no roots anywhere\n");
+    }
     if(cost_diff_mid < 0){
       push_piece(it1, last_min_log_mean, first_max_log_mean);
     }else{
       push_piece(it2, last_min_log_mean, first_max_log_mean);
     }
-    if(verbose)Rprintf("equal on the right with no crossing in interval\n");
     return;
   }
   if(same_at_left){
