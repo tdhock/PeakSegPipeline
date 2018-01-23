@@ -745,25 +745,29 @@ int PiecewisePoissonLossLog::check_min_of
       Rprintf("max_log_mean<=min_log_mean=%15.10f min\n", it->min_log_mean);
       return 2;
     }
-    double mid_mean = (it->min_log_mean + it->max_log_mean)/2;
-    if(-INFINITY < mid_mean){
-      double cost_min = it->getCost(mid_mean);
-      double cost_prev = prev->findCost(mid_mean);
-      if(cost_prev+1e-6 < cost_min){
-	Rprintf("prev(%f)=%f\n", mid_mean, cost_prev);
-	prev->print();
-	Rprintf("min(%f)=%f\n", mid_mean, cost_min);
-	print();
-	return 1;
-      }
-      double cost_model = model->findCost(mid_mean);
-      if(cost_model+1e-6 < cost_min){
-	Rprintf("model(%f)=%f\n", mid_mean, cost_model);
-	model->print();
-	Rprintf("min(%f)=%f\n", mid_mean, cost_min);
-	print();
-	return 1;
-      }
+    double mid_log_mean = (it->min_log_mean + it->max_log_mean)/2;
+    if(-INFINITY == mid_log_mean){
+      mid_log_mean = it->max_log_mean - 1;
+    }
+    if(INFINITY == mid_log_mean){
+      mid_log_mean = it->min_log_mean + 1;
+    }
+    double cost_min = it->getCost(mid_log_mean);
+    double cost_prev = prev->findCost(mid_log_mean);
+    if(cost_prev+1e-6 < cost_min){
+      Rprintf("prev(%f)=%f\n", mid_log_mean, cost_prev);
+      prev->print();
+      Rprintf("min(%f)=%f\n", mid_log_mean, cost_min);
+      print();
+      return 1;
+    }
+    double cost_model = model->findCost(mid_log_mean);
+    if(cost_model+1e-6 < cost_min){
+      Rprintf("model(%f)=%f\n", mid_log_mean, cost_model);
+      model->print();
+      Rprintf("min(%f)=%f\n", mid_log_mean, cost_min);
+      print();
+      return 1;
     }
   }
   for(it = prev->piece_list.begin(); it != prev->piece_list.end(); it++){
@@ -779,17 +783,21 @@ int PiecewisePoissonLossLog::check_min_of
       Rprintf("max_log_mean<=min_log_mean=%15.10f prev\n", it->min_log_mean);
       return 2;
     }
-    double mid_mean = (it->min_log_mean + it->max_log_mean)/2;
-    if(-INFINITY < mid_mean){
-      double cost_prev = it->getCost(mid_mean);
-      double cost_min = findCost(mid_mean);
-      if(cost_prev+1e-6 < cost_min){
-	Rprintf("prev(%f)=%f\n", mid_mean, cost_prev);
-	prev->print();
-	Rprintf("min(%f)=%f\n", mid_mean, cost_min);
-	print();
-	return 1;
-      }
+    double mid_log_mean = (it->min_log_mean + it->max_log_mean)/2;
+    if(-INFINITY < mid_log_mean){
+      mid_log_mean = it->max_log_mean - 1;
+    }
+    if(INFINITY == mid_log_mean){
+      mid_log_mean = it->min_log_mean + 1;
+    }
+    double cost_prev = it->getCost(mid_log_mean);
+    double cost_min = findCost(mid_log_mean);
+    if(cost_prev+1e-6 < cost_min){
+      Rprintf("prev(%f)=%f\n", mid_log_mean, cost_prev);
+      prev->print();
+      Rprintf("min(%f)=%f\n", mid_log_mean, cost_min);
+      print();
+      return 1;
     }
   }
   for(it = model->piece_list.begin(); it != model->piece_list.end(); it++){
@@ -807,15 +815,19 @@ int PiecewisePoissonLossLog::check_min_of
     }
     double mid_log_mean = (it->min_log_mean + it->max_log_mean)/2;
     if(-INFINITY < mid_log_mean){
-      double cost_model = it->getCost(mid_log_mean);
-      double cost_min = findCost(mid_log_mean);
-      if(cost_model+1e-6 < cost_min){
-	Rprintf("model(%f)=%f\n", mid_log_mean, cost_model);
-	model->print();
-	Rprintf("min(%f)=%f\n", mid_log_mean, cost_min);
-	print();
-	return 1;
-      }
+      mid_log_mean = it->max_log_mean - 1;
+    }
+    if(INFINITY == mid_log_mean){
+      mid_log_mean = it->min_log_mean + 1;
+    }
+    double cost_model = it->getCost(mid_log_mean);
+    double cost_min = findCost(mid_log_mean);
+    if(cost_model+1e-6 < cost_min){
+      Rprintf("model(%f)=%f\n", mid_log_mean, cost_model);
+      model->print();
+      Rprintf("min(%f)=%f\n", mid_log_mean, cost_min);
+      print();
+      return 1;
     }
   }
   return 0;
