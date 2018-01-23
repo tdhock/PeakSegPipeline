@@ -784,7 +784,7 @@ int PiecewisePoissonLossLog::check_min_of
       return 2;
     }
     double mid_log_mean = (it->min_log_mean + it->max_log_mean)/2;
-    if(-INFINITY < mid_log_mean){
+    if(-INFINITY == mid_log_mean){
       mid_log_mean = it->max_log_mean - 1;
     }
     if(INFINITY == mid_log_mean){
@@ -814,7 +814,7 @@ int PiecewisePoissonLossLog::check_min_of
       return 2;
     }
     double mid_log_mean = (it->min_log_mean + it->max_log_mean)/2;
-    if(-INFINITY < mid_log_mean){
+    if(-INFINITY == mid_log_mean){
       mid_log_mean = it->max_log_mean - 1;
     }
     if(INFINITY == mid_log_mean){

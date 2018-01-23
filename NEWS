@@ -16,6 +16,9 @@ counting function, which should be much faster than using an
 intermediate bedGraph
 file. http://www.cs.uleth.ca/~holzmann/C/system/shell_commands.html
 
+PeakSegPipeline::PeakSegFPOP_disk("/gs/project/mugqic/projects/thocking/blueprint/PeakSegFPOP-labels/ATAC_JV_adipose/samples/\
+ AC2/MSC91/problems/chr22:20700000-50364777/coverage.bedGraph", "2885.92045251859")
+
 2017.01.22
 
 Fix optimization bug in
