@@ -579,13 +579,15 @@ problem.target <- function
       next.pen=max.lambda)]
     other.candidates <- path.dt[which(0<diff(fn) & diff(fp)<0)]
     interval.dt <- path.dt[is.min==TRUE, {
-      ## do not attempt to explore other.candidates -- try different
-      ## ones!
-      i <- if(1 == .N){
+      i <- if(1 == .N || 0 == errors[1]){
+        ## No middle candidate if there is only one model in the
+        ## interval, or if there are no errors.
         NA
       }else{
         d <- data.table(
           i=1:(.N-1),
+          ## do not attempt to explore other.candidates -- try
+          ## different ones!
           is.other=next.pen[-.N] %in% other.candidates$next.pen,
           dist=diff(max.log.lambda)+diff(min.log.lambda),
           done=done[-.N])
