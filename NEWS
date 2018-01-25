@@ -16,8 +16,69 @@ counting function, which should be much faster than using an
 intermediate bedGraph
 file. http://www.cs.uleth.ca/~holzmann/C/system/shell_commands.html
 
-PeakSegPipeline::PeakSegFPOP_disk("/gs/project/mugqic/projects/thocking/blueprint/PeakSegFPOP-labels/ATAC_JV_adipose/samples/\
- AC2/MSC91/problems/chr22:20700000-50364777/coverage.bedGraph", "2885.92045251859")
+2018.01.25
+
+Several modifications to problem.target, see below for examples. The
+main idea remains the same: refine the limits of the largest min error
+interval, until there is no more searching to do at the edges of that
+interval. However now we search a few more penalties in parallel:
+
+1. we search the borders and one penalty in the middle of each min
+error interval (but we only use the largest interval, and we don't
+care about the middle penalty, for the stopping criterion).
+
+2. We don't stop if there are any places to explore where we see fp
+increasing and fn decreasing -- this typically indicates a possibility
+for lowering the error, see examples below.
+
+In the case below, we miss the min-error model, but we could get it by
+exploring the middle of the target interval. (in parallel before
+termination)
+
+     penalty peaks     status fp fn errors
+1:       Inf     0   feasible  0  2      2
+2: 3169.9938     1   feasible  2  0      2
+3: 1581.6023     2   feasible  1  0      1
+                 3             0  0      0 
+4:  787.4066     4   feasible  1  0      1
+5:  527.7266     6   feasible  2  0      2
+6:  211.5639    14   feasible  2  0      2
+7:   63.6843    26 infeasible  3  0      3
+8:    0.0000   238 infeasible  3  0      3
+[1] 559.9769
+Next = 559.976929694436 mc.cores= 6 
+
+In the case below, we miss the min-error model with 2 peaks, 1 error
+because the target interval is the infinite interval that selects 0
+peaks -- maybe could get the min if we explored the limits of every
+min error interval (not just the biggest one).
+
+        penalty peaks     status fp fn errors
+ 1:         Inf     0   feasible  0  2      2
+ 2: 10766.15837     1   feasible  1  2      3
+                    2             1  0      1
+ 3:  1318.09401     3 infeasible  1  1      2
+ 4:   757.42870     4 infeasible  1  1      2
+ 5:   716.69571     5 infeasible  2  0      2
+ 6:   703.89812     7 infeasible  3  0      3
+ 7:   595.41734     8 infeasible  3  0      3
+ 8:   340.70804    15 infeasible  4  0      4
+ 9:    69.72866    32 infeasible  4  0      4
+10:     0.00000   638 infeasible  4  0      4
+
+
+In the case below we need to explore between 6 and 16 peaks, because
+both fn and fp are decreasing at that point.
+      penalty peaks     status fp fn errors
+1:        Inf     0   feasible  0  7      7
+2: 4637.52407     1   feasible  0  5      5
+3: 1591.01410     6   feasible  1  2      3
+4:  859.85170    16   feasible  2  1      3
+5:  510.66132    31   feasible  3  1      4
+6:  317.52513    48   feasible  3  1      4
+7:  194.70909    74 infeasible  5  0      5
+8:   64.14391   137 infeasible  8  0      8
+9:    0.00000  1205 infeasible  9  0      9
 
 2017.01.22
 

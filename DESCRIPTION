@@ -1,7 +1,7 @@
 Package: PeakSegPipeline
 Type: Package
 Title: Genome-Wide Peak Calling Using PeakSegFPOP and PeakSegJoint
-Version: 2017.01.22
+Version: 2018.01.25
 Author: Toby Dylan Hocking
 Maintainer: Toby Dylan Hocking <toby.hocking@r-project.org>
 Description: Implementations of supervised machine learning

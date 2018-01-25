@@ -549,54 +549,6 @@ problem.target <- function
       fn=sum(fn),
       fp=sum(fp)))
   }  
-  ## Compute the target interval given the errors computed in dt.
-  getTarget <- function(dt){
-    peaks.tab <- table(dt$peaks)
-    error.sorted <- dt[order(peaks), ][c(TRUE, diff(peaks) != 0),]
-    error.sorted[, errors := fp + fn]
-    path <- penaltyLearning::modelSelection(
-      error.sorted, "total.cost", "peaks")
-    path.dt <- data.table(path)
-    direction.list <- list(start=1, end=-1)
-    side.vec.list <- list(fn="end", fp="start", errors=c("start", "end"))
-    result <- list(models=path, candidates=list())
-    for(error.col in c("fp", "fn", "errors")){
-      indices <- penaltyLearning::largestContinuousMinimumC(
-        path.dt[[error.col]],
-        path.dt[, max.log.lambda-min.log.lambda]
-        )
-      side.vec <- side.vec.list[[error.col]]
-      for(side in side.vec){
-        direction <- direction.list[[side]]
-        index <- indices[[side]]
-        model <- path.dt[index,]
-        index.outside <- index - direction
-        neighboring.peaks <- model$peaks + direction
-        found.neighbor <- neighboring.peaks %in% path.dt$peaks
-        multiple.penalties <- if(index.outside %in% seq_along(path.dt$peaks)){
-          model.outside <- path.dt[index.outside,]
-          peaks.num <- c(model.outside$peaks, model$peaks)
-          peaks.str <- paste(peaks.num)
-          peaks.counts <- peaks.tab[peaks.str]
-          any(1 < peaks.counts)
-        }else{
-          FALSE
-        }
-        ## cost + lambda * model.complexity =
-        ## cost + penalty * peaks =>
-        ## penalty = lambda * model.complexity / peaks.
-        ## lambda is output by exactModelSelection,
-        ## penalty is input by PeakSegFPOP.
-        next.pen <- ifelse(side=="start", model$min.lambda, model$max.lambda)
-        already.computed <- paste(next.pen) %in% names(error.list)
-        done <- found.neighbor | multiple.penalties | already.computed
-        result$candidates[[paste(error.col, side)]] <- data.table(
-          model, found.neighbor, multiple.penalties, already.computed,
-          done, next.pen)
-      }
-    }
-    result
-  }
   error.list <- list()
   next.pen <- c(0, Inf)
   iteration <- 0
@@ -613,27 +565,53 @@ problem.target <- function
     if(!is.numeric(error.dt$penalty)){
       stop("penalty column is not numeric -- check loss in _loss.tsv files")
     }
-    print(error.dt[,.(penalty, peaks, status, fp, fn, errors=fp+fn)])
-    target.list <- getTarget(error.dt)
-    target.vec <- c(
-      target.list$candidates[["errors start"]]$min.log.lambda,
-      target.list$candidates[["errors end"]]$max.log.lambda)
-    target.result.list[[paste(iteration)]] <- data.table(
+    error.dt[, errors := fp+fn]
+    print(error.dt[,.(penalty, peaks, status, fp, fn, errors)])
+    path.dt <- data.table(penaltyLearning::modelSelection(error.dt, "total.cost", "peaks"))
+    path.dt[, `:=`(
+      is.min=errors==min(errors),
+      found.neighbor=c(diff(peaks) == -1, NA),
+      multiple.penalties=c(diff(peaks) == 0, NA),
+      already.computed=max.lambda %in% names(error.list))]
+    path.dt[, `:=`(
+      min.err.interval=cumsum(ifelse(c(is.min[1], diff(is.min))==1, 1, 0)),
+      done=found.neighbor | multiple.penalties | already.computed,
+      next.pen=max.lambda)]
+    other.candidates <- path.dt[which(0<diff(fn) & diff(fp)<0)]
+    interval.dt <- path.dt[is.min==TRUE, {
+      ## do not attempt to explore other.candidates -- try different
+      ## ones!
+      i <- if(1 == .N){
+        NA
+      }else{
+        d <- data.table(
+          i=1:(.N-1),
+          is.other=next.pen[-.N] %in% other.candidates$next.pen,
+          dist=diff(max.log.lambda)+diff(min.log.lambda),
+          done=done[-.N])
+        d[is.other==FALSE & done==FALSE, i[which.max(dist)]]
+      }
+      if(length(i)==0)i <- NA
+      data.table(
+        min.lambda=min.lambda[1],
+        min.log.lambda=min.log.lambda[1],
+        mid.lambda=max.lambda[i],
+        max.lambda=max.lambda[.N],
+        max.log.lambda=max.log.lambda[.N],
+        log.size=max.log.lambda[.N]-min.log.lambda[1]
+        )
+    }, by=list(min.err.interval)]
+    largest.interval <- interval.dt[which.max(log.size)]
+    target.vec <- largest.interval[, c(min.log.lambda, max.log.lambda)]
+    target.result.list[[paste(iteration)]] <- largest.interval[, data.table(
       iteration,
-      min.log.lambda=target.vec[1],
-      max.log.lambda=target.vec[2])
-    is.error <- grepl("error", names(target.list$candidates))
-    error.candidates <- do.call(rbind, target.list$candidates[is.error])
-    other.candidates <- do.call(rbind, target.list$candidates[!is.error])
-    other.in.target <- other.candidates[done==FALSE &
-        target.vec[1] < log(next.pen) & log(next.pen) < target.vec[2],]
-    next.pen <- if(
-      any(nrow(other.in.target)) || any(error.candidates$done==FALSE)){
-      ## Here the idea is that if there is any more exploration to do
-      ## for the target interval, we can also explore the fp/fn
-      ## boundaries for free in parallel.
-      rbind(
-        error.candidates, other.candidates)[done==FALSE, unique(next.pen)]
+      min.log.lambda,
+      max.log.lambda)]
+    error.candidates <- path.dt[next.pen %in% largest.interval[, c(min.lambda, max.lambda)] ]
+    stopping.candidates <- rbind(error.candidates, other.candidates)[done==FALSE]
+    next.pen <- if(nrow(stopping.candidates)){
+      interval.candidates <- path.dt[next.pen %in% interval.dt[, c(min.lambda, mid.lambda, max.lambda)]][done==FALSE]
+      unique(rbind(stopping.candidates, interval.candidates)$next.pen)
     }
   }#while(!is.null(pen))
   write.table(
