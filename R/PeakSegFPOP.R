@@ -520,7 +520,7 @@ problem.target <- function
       bases <- NULL
   ## above to avoid "no visible binding for global variable" NOTEs in
   ## CRAN check.
-  seconds.start <- Sys.time()
+  seconds.start <- as.numeric(Sys.time())
   stopifnot(is.numeric(minutes.limit))
   stopifnot(is.character(problem.dir))
   stopifnot(length(problem.dir)==1)
@@ -621,7 +621,11 @@ problem.target <- function
     target.lambda <- largest.interval[, c(min.lambda, max.lambda)]
     error.candidates <- path.dt[next.pen %in% target.lambda]
     stopping.candidates <- rbind(error.candidates, other.candidates)[done==FALSE]
-    minutes.elapsed <- as.numeric(Sys.time()-seconds.start)/60
+    seconds.now <- as.numeric(Sys.time())
+    minutes.elapsed <- (seconds.now-seconds.start)/60
+    cat(sprintf(
+      "%f minutes elapsed / %f limit\n",
+      minutes.elapsed, minutes.limit))
     next.pen <- if(minutes.elapsed < minutes.limit && nrow(stopping.candidates)){
       lambda.vec <- interval.dt[, c(min.lambda, mid.lambda, max.lambda)]
       interval.candidates <- path.dt[next.pen %in% lambda.vec][done==FALSE]
