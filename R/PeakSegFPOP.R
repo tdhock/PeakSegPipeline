@@ -505,17 +505,24 @@ problem.target <- function
 ### until it finds an interval of penalty values with minimal label
 ### error. The calls to PeakSegFPOP are parallelized using mclapply if
 ### you set options(mc.cores).
-(problem.dir
+(problem.dir,
 ### problemID directory in which coverage.bedGraph has already been
 ### computed. If there is a labels.bed file then the number of
 ### incorrect labels will be computed in order to find the target
 ### interval of minimal error penalty values.
+  minutes.limit=getOption("PeakSegPipeline.problem.target.minutes")
+### Time limit; the search will stop at a sub-optimal target interval
+### if this many minutes has elapsed. Useful for testing environments
+### with build time limits (travis).
  ){
   status <- peaks <- errors <- fp <- fn <- penalty <- max.log.lambda <-
     min.log.lambda <- penalty <- . <- done <- total.cost <- mean.pen.cost <-
       bases <- NULL
   ## above to avoid "no visible binding for global variable" NOTEs in
   ## CRAN check.
+  if(is.null(minutes.limit))minutes.limit <- Inf
+  seconds.start <- Sys.time()
+  stopifnot(is.numeric(minutes.limit))
   stopifnot(is.character(problem.dir))
   stopifnot(length(problem.dir)==1)
   problem.coverage(problem.dir)
@@ -611,7 +618,8 @@ problem.target <- function
       max.log.lambda)]
     error.candidates <- path.dt[next.pen %in% largest.interval[, c(min.lambda, max.lambda)] ]
     stopping.candidates <- rbind(error.candidates, other.candidates)[done==FALSE]
-    next.pen <- if(nrow(stopping.candidates)){
+    minutes.elapsed <- as.numeric(Sys.time()-seconds.start)/60
+    next.pen <- if(minutes.elapsed < minutes.limit && nrow(stopping.candidates)){
       interval.candidates <- path.dt[next.pen %in% interval.dt[, c(min.lambda, mid.lambda, max.lambda)]][done==FALSE]
       unique(rbind(stopping.candidates, interval.candidates)$next.pen)
     }

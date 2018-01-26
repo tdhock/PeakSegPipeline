@@ -11,7 +11,10 @@ sampleID/problems/problemID/coverage.bedGraph}
   \item{end}{end of coverage to read.}
 }
 
-\value{Either the data.table of coverage, or NULL if no coverage data exists.}
+\value{The data.table of coverage, which can be 1 row with 0 coverage if
+no coverage data exists. (this is necessary for standard output of
+the right number of samples for each joint problem, even those
+with no coverage in some samples)}
 
 \author{Toby Dylan Hocking}
 

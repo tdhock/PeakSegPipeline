@@ -2,7 +2,9 @@ library(testthat)
 library(PeakSegPipeline)
 library(data.table)
 context("input")
-options(mc.cores=parallel::detectCores())
+options(
+  mc.cores=parallel::detectCores(),
+  PeakSegPipeline.problem.target.minutes=5)
 
 download.to <- function
 (u, f, writeFun=if(grepl("bigWig", f))writeBin else writeLines){

@@ -18,6 +18,9 @@ file. http://www.cs.uleth.ca/~holzmann/C/system/shell_commands.html
 
 2018.01.25
 
+New minutes.limit argument for problem.target, which can be used for
+early stopping, useful for time limited jobs like testing on travis.
+
 Several modifications to problem.target, see below for examples. The
 main idea remains the same: refine the limits of the largest min error
 interval, until there is no more searching to do at the edges of that
