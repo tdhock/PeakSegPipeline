@@ -510,7 +510,7 @@ problem.target <- function
 ### computed. If there is a labels.bed file then the number of
 ### incorrect labels will be computed in order to find the target
 ### interval of minimal error penalty values.
-  minutes.limit=getOption("PeakSegPipeline.problem.target.minutes")
+  minutes.limit=getOption("PeakSegPipeline.problem.target.minutes", Inf)
 ### Time limit; the search will stop at a sub-optimal target interval
 ### if this many minutes has elapsed. Useful for testing environments
 ### with build time limits (travis).
@@ -520,7 +520,6 @@ problem.target <- function
       bases <- NULL
   ## above to avoid "no visible binding for global variable" NOTEs in
   ## CRAN check.
-  if(is.null(minutes.limit))minutes.limit <- Inf
   seconds.start <- Sys.time()
   stopifnot(is.numeric(minutes.limit))
   stopifnot(is.character(problem.dir))
@@ -568,22 +567,25 @@ problem.target <- function
     next.str <- paste(next.pen)
     iteration <- iteration+1
     error.list[next.str] <- mclapply.or.stop(next.str, getError)
-    error.dt <- do.call(rbind, error.list)[order(-penalty),]
+    error.dt <- do.call(rbind, error.list)[order(penalty)]
     if(!is.numeric(error.dt$penalty)){
       stop("penalty column is not numeric -- check loss in _loss.tsv files")
     }
     error.dt[, errors := fp+fn]
     print(error.dt[,.(penalty, peaks, status, fp, fn, errors)])
-    path.dt <- data.table(penaltyLearning::modelSelection(error.dt, "total.cost", "peaks"))
-    path.dt[, `:=`(
-      is.min=errors==min(errors),
-      found.neighbor=c(diff(peaks) == -1, NA),
-      multiple.penalties=c(diff(peaks) == 0, NA),
-      already.computed=max.lambda %in% names(error.list))]
-    path.dt[, `:=`(
-      min.err.interval=cumsum(ifelse(c(is.min[1], diff(is.min))==1, 1, 0)),
-      done=found.neighbor | multiple.penalties | already.computed,
-      next.pen=max.lambda)]
+    unique.peaks <- error.dt[, data.table(
+      .SD[which.min(iteration)],
+      penalties=.N
+    ), by=list(peaks)]
+    path.dt <- data.table(penaltyLearning::modelSelection(
+      unique.peaks, "total.cost", "peaks"))
+    path.dt[, next.pen := max.lambda]
+    path.dt[, already.computed := next.pen %in% names(error.list)]
+    path.dt[, no.next := c(diff(peaks) == -1, NA)]
+    path.dt[, done := already.computed | no.next]
+    path.dt[, is.min := errors==min(errors)]
+    path.dt[, min.err.interval := cumsum(ifelse(
+      c(is.min[1], diff(is.min))==1, 1, 0))]
     other.candidates <- path.dt[which(0<diff(fn) & diff(fp)<0)]
     interval.dt <- path.dt[is.min==TRUE, {
       i <- if(1 == .N || 0 == errors[1]){
@@ -616,11 +618,13 @@ problem.target <- function
       iteration,
       min.log.lambda,
       max.log.lambda)]
-    error.candidates <- path.dt[next.pen %in% largest.interval[, c(min.lambda, max.lambda)] ]
+    target.lambda <- largest.interval[, c(min.lambda, max.lambda)]
+    error.candidates <- path.dt[next.pen %in% target.lambda]
     stopping.candidates <- rbind(error.candidates, other.candidates)[done==FALSE]
     minutes.elapsed <- as.numeric(Sys.time()-seconds.start)/60
     next.pen <- if(minutes.elapsed < minutes.limit && nrow(stopping.candidates)){
-      interval.candidates <- path.dt[next.pen %in% interval.dt[, c(min.lambda, mid.lambda, max.lambda)]][done==FALSE]
+      lambda.vec <- interval.dt[, c(min.lambda, mid.lambda, max.lambda)]
+      interval.candidates <- path.dt[next.pen %in% lambda.vec][done==FALSE]
       unique(rbind(stopping.candidates, interval.candidates)$next.pen)
     }
   }#while(!is.null(pen))
