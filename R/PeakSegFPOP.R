@@ -555,9 +555,12 @@ problem.target <- function
       fn=sum(fn),
       fp=sum(fp)))
   }  
+  ## Also compute feature vector here so train is faster later.
+  problem.features(problem.dir)
   error.list <- list()
   next.pen <- c(0, Inf)
   iteration <- 0
+  last.target.vec <- c(-Inf, Inf)
   target.result.list <- list()
   while(length(next.pen)){
     cat(
@@ -614,6 +617,9 @@ problem.target <- function
     }, by=list(min.err.interval)]
     largest.interval <- interval.dt[which.max(log.size)]
     target.vec <- largest.interval[, c(min.log.lambda, max.log.lambda)]
+    write(target.vec, file.path(problem.dir, "target.tsv"), sep="\t")
+    diff.target.vec <- target.vec-last.target.vec
+    last.target.vec <- target.vec
     target.result.list[[paste(iteration)]] <- largest.interval[, data.table(
       iteration,
       min.log.lambda,
@@ -624,8 +630,10 @@ problem.target <- function
     seconds.now <- as.numeric(Sys.time())
     minutes.elapsed <- (seconds.now-seconds.start)/60
     cat(sprintf(
-      "%f minutes elapsed / %f limit\n",
-      minutes.elapsed, minutes.limit))
+      "%f minutes elapsed / %f limit\nTarget interval: %f %f change: %f %f\n",
+      minutes.elapsed, minutes.limit,
+      target.vec[1], target.vec[2],
+      diff.target.vec[1], diff.target.vec[2]))
     next.pen <- if(minutes.elapsed < minutes.limit && nrow(stopping.candidates)){
       lambda.vec <- interval.dt[, c(min.lambda, mid.lambda, max.lambda)]
       interval.candidates <- path.dt[next.pen %in% lambda.vec][done==FALSE]
@@ -639,9 +647,6 @@ problem.target <- function
     quote=FALSE,
     row.names=FALSE,
     col.names=TRUE)
-  write(target.vec, file.path(problem.dir, "target.tsv"), sep="\t")
-  ## Also compute feature vector here so train is faster later.
-  problem.features(problem.dir)
   list(
     target=target.vec,
     target.iterations=do.call(rbind, target.result.list),
