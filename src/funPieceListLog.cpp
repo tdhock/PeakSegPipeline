@@ -157,7 +157,7 @@ double PoissonLossPieceLog::get_smaller_root(double equals){
   double candidate_root = optimal_log_mean - 1;
   // find the smaller root of g(x) = Linear*e^x + Log*x + Constant -
   // equals = 0.
-  double candidate_cost, possibly_outside, deriv;
+  double candidate_cost, possibly_outside, deriv, possibly_cost;
   // as we search we will store bounds on the left and the right of
   // the zero point.
   double closest_positive_cost = INFINITY, closest_positive_log_mean;
@@ -170,6 +170,7 @@ double PoissonLossPieceLog::get_smaller_root(double equals){
     closest_positive_log_mean = optimal_log_mean;
   }
   int step=0;
+  double offset;
   do{
      candidate_cost = getCost(candidate_root) - equals;
      if(0 < candidate_cost && candidate_cost < closest_positive_cost){
@@ -184,22 +185,18 @@ double PoissonLossPieceLog::get_smaller_root(double equals){
        // Rprintf("smaller root MAXSTEPS equals=%e\n", equals);
        // print();
        // Rprintf("step=%d log_mean=%e cost=%e\n", step, candidate_root, candidate_cost);
-       return (closest_positive_log_mean + closest_negative_log_mean)/2;
+       // Rprintf("neg_cost=%e neg_log_mean=%e pos_cost=%e pos_log_mean=%e\n", closest_negative_cost, closest_negative_
+       //log_mean, closest_positive_cost, closest_positive_log_mean);
+       if(ABS(closest_positive_cost) < ABS(closest_negative_cost)){
+	 return closest_positive_log_mean;
+       }else{
+	 return closest_negative_log_mean;
+       }
      }
      deriv = getDeriv(candidate_root);
-     possibly_outside = candidate_root - candidate_cost/deriv;
-     if(possibly_outside < optimal_log_mean){
-       // it's to the left of the optimum, no problem.
-       candidate_root = possibly_outside;
-     }else{
-       // it's on the right of the optimum, so the root is probably
-       //very close to the optimum, and we have probably already
-       //explored very close to the zero.
-       Rprintf("smaller root WRONG SIDE equals=%e\n", equals);
-       print();
-       Rprintf("neg_cost=%e neg_log_mean=%e pos_cost=%e pos_log_mean=%e\n", closest_negative_cost, closest_negative_log_mean, closest_positive_cost, closest_positive_log_mean);
-       return (closest_positive_log_mean + closest_negative_log_mean)/2;
-     }
+     offset = candidate_cost/deriv;
+     possibly_outside = candidate_root - offset;
+     candidate_root = possibly_outside;
   }while(NEWTON_EPSILON < ABS(candidate_cost));
   return candidate_root;
 }
@@ -281,7 +278,7 @@ void PiecewisePoissonLossLog::set_to_min_less_of
 	// right of the interval are equal.
 	double right_left_diff = right_cost - left_cost;
 	if(verbose)Rprintf("right_cost-left_cost=%e\n", right_left_diff);
-	//bool right_left_equal = right_left_diff < NEWTON_EPSILON;
+	bool right_left_equal = right_left_diff < NEWTON_EPSILON;
 	bool next_cost_more_than_left;
 	if(next_it == input->piece_list.end()){
 	  next_cost_more_than_left = true;
@@ -293,10 +290,14 @@ void PiecewisePoissonLossLog::set_to_min_less_of
 	}
 	// next_cost_more_than_left is true if the cost on the left of
 	// the next piece is numerically greater than the cost on the
-	// left of this interval => this is a sufficient condition for
-	// finding a minimum on the left and starting a constant
-	// interval.
-	if(next_cost_more_than_left){
+	// left of this interval => this is a NOT sufficient condition
+	// for finding a minimum on the left and starting a constant
+	// interval. We also need to make sure the left and right
+	// sides are not equal -- there are some cases where this
+	// interval is numerically constant, and the next interval's
+	// left side is slightly larger in cost, but we can't find a
+	// root in that next interval.
+	if(next_cost_more_than_left && !right_left_equal){
 	  // don't store this interval, but store its min cost as a
 	  // constant.
 	  prev_min_cost = left_cost;
@@ -403,6 +404,8 @@ void PiecewisePoissonLossLog::set_to_min_less_of
 	  // are only concerned with the first mean value (the
 	  // lesser of the two).
 	  double mu = it->get_smaller_root(prev_min_cost);
+	  double cost_mu = it->getCost(mu);
+	  if(verbose)Rprintf("smaller_root log_mean=%f root_cost=%f root_cost-side_cost=[%f,%f]\n", mu, cost_mu, cost_mu-left_cost, cost_mu-right_cost);
 	  if(it->min_log_mean < mu && mu < it->max_log_mean){
 	    // The smaller intersection point occurs within the
 	    // interval, so the constant interval ends here, and we
