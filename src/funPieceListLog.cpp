@@ -110,35 +110,27 @@ double PoissonLossPieceLog::get_larger_root(double equals){
        // Rprintf("larger root MAXSTEPS with equals=%e\n", equals);
        // print();
        // Rprintf("step=%d mean=%e cost=%e\n", step, candidate_root, candidate_cost);
-       return log((closest_positive_mean + closest_negative_mean)/2);
+       double between_closest = (closest_positive_mean + closest_negative_mean)/2;
+       double between_cost = PoissonLoss(between_closest) - equals;
+       if(ABS(between_cost) < ABS(candidate_cost)){
+	 return log(between_closest);
+       }else{
+	 return log(candidate_root);
+       }
      }
      deriv = PoissonDeriv(candidate_root);
      possibly_outside = candidate_root - candidate_cost/deriv;
-     if(possibly_outside < optimal_mean){
-       //it overshot to the left of the optimum, so the root is
-       //probably very close to the optimum, and we have probably
-       //already explored very close to the zero.
-       Rprintf("larger root WRONG SIDE equals=%e\n", equals);
-       print();
-       Rprintf("neg_cost=%e neg_mean=%e pos_cost=%e pos_mean=%e\n", closest_negative_cost, closest_negative_mean, closest_positive_cost, closest_positive_mean);
-       if(closest_negative_cost==-INFINITY){
-	 double optimal_log_mean = argmin(); //min or max!
-	 double optimal_cost2 = getCost(optimal_log_mean);
-	 Rprintf("optimal_mean=%e=%e=exp(%e) optimal_cost=%e=%e=\n", optimal_mean, exp(optimal_log_mean), optimal_log_mean, optimal_cost, optimal_cost2);
-	 throw 1;
-       }
-       return log((closest_positive_mean + closest_negative_mean)/2);
-     }else{
-       // the candidate_root is bigger than the optimal_mean, so that
-       // is fine.
-       candidate_root = possibly_outside;
-     }
+     candidate_root = possibly_outside;
   }while(NEWTON_EPSILON < ABS(candidate_cost));
   //Rprintf("found root %e in %d steps!\n", candidate_root, step);
   return log(candidate_root);
 }
 
 double PoissonLossPieceLog::get_smaller_root(double equals){
+  // root finding using the fact that g'(x)=Linear*e^x+Log is linear
+  // as x tends to Inf.
+  // find the smaller root of g(x) = Linear*e^x + Log*x + Constant -
+  // equals = 0. x = log_mean
   double optimal_log_mean = argmin(); //min or max!
   double optimal_cost = getCost(optimal_log_mean);
   double left_cost = getCost(min_log_mean);
@@ -150,13 +142,7 @@ double PoissonLossPieceLog::get_smaller_root(double equals){
     // value on the left side-- it will be ignored later.
     return min_log_mean-1;
   }
-  // Approximate the solution by the line through
-  // (optimal_mean,optimal_cost) with the asymptotic slope. As x tends
-  // to -Inf, g'(x)=Linear*e^x+Log tends to Log.
-  //double candidate_root = optimal_log_mean + (equals-optimal_cost)/Log;
   double candidate_root = optimal_log_mean - 1;
-  // find the smaller root of g(x) = Linear*e^x + Log*x + Constant -
-  // equals = 0.
   double candidate_cost, possibly_outside, deriv, possibly_cost;
   // as we search we will store bounds on the left and the right of
   // the zero point.
@@ -187,10 +173,12 @@ double PoissonLossPieceLog::get_smaller_root(double equals){
        // Rprintf("step=%d log_mean=%e cost=%e\n", step, candidate_root, candidate_cost);
        // Rprintf("neg_cost=%e neg_log_mean=%e pos_cost=%e pos_log_mean=%e\n", closest_negative_cost, closest_negative_
        //log_mean, closest_positive_cost, closest_positive_log_mean);
-       if(ABS(closest_positive_cost) < ABS(closest_negative_cost)){
-	 return closest_positive_log_mean;
+       double between_closest = (closest_positive_log_mean + closest_negative_log_mean)/2;
+       double between_cost = getCost(between_closest) - equals;
+       if(ABS(between_cost) < ABS(candidate_cost)){
+	 return between_closest;
        }else{
-	 return closest_negative_log_mean;
+	 return candidate_root;
        }
      }
      deriv = getDeriv(candidate_root);
@@ -1135,9 +1123,9 @@ void PiecewisePoissonLossLog::push_min_pieces
   if(two_roots){
     bool larger_inside =
       last_min_log_mean < larger_log_mean && larger_log_mean < first_max_log_mean;
-    if(verbose)Rprintf("smaller_log_mean=%f %a\nlarger_log_mean=%f %a\n",
-		      smaller_log_mean, smaller_log_mean,
-		      larger_log_mean, larger_log_mean);
+    if(verbose)Rprintf("smaller_log_mean=%f\nlarger_log_mean=%f\n",
+		      smaller_log_mean,
+		      larger_log_mean);
     bool smaller_inside =
       last_min_log_mean < smaller_log_mean &&
       0 < exp(smaller_log_mean) &&
@@ -1218,11 +1206,11 @@ void PiecewisePoissonLossLog::push_min_pieces
     double before_mean = (exp(last_min_log_mean) + exp(first_log_mean))/2;
     double cost_diff_before = diff_piece.getCost(log(before_mean));
     if(verbose){
-      Rprintf("cost_diff_before(%.55f)=%f\n", log(before_mean), cost_diff_before);
+      Rprintf("cost_diff_before(%f)=%f\n", log(before_mean), cost_diff_before);
     }
     double after_mean = (first_max_log_mean + first_log_mean)/2;
     double cost_diff_after = diff_piece.getCost(after_mean);
-    if(verbose)Rprintf("cost_diff_after(%.55f)=%f\n", after_mean, cost_diff_after);
+    if(verbose)Rprintf("cost_diff_after(%f)=%f\n", after_mean, cost_diff_after);
     if(cost_diff_before < 0){
       if(cost_diff_after < 0){
 	// f1-f2<0 meaning f1<f2 on the entire interval, so just push it1.
