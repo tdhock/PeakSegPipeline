@@ -438,7 +438,7 @@ problem.PeakSegFPOP <- function
       0
     }
     timing <- data.table(
-      penalty.str,
+      penalty=as.numeric(penalty.str),
       megabytes,
       seconds)
     write.table(
