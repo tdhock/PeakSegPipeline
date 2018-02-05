@@ -1,17 +1,29 @@
 \name{PeakSegFPOP_disk}
 \alias{PeakSegFPOP_disk}
-\title{PeakSegFPOP disk}
+\title{PeakSegFPOP on disk}
 \description{Run the PeakSeg Functional Pruning Optimal Partitioning algorithm,
 using a file on disk (rather than in memory as in
-coseg::PeakSegFPOP) to store the O(N) function piece lists, each of size O(log N).
+PeakSegOptimal::PeakSegFPOP) to store the O(N) function piece lists,
+each of size O(log N).
+This is a low-level function that just runs the algo
+and produces the result files (without reading them into R),
+so normal users are recommended to instead use problem.PeakSegFPOP,
+which calls this function then reads the result files into R.
 Finds the optimal change-points using the Poisson loss and the
 PeakSeg constraint. For N data points, the functional pruning
 algorithm is O(N log N) time and disk space, and O(log N) memory.
 It computes the exact
 solution to the following optimization problem. Let Z be an
-N-vector of count data (count.vec, non-negative integers), let W
-be an N-vector of positive weights (weight.vec), and let penalty
-be a non-negative real number. Find the N-vector M of real numbers
+N-vector of count data, typically the coverage, number of aligned
+DNA sequence reads in part of the genome
+(the fourth column of bedGraph.file, non-negative integers). Let W
+be an N-vector of positive weights
+(number of bases with the given amount of count/coverage,
+chromEnd - chromStart,
+third column of bedGraph.file - second column). Let penalty
+be a non-negative real number
+(larger for fewer peaks, smaller for more peaks).
+Find the N-vector M of real numbers
 (segment means) and (N-1)-vector C of change-point indicators in
 {-1,0,1} which minimize the penalized Poisson Loss,
 penalty*sum_{i=1}^{N_1} I(c_i=1) + sum_{i=1}^N
@@ -31,13 +43,20 @@ problem is undefined.}
 \usage{PeakSegFPOP_disk(bedGraph.file, pen.str)}
 \arguments{
   \item{bedGraph.file}{character scalar: tab-delimited tabular text file with four
-columns: chrom, chromStart, chromEnd, coverage.}
+columns: chrom, chromStart, chromEnd, coverage. The algorithm
+creates a large temporary file in the same directory, so make sure
+that there is disk space available on that device.}
   \item{pen.str}{character scalar that can be converted to a numeric scalar via
 as.numeric: non-negative penalty. More penalty means fewer
-peaks. 0 and Inf are OK.}
+peaks. 0 and Inf are OK. Character is required rather than
+numeric, so that the user can reliably find the results in the
+output files, which are in the same directory as bedGraph.file,
+and named using the penalty value,
+e.g. coverage.bedGraph_penalty=136500650856.439_loss.tsv}
 }
 
-
+\value{A list of input parameters (bedGraph.file, penalty) and result
+files (segments, db, loss). }
 
 \author{Toby Dylan Hocking}
 

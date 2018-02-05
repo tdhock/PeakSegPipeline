@@ -1,13 +1,18 @@
 \name{problem.PeakSegFPOP}
 \alias{problem.PeakSegFPOP}
 \title{problem PeakSegFPOP}
-\description{Run PeakSegFPOP on one genomic segmentation problem directory.}
+\description{Run PeakSegFPOP_disk on one genomic segmentation problem
+directory, and read the result files into R. Actually, this
+function will first check if the result files are already present
+(and consistent), and if so, it will simply read them into R
+(without running PeakSegFPOP_disk) -- this is a caching mechanism
+that can save a lot of time.}
 \usage{problem.PeakSegFPOP(problem.dir, penalty.str)}
 \arguments{
   \item{problem.dir}{Path to a directory like sampleID/problems/problemID which
 contains a coverage.bedGraph file with the aligned read counts for
 one genomic segmentation problem.}
-  \item{penalty.str}{Penalty parameter to pass to the PeakSegFPOP command line program.}
+  \item{penalty.str}{Penalty parameter to pass to PeakSegFPOP_disk.}
 }
 
 \value{List of data.tables: segments has one row for every segment in the
