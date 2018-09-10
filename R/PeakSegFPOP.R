@@ -633,7 +633,9 @@ problem.target <- function
  ){
   status <- peaks <- errors <- fp <- fn <- penalty <- max.log.lambda <-
     min.log.lambda <- penalty <- . <- done <- total.cost <- mean.pen.cost <-
-      bases <- NULL
+      bases <- no.next <- is.min <- min.err.interval <- max.lambda <-
+        already.computed <- is.other <- dist <- min.lambda <- log.size <-
+          mid.lambda <- NULL
   ## above to avoid "no visible binding for global variable" NOTEs in
   ## CRAN check.
   seconds.start <- as.numeric(Sys.time())

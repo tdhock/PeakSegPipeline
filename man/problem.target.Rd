@@ -7,7 +7,7 @@ until it finds an interval of penalty values with minimal label
 error. The calls to PeakSegFPOP are parallelized using mclapply if
 you set options(mc.cores).}
 \usage{problem.target(problem.dir, minutes.limit = getOption("PeakSegPipeline.problem.target.minutes", 
-    Inf))}
+    Inf), verbose = 0)}
 \arguments{
   \item{problem.dir}{problemID directory in which coverage.bedGraph has already been
 computed. If there is a labels.bed file then the number of
@@ -16,6 +16,8 @@ interval of minimal error penalty values.}
   \item{minutes.limit}{Time limit; the search will stop at a sub-optimal target interval
 if this many minutes has elapsed. Useful for testing environments
 with build time limits (travis).}
+  \item{verbose}{
+}
 }
 
 \value{List of info related to target interval computation: target is the

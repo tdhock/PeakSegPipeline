@@ -17,7 +17,7 @@ create_track_hub <- function
 ### creating bigWigs.
 ){
   chrom <- problemStart <- problemEnd <- chromEnd <- . <-
-    name <- chrom <- chromStart <- NULL
+    name <- chrom <- chromStart <- strand <- NULL
   ## above to avoid "no visible binding for global variable" NOTEs in
   ## CRAN check.
   chromInfo.txt <- paste0(genome, "_chromInfo.txt")
