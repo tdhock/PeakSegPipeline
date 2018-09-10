@@ -487,7 +487,97 @@ problem.PeakSegFPOP <- function
 ### List of data.tables: segments has one row for every segment in the
 ### optimal model, loss has one row and contains the Poisson loss and
 ### feasibility, and timing is one row with the time and disk usage.
-}  
+}
+
+problem.sequentialSearch <- function
+### Compute the most likely peak model with at most the number of
+### peaks given by peaks.int. This function repeated calls
+### problem.PeakSegFPOP with different penalty values, until either
+### (1) it finds the peaks.int model, or (2) it concludes that there
+### is no peaks.int model, in which case it returns the next simplest
+### model (with fewer peaks than peaks.int).
+(problem.dir,
+### problemID directory in which coverage.bedGraph has already been
+### computed. If there is a labels.bed file then the number of
+### incorrect labels will be computed in order to find the target
+### interval of minimal error penalty values.
+  peaks.int,
+### int: target number of peaks.
+  verbose=0
+### Print messages?
+){
+  stopifnot(
+    is.integer(peaks.int) &&
+    length(peaks.int)==1 &&
+    0 <= peaks.int)
+  ## above to avoid "no visible binding for global variable" NOTEs in
+  ## CRAN check.
+  stopifnot(is.character(problem.dir))
+  stopifnot(length(problem.dir)==1)
+  problem.coverage(problem.dir)
+  model.list <- list()
+  next.pen <- c(0, Inf)
+  iteration <- 0
+  under <- over <- data.table(peaks=NA)
+  while(length(next.pen)){
+    if(verbose)cat(
+      "Next =", paste(next.pen, collapse=", "),
+      "mc.cores=", getOption("mc.cores"),
+      "\n")
+    next.str <- paste(next.pen)
+    iteration <- iteration+1
+    model.list[next.str] <- mclapply.or.stop(
+      next.str, function(penalty.str){
+        L <- problem.PeakSegFPOP(problem.dir, penalty.str)
+        L$loss$seconds <- L$timing$seconds
+        L$loss$megabytes <- L$timing$megabytes
+        L$loss$iteration <- iteration
+        L$loss$under <- under$peaks
+        L$loss$over <- over$peaks
+        L
+      }
+    )
+    if(iteration==1){
+      under <- model.list[["Inf"]]$loss
+      over <- model.list[["0"]]$loss
+    }else{
+      Mnew <- model.list[[next.str]]$loss
+      if(Mnew$peaks %in% c(under$peaks, over$peaks)){## not a new model.
+        candidate <- under ##pick the simpler one.
+        next.pen <- NULL
+      }else{#new model.
+        if(Mnew$peaks < peaks.int){
+          under <- Mnew
+        }else{
+          over <- Mnew
+        }
+      }
+    }
+    if(peaks.int==under$peaks){
+      candidate <- under
+      next.pen <- NULL
+    }
+    if(peaks.int==over$peaks){
+      candidate <- over
+      next.pen <- NULL
+    }
+    if(!is.null(next.pen)){
+      next.pen <- (over$total.cost-under$total.cost)/(under$peaks-over$peaks)
+    }
+  }#while(!is.null(pen))
+  out <- model.list[[paste(candidate$penalty)]]
+  loss.list <- lapply(model.list, "[[", "loss")
+  out$others <- do.call(rbind, loss.list)[order(iteration)]
+  out
+### Same result list from problem.PeakSegFPOP, with an additional
+### component "others" describing the other models that were computed
+### before finding the optimal model with peaks.int (or fewer)
+### peaks. Additional loss columns are as follows: under=number of
+### peaks in smaller model during binary search; over=number of peaks
+### in larger model during binary search; iteration=number of times
+### PeakSegFPOP has been run.
+}
+
 
 problem.features <- function
 ### Compute features for one segmentation problem.
@@ -535,10 +625,11 @@ problem.target <- function
 ### computed. If there is a labels.bed file then the number of
 ### incorrect labels will be computed in order to find the target
 ### interval of minimal error penalty values.
-  minutes.limit=getOption("PeakSegPipeline.problem.target.minutes", Inf)
+  minutes.limit=getOption("PeakSegPipeline.problem.target.minutes", Inf),
 ### Time limit; the search will stop at a sub-optimal target interval
 ### if this many minutes has elapsed. Useful for testing environments
 ### with build time limits (travis).
+  verbose=0
  ){
   status <- peaks <- errors <- fp <- fn <- penalty <- max.log.lambda <-
     min.log.lambda <- penalty <- . <- done <- total.cost <- mean.pen.cost <-
@@ -588,7 +679,7 @@ problem.target <- function
   last.target.vec <- c(-Inf, Inf)
   target.result.list <- list()
   while(length(next.pen)){
-    cat(
+    if(verbose)cat(
       "Next =", paste(next.pen, collapse=", "),
       "mc.cores=", getOption("mc.cores"),
       "\n")

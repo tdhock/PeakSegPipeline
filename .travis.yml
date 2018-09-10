@@ -20,6 +20,8 @@ before_install:
   - popd
   - travis-tool.sh bootstrap
   - sudo apt-get install -y bedtools libdb5.1++-dev libdb5.1-stl-dev texlive
+  - mkdir /tmp/tmp256K
+  - sudo mount -t tmpfs -o size=256K tmpfs /tmp/tmp256K
 
 install:
   - travis-tool.sh r_install devtools RJSONIO hexbin xtable future directlabels

@@ -38,3 +38,4 @@ test_that("error for numeric penalty", {
     PeakSegFPOP_disk(tmp, 10.5)
   }, "pen.str must be a character string that can be converted to a non-negative numeric scalar")
 })
+
