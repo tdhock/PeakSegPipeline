@@ -86,8 +86,8 @@ double PoissonLossPieceLog::get_larger_root(double equals){
   // find the larger root of f(m) = Linear*m + Log*log(m) + Constant -
   // equals = 0.
   double candidate_cost, possibly_outside, deriv;
-  double closest_positive_cost = INFINITY, closest_positive_mean;
-  double closest_negative_cost = -INFINITY, closest_negative_mean;
+  double closest_positive_cost = INFINITY, closest_positive_mean=INFINITY;
+  double closest_negative_cost = -INFINITY, closest_negative_mean=INFINITY;
   if(optimal_cost < 0){
     closest_negative_cost = optimal_cost;
     closest_negative_mean = optimal_mean;
@@ -146,8 +146,8 @@ double PoissonLossPieceLog::get_smaller_root(double equals){
   double candidate_cost, possibly_outside, deriv;
   // as we search we will store bounds on the left and the right of
   // the zero point.
-  double closest_positive_cost = INFINITY, closest_positive_log_mean;
-  double closest_negative_cost = -INFINITY, closest_negative_log_mean;
+  double closest_positive_cost = INFINITY, closest_positive_log_mean=INFINITY;
+  double closest_negative_cost = -INFINITY, closest_negative_log_mean=INFINITY;
   if(optimal_cost < 0){
     closest_negative_cost = optimal_cost;
     closest_negative_log_mean = optimal_log_mean;
@@ -240,7 +240,7 @@ void PiecewisePoissonLossLog::set_to_min_less_of
   PoissonLossPieceListLog::iterator next_it;
   double prev_min_cost = INFINITY;
   double prev_min_log_mean = it->min_log_mean;
-  double prev_best_log_mean;
+  double prev_best_log_mean=INFINITY;
   while(it != input->piece_list.end()){
     double left_cost = it->getCost(it->min_log_mean);
     double right_cost = it->getCost(it->max_log_mean);
@@ -250,7 +250,7 @@ void PiecewisePoissonLossLog::set_to_min_less_of
 	Rprintf("Searching for min in\n");
 	it->print();
       }
-      double next_left_cost;
+      double next_left_cost=INFINITY;
       next_it = it;
       next_it++;
       if(it->Log==0){
@@ -444,7 +444,7 @@ void PiecewisePoissonLossLog::set_to_min_more_of
   it--;
   double prev_min_cost = INFINITY;
   double prev_max_log_mean = it->max_log_mean;
-  double prev_best_log_mean;
+  double prev_best_log_mean=INFINITY;
   it++;
   if(verbose)print();
   while(it != input->piece_list.begin()){
@@ -1015,7 +1015,7 @@ void PiecewisePoissonLossLog::push_min_pieces
   double cost_diff_left = diff_piece.getCost(last_min_log_mean);
   double cost_diff_right = diff_piece.getCost(first_max_log_mean);
   bool two_roots = diff_piece.has_two_roots(0.0);
-  double smaller_log_mean, larger_log_mean;
+  double smaller_log_mean=INFINITY, larger_log_mean=INFINITY;
   if(two_roots){
     smaller_log_mean = diff_piece.get_smaller_root(0.0);
     larger_log_mean = diff_piece.get_larger_root(0.0);
