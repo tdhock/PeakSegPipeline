@@ -143,7 +143,7 @@ double PoissonLossPieceLog::get_smaller_root(double equals){
     return min_log_mean-1;
   }
   double candidate_root = optimal_log_mean - 1;
-  double candidate_cost, possibly_outside, deriv, possibly_cost;
+  double candidate_cost, possibly_outside, deriv;
   // as we search we will store bounds on the left and the right of
   // the zero point.
   double closest_positive_cost = INFINITY, closest_positive_log_mean;
