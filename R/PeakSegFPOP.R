@@ -639,10 +639,12 @@ problem.target <- function
 ### computed. If there is a labels.bed file then the number of
 ### incorrect labels will be computed in order to find the target
 ### interval of minimal error penalty values.
-  minutes.limit=getOption("PeakSegPipeline.problem.target.minutes", Inf),
+  minutes.limit=NULL,
 ### Time limit; the search will stop at a sub-optimal target interval
 ### if this many minutes has elapsed. Useful for testing environments
-### with build time limits (travis).
+### with build time limits (travis). Default NULL means to use the
+### value in option PeakSegPipeline.problem.target.minutes (or Inf if
+### that option is not set).
   verbose=0
  ){
   status <- peaks <- errors <- fp <- fn <- penalty <- max.log.lambda <-
@@ -652,6 +654,11 @@ problem.target <- function
           mid.lambda <- NULL
   ## above to avoid "no visible binding for global variable" NOTEs in
   ## CRAN check.
+  if(is.null(minutes.limit)){
+    ## here rather than in the arguments in order to avoid Rd NOTE
+    ## about lines wider than 90 characters.
+    minutes.limit <- getOption("PeakSegPipeline.problem.target.minutes", Inf)
+  }
   seconds.start <- as.numeric(Sys.time())
   stopifnot(is.numeric(minutes.limit))
   stopifnot(is.character(problem.dir))

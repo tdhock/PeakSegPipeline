@@ -85,7 +85,7 @@ seg.df
 loss.df <- read.table(names.list$loss)
 names(loss.df) <- c(
   "penalty", "segments", "peaks", "bases",
-  "mean.pen.cost", "total.cost", "status",
+  "mean.pen.cost", "total.cost", "equality.constraints",
   "mean.intervals", "max.intervals")
 loss.df
 
