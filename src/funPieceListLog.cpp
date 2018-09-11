@@ -715,6 +715,7 @@ void PiecewisePoissonLossLog::Minimize
 int PiecewisePoissonLossLog::check_min_of
 (PiecewisePoissonLossLog *prev, PiecewisePoissonLossLog *model){
   PoissonLossPieceListLog::iterator it;
+  return 0;// disables checks!
   for(it = piece_list.begin(); it != piece_list.end(); it++){
     if(it != piece_list.begin()){
       PoissonLossPieceListLog::iterator pit = it;
@@ -753,7 +754,9 @@ int PiecewisePoissonLossLog::check_min_of
       return 1;
     }
     double cost_model = model->findCost(mid_log_mean);
-    if(cost_model+1e-6 < cost_min){
+    double cost_model_diff = cost_min - cost_model;
+    if(NEWTON_EPSILON < cost_model_diff){
+      Rprintf("min-model=%e\n", cost_model_diff);
       Rprintf("model(%f)=%f\n", mid_log_mean, cost_model);
       model->print();
       Rprintf("min(%f)=%f\n", mid_log_mean, cost_min);
@@ -813,7 +816,9 @@ int PiecewisePoissonLossLog::check_min_of
     }
     double cost_model = it->getCost(mid_log_mean);
     double cost_min = findCost(mid_log_mean);
-    if(cost_model+1e-6 < cost_min){
+    double cost_model_diff = cost_min - cost_model;
+    if(NEWTON_EPSILON < cost_model_diff){
+      Rprintf("min-model=%e\n", cost_model_diff);
       Rprintf("model(%f)=%f\n", mid_log_mean, cost_model);
       model->print();
       Rprintf("min(%f)=%f\n", mid_log_mean, cost_min);

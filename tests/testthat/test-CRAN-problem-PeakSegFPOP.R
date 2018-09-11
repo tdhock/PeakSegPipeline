@@ -23,4 +23,5 @@ fwrite(cov.dt, file.path(prob.dir, "coverage.bedGraph"), sep="\t", row.names=FAL
 
 test_that("large penalty should not crash solver", {
   fit <- problem.PeakSegFPOP(prob.dir, "866939314852865280")
+  expect_identical(fit$loss$peaks, 0L)
 })
