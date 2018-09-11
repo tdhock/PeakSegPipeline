@@ -570,6 +570,13 @@ problem.sequentialSearch <- function
     }
     if(!is.null(next.pen)){
       next.pen <- (over$total.cost-under$total.cost)/(under$peaks-over$peaks)
+      if(next.pen<0){
+        ## sometimes happens for a large number of peaks -- cost is
+        ## numerically unstable so we don't get a good penalty to try --
+        ## anyways these models are way too big, so just return under.
+        candidate <- under
+        next.pen <- NULL
+      }
     }
   }#while(!is.null(pen))
   out <- model.list[[paste(candidate$penalty)]]
