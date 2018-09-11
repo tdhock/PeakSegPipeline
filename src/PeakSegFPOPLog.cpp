@@ -108,8 +108,6 @@ int PeakSegFPOP_disk(char *bedGraph_file_name, char* penalty_str){
   // Also write loss file.
   std::string loss_file_name = penalty_prefix + "_loss.tsv";
   std::ofstream loss_file;
-  // Also db file.
-  std::string db_file_name = penalty_prefix + ".db";
   loss_file.open(loss_file_name.c_str());
   if(penalty == INFINITY){
     if(cum_weighted_count != 0){
@@ -126,9 +124,9 @@ int PeakSegFPOP_disk(char *bedGraph_file_name, char* penalty_str){
       "\t" << (int)cum_weight_i << //total bases
       "\t" << best_cost/cum_weight_i << //mean penalized cost
       "\t" << best_cost << //total un-penalized cost
-      "\t" << "feasible" <<
-      "\t" << 0 <<
-      "\t" << 0 <<
+      "\t" << 0 << //n_constraints_equal
+      "\t" << 0 << //mean intervals
+      "\t" << 0 << //max intervals
       "\n";
     loss_file.close();
     return 0;
@@ -149,6 +147,7 @@ int PeakSegFPOP_disk(char *bedGraph_file_name, char* penalty_str){
 
   //Berkeley DB filesystem Backend:
   DbEnv *env = NULL;
+  std::string db_file_name = penalty_prefix + ".db";
   Db *db = dbstl::open_db(env, db_file_name.c_str(), DB_RECNO, DB_CREATE, 0);
   dbstl::db_vector<PiecewisePoissonLossLog> cost_model_mat(db, env);
 
@@ -159,9 +158,9 @@ int PeakSegFPOP_disk(char *bedGraph_file_name, char* penalty_str){
   //std::vector<PiecewisePoissonLossLog> cost_model_mat;
 
   //Initialization of empty function pieces.
-  PiecewisePoissonLossLog foo;
+  PiecewisePoissonLossLog empty_fun;
   for(int i=0; i<data_count*2; i++){
-    cost_model_mat.push_back(foo);
+    cost_model_mat.push_back(empty_fun);
   }
   
   PiecewisePoissonLossLog up_cost, down_cost, up_cost_prev, down_cost_prev;
@@ -295,9 +294,17 @@ int PeakSegFPOP_disk(char *bedGraph_file_name, char* penalty_str){
     down_cost_prev = down_cost;
     //Rprintf("data_i=%d data_i+data_count=%d\n", data_i, data_i+data_count);
     up_cost.chromEnd = chromEnd;
-    cost_model_mat[data_i] = up_cost;
     down_cost.chromEnd = chromEnd;
-    cost_model_mat[data_i + data_count] = down_cost;
+    try{
+      cost_model_mat[data_i] = up_cost;
+      cost_model_mat[data_i + data_count] = down_cost;
+    }catch(DbException e){
+      //Rprintf("Db ERror: %d\n", e.get_errno());
+      // need to close the database file, otherwise it takes up disk space
+      // until R exists.
+      db->close(0);
+      return ERROR_WRITING_COST_FUNCTIONS;
+    }
     data_i++;
   }
   //Rprintf("AFTER\n");
@@ -314,7 +321,7 @@ int PeakSegFPOP_disk(char *bedGraph_file_name, char* penalty_str){
   prev_chromEnd = down_cost.chromEnd;
   // mean_vec[0] = exp(best_log_mean);
   // end_vec[0] = prev_seg_end;
-  bool feasible = true;
+  int n_equality_constraints = 0;
   line_i=1;
   while(0 <= prev_seg_end){
     line_i++;
@@ -338,15 +345,17 @@ int PeakSegFPOP_disk(char *bedGraph_file_name, char* penalty_str){
       //equality constraint inactive
       best_log_mean = prev_log_mean;
     }else{
-      feasible = false;
+      n_equality_constraints++;
     }
     up_cost.findMean
       (best_log_mean, &prev_seg_end, &prev_log_mean);
     //Rprintf("mean=%f end=%d chromEnd=%d\n", exp(best_log_mean), prev_seg_end, up_cost.chromEnd);
   }//for(data_i
+  // need to close the database file, otherwise it takes up disk space
+  // until R exists.
+  db->close(0);
   segments_file << chrom << "\t" << first_chromStart << "\t" << prev_chromEnd << "\tbackground\t" << exp(best_log_mean) << "\n";
   segments_file.close();
-  //Rprintf("feasible=%d\n", feasible);
   int n_peaks = (line_i-1)/2;
   loss_file << std::setprecision(20) << penalty << //penalty constant
     "\t" << line_i << //segments
@@ -354,20 +363,11 @@ int PeakSegFPOP_disk(char *bedGraph_file_name, char* penalty_str){
     "\t" << (int)cum_weight_i << //total bases
     "\t" << best_cost << //mean penalized cost
     "\t" << best_cost*cum_weight_i-penalty*n_peaks << //total un-penalized cost
-    "\t"; 
-  if(feasible){
-    loss_file << "feasible";
-  }else{
-    loss_file << "infeasible";
-  }
-  loss_file <<
+    "\t" << n_equality_constraints <<
     "\t" << total_intervals/(data_count*2) <<
     "\t" << max_intervals <<
     "\n";
   loss_file.close();
-  // need to close the database file, otherwise it takes up disk space
-  // until R exists.
-  db->close(0);
   return 0;
 }
 

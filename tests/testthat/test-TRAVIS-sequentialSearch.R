@@ -65,5 +65,4 @@ most.peaks <- fit$others[penalty==0, peaks]
 most.fit <- problem.sequentialSearch(data.dir, most.peaks-1L, verbose=1)
 test_that("sequential search returns something for max_peaks-1", {
   expect_is(most.fit$others, "data.table")
-  expect_identical(most.fit$loss$peaks, 19L)
 })

@@ -233,6 +233,13 @@ PeakSegFPOP_disk <- structure(function # PeakSegFPOP on disk
   result$segments <- paste0(prefix, "_segments.bed")
   result$db <- paste0(prefix, ".db")
   result$loss <- paste0(prefix, "_loss.tsv")
+  if(file.size(result$loss)==0){
+    stop(
+      "unable to write to loss output file ",
+      result$loss,
+      " (disk is probably full)"
+    )
+  }
   result
 ### A list of input parameters (bedGraph.file, penalty) and result
 ### files (segments, db, loss). 
@@ -258,7 +265,7 @@ PeakSegFPOP_disk <- structure(function # PeakSegFPOP on disk
   loss.df <- read.table(names.list$loss)
   names(loss.df) <- c(
     "penalty", "segments", "peaks", "bases",
-    "mean.pen.cost", "total.cost", "status",
+    "mean.pen.cost", "total.cost", "equality.constraints",
     "mean.intervals", "max.intervals")
   loss.df
   
@@ -428,7 +435,7 @@ problem.PeakSegFPOP <- function
     penalty.loss <- fread(penalty_loss.tsv)
     setnames(penalty.loss, c(
       "penalty", "segments", "peaks", "bases",
-      "mean.pen.cost", "total.cost", "status",
+      "mean.pen.cost", "total.cost", "equality.constraints",
       "mean.intervals", "max.intervals"))
     loss.segments.consistent <-
       first.line$chromEnd-last.line$chromStart == penalty.loss$bases
@@ -475,7 +482,7 @@ problem.PeakSegFPOP <- function
     penalty.loss <- fread(penalty_loss.tsv)
     setnames(penalty.loss, c(
       "penalty", "segments", "peaks", "bases",
-      "mean.pen.cost", "total.cost", "status",
+      "mean.pen.cost", "total.cost", "equality.constraints",
       "mean.intervals", "max.intervals"))
   }
   penalty.segs <- fread(penalty_segments.bed)
