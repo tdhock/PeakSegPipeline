@@ -17,9 +17,16 @@ prob.dir <- file.path(
   "samples",
   "sample1",
   "problems",
-  "chr6_dbb_hap3:3481304-3736386")
+  "chr6_dbb_hap3:3491790-3736386")
 dir.create(prob.dir, showWarnings=FALSE, recursive=TRUE)
-fwrite(cov.dt, file.path(prob.dir, "coverage.bedGraph"), sep="\t", row.names=FALSE, col.names=FALSE)
+fwrite(
+  cov.dt,
+  file.path(prob.dir, "coverage.bedGraph"),
+  sep="\t", row.names=FALSE, col.names=FALSE)
+
+test_that("no need for problem.bed when running problem.coverage", {
+  problem.coverage(prob.dir)
+})
 
 test_that("large penalty should not crash solver", {
   fit <- problem.PeakSegFPOP(prob.dir, "866939314852865280")

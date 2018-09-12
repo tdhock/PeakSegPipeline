@@ -33,4 +33,39 @@ error was computed.}
 
 
 
+\examples{
 
+library(PeakSegPipeline)
+data(Mono27ac)
+## Write the Mono27ac data set to disk.
+data.dir <- file.path(
+  tempfile(),
+  "H3K27ac-H3K4me3_TDHAM_BP",
+  "samples",
+  "Mono1_H3K27ac",
+  "S001YW_NCMLS",
+  "problems",
+  "chr11:60000-580000")
+dir.create(data.dir, recursive=TRUE, showWarnings=FALSE)
+write.table(
+  Mono27ac$labels, file.path(data.dir, "labels.bed"),
+  col.names=FALSE, row.names=FALSE, quote=FALSE, sep="\t")
+write.table(
+  Mono27ac$coverage, file.path(data.dir, "coverage.bedGraph"),
+  col.names=FALSE, row.names=FALSE, quote=FALSE, sep="\t")
+
+## Compute target interval. Specifying minutes.limit stops the
+## optimization after that number of minutes, resulting in an
+## imprecise target interval, but saving time (to avoid NOTE on
+## CRAN).
+target.list <- problem.target(data.dir, minutes.limit=0.05)
+
+## These are all the models computed in order to find the target
+## interval.
+print(target.list$models[, list(
+  penalty, log.penalty=log(penalty), peaks, total.cost, fn, fp, errors)])
+
+## This is the target interval in log(penalty) values.
+print(target.list$target)
+
+}

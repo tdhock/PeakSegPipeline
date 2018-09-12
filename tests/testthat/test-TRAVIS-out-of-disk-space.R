@@ -27,10 +27,6 @@ fwrite(
 fwrite(
   Mono27ac$coverage, coverage.bedGraph,
   col.names=FALSE, row.names=FALSE, quote=FALSE, sep="\t")
-fwrite(
-  data.table(chrom="chr11", chromStart=60000, chromEnd=580000),
-  file.path(data.dir, "problem.bed"),
-  col.names=FALSE, row.names=FALSE, quote=FALSE, sep="\t")
 du.dt <- fread(paste("du -bs", file.path(data.dir, "*")))
 sum(du.dt$V1)
 system(paste("du -bs", tmp.dir))
@@ -71,10 +67,6 @@ fwrite(
   col.names=FALSE, row.names=FALSE, quote=FALSE, sep="\t")
 fwrite(
   Mono27ac$coverage, coverage.bedGraph,
-  col.names=FALSE, row.names=FALSE, quote=FALSE, sep="\t")
-fwrite(
-  data.table(chrom="chr11", chromStart=60000, chromEnd=580000),
-  file.path(data.dir, "problem.bed"),
   col.names=FALSE, row.names=FALSE, quote=FALSE, sep="\t")
 
 test_that("problem.PeakSegFPOP error writing loss output", {

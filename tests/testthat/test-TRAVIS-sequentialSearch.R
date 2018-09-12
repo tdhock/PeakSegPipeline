@@ -21,10 +21,6 @@ fwrite(
 fwrite(
   Mono27ac$coverage, coverage.bedGraph,
   col.names=FALSE, row.names=FALSE, quote=FALSE, sep="\t")
-fwrite(
-  data.table(chrom="chr11", chromStart=60000, chromEnd=580000),
-  file.path(data.dir, "problem.bed"),
-  col.names=FALSE, row.names=FALSE, quote=FALSE, sep="\t")
 
 fit <- problem.sequentialSearch(data.dir, 19L, verbose=1)
 test_that("sequential search finds 19 peaks", {

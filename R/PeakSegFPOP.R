@@ -291,10 +291,13 @@ problem.coverage <- function
 ### particular genomic segmentation problem.
 (problem.dir
 ### Path to a directory like sampleID/problems/problemID where
-### sampleID/coverage.bedGraph contains counts of aligned reads in the
-### entire genome, and sampleID/problems/problemID/problem.bed
-### contains one line that indicates the genomic coordinates of a
-### particular segmentation problem.
+### sampleID/coverage.bigWig contains counts of aligned reads in the
+### entire genome, and problemID is a chrom range string like
+### chr6_dbb_hap3:3491790-3736386 that indicates the genomic
+### coordinates of a particular segmentation problem. If
+### problemID/coverage.bedGraph does not exist, or its first/last
+### lines do not match the expected problemID, then we recreate it
+### from sampleID/coverage.bigWig.
 ){
   chrom <- problemStart <- problemEnd <- count.num.str <- coverage <-
     count.int <- count.int.str <- chromStart <- chromEnd <- J <-
@@ -305,9 +308,17 @@ problem.coverage <- function
   stopifnot(length(problem.dir)==1)
   problems.dir <- dirname(problem.dir)
   sample.dir <- dirname(problems.dir)
-  problem.bed <- file.path(problem.dir, "problem.bed")
-  problem <- fread(problem.bed)
-  setnames(problem, c("chrom", "problemStart", "problemEnd"))
+  ## Get problem from directory name.
+  pattern <- paste0(
+    "(?<chrom>chr[^:]+)",
+    ":",
+    "(?<problemStart>[0-9]+)",
+    "-",
+    "(?<problemEnd>[0-9]+)")
+  problem.base <- basename(problem.dir)
+  problem <- data.table(str_match_named(problem.base, pattern, list(
+    chromStart=as.integer,
+    chromEnd=as.integer)))
   ## First check if problem/coverage.bedGraph has been created.
   prob.cov.bedGraph <- file.path(problem.dir, "coverage.bedGraph")
   coverage.ok <- tryCatch({
@@ -402,7 +413,7 @@ problem.coverage <- function
 ### with zero counts for missing data.
 }
 
-problem.PeakSegFPOP <- function
+problem.PeakSegFPOP <- structure(function
 ### Run PeakSegFPOP_disk on one genomic segmentation problem
 ### directory, and read the result files into R. Actually, this
 ### function will first check if the result files are already present
@@ -492,11 +503,89 @@ problem.PeakSegFPOP <- function
     loss=penalty.loss,
     timing=timing)
 ### List of data.tables: segments has one row for every segment in the
-### optimal model, loss has one row and contains the Poisson loss and
-### feasibility, and timing is one row with the time and disk usage.
-}
+### optimal model, timing is one row with the time and disk usage, and
+### loss has one row and contains the following columns. penalty=same
+### as input, segments=number of segments in optimal model,
+### peaks=number of peaks in optimal model, bases=number of positions
+### described in bedGraph file, total.cost=total Poisson loss=sum_i
+### m_i-z_i*log(m_i)=mean.pen.cost*bases-penalty*peaks,
+### mean.pen.cost=mean penalized
+### cost=(total.cost+penalty*peaks)/bases, equality.constraints=number
+### of adjacent segment means that have equal values in the optimal
+### solution, mean.intervals=mean number of intervals/candidate
+### changepoints stored in optimal cost functions -- useful for
+### characterizing the computational complexity of the algorithm,
+### max.intervals=maximum number of intervals.
+}, ex=function(){
 
-problem.sequentialSearch <- function
+  library(PeakSegPipeline)
+  data(Mono27ac)
+  data.dir <- file.path(
+    tempfile(),
+    "H3K27ac-H3K4me3_TDHAM_BP",
+    "samples",
+    "Mono1_H3K27ac",
+    "S001YW_NCMLS",
+    "problems",
+    "chr11:60000-580000")
+  dir.create(data.dir, recursive=TRUE, showWarnings=FALSE)
+  write.table(
+    Mono27ac$coverage, file.path(data.dir, "coverage.bedGraph"),
+    col.names=FALSE, row.names=FALSE, quote=FALSE, sep="\t")
+
+  ## Compute one model with penalty=1952.6
+  fit <- problem.PeakSegFPOP(data.dir, "1952.6")
+  
+  ## Visualize that model.
+  ann.colors <- c(
+    noPeaks="#f6f4bf",
+    peakStart="#ffafaf",
+    peakEnd="#ff4c4c",
+    peaks="#a445ee")
+  library(ggplot2)
+  lab.min <- Mono27ac$labels[1, chromStart]
+  lab.max <- Mono27ac$labels[.N, chromEnd]
+  in.labels <- function(dt){
+    dt[lab.min < chromEnd & chromStart < lab.max]
+  }
+  changes <- fit$segments[, list(
+    constraint=ifelse(diff(mean)==0, "equality", "inequality"),
+    chromStart=chromEnd[-1],
+    chromEnd=chromEnd[-1])]
+  ggplot()+
+    theme_bw()+
+    penaltyLearning::geom_tallrect(aes(
+      xmin=chromStart, xmax=chromEnd,
+      fill=annotation),
+      color="grey",
+      data=Mono27ac$labels)+
+    scale_fill_manual("label", values=ann.colors)+
+    geom_step(aes(
+      chromStart, count),
+      color="grey50",
+      data=in.labels(Mono27ac$coverage))+
+    geom_segment(aes(
+      chromStart, mean,
+      xend=chromEnd, yend=mean),
+      color="green",
+      size=1,
+      data=in.labels(fit$segments))+
+    geom_segment(aes(
+      chromStart, mean,
+      xend=chromEnd, yend=mean),
+      color="green",
+      size=1,
+      data=in.labels(fit$segments))+
+    geom_vline(aes(
+      xintercept=chromEnd, linetype=constraint),
+      color="green",
+      data=in.labels(changes))+
+    scale_linetype_manual(values=c(inequality="dotted", equality="solid"))+
+    coord_cartesian(xlim=c(lab.min, lab.max))
+  
+})
+
+problem.sequentialSearch <- structure(function
 ### Compute the most likely peak model with at most the number of
 ### peaks given by peaks.int. This function repeated calls
 ### problem.PeakSegFPOP with different penalty values, until either
@@ -521,7 +610,6 @@ problem.sequentialSearch <- function
   ## CRAN check.
   stopifnot(is.character(problem.dir))
   stopifnot(length(problem.dir)==1)
-  problem.coverage(problem.dir)
   model.list <- list()
   next.pen <- c(0, Inf)
   iteration <- 0
@@ -547,6 +635,17 @@ problem.sequentialSearch <- function
     if(iteration==1){
       under <- model.list[["Inf"]]$loss
       over <- model.list[["0"]]$loss
+      max.peaks <- floor((over$bases-1)/2)
+      if(max.peaks < peaks.int){
+        stop(
+          "peaks.int=",
+          peaks.int,
+          " but max=",
+          max.peaks,
+          " peaks for N=",
+          over$bases,
+          " data")
+      }
     }else{
       Mnew <- model.list[[next.str]]$loss
       if(Mnew$peaks %in% c(under$peaks, over$peaks)){## not a new model.
@@ -590,7 +689,44 @@ problem.sequentialSearch <- function
 ### peaks in smaller model during binary search; over=number of peaks
 ### in larger model during binary search; iteration=number of times
 ### PeakSegFPOP has been run.
-}
+}, ex=function(){
+
+  ## Create simple 6 point data set discussed in supplementary
+  ## materials. GFPOP/GPDPA computes up-down model with 2 peaks, but
+  ## neither CDPA (PeakSegDP::cDPA) nor PDPA (jointseg)
+  r <- function(chrom, chromStart, chromEnd, coverage){
+    data.frame(chrom, chromStart, chromEnd, coverage)
+  }
+  supp <- rbind(
+    r("chr1", 0, 1,  3),
+    r("chr1", 1, 2, 9),
+    r("chr1", 2, 3, 18),
+    r("chr1", 3, 4, 15),
+    r("chr1", 4, 5, 20),
+    r("chr1", 5, 6, 2)
+  )
+  data.dir <- file.path(tempfile(), "chr1:0-6")
+  dir.create(data.dir, recursive=TRUE)
+  write.table(
+    supp, file.path(data.dir, "coverage.bedGraph"),
+    sep="\t", row.names=FALSE, col.names=FALSE)
+
+  ## Compute optimal up-down model with 2 peaks via sequential search.
+  fit <- PeakSegPipeline::problem.sequentialSearch(data.dir, 2L)
+
+  library(ggplot2)
+  ggplot()+
+    theme_bw()+
+    geom_point(aes(
+      chromEnd, coverage),
+      data=supp)+
+    geom_segment(aes(
+      chromStart+0.5, mean,
+      xend=chromEnd+0.5, yend=mean),
+      data=fit$segments,
+      color="green")
+  
+})
 
 
 problem.features <- function
@@ -628,7 +764,7 @@ problem.features <- function
 ### already.
 }
 
-problem.target <- function
+problem.target <- structure(function
 ### Compute target interval for a segmentation problem. This function
 ### repeated calls problem.PeakSegFPOP with different penalty values,
 ### until it finds an interval of penalty values with minimal label
@@ -714,7 +850,7 @@ problem.target <- function
       stop("penalty column is not numeric -- check loss in _loss.tsv files")
     }
     error.dt[, errors := fp+fn]
-    print(error.dt[,.(penalty, peaks, status, fp, fn, errors)])
+    if(verbose)print(error.dt[,.(penalty, peaks, status, fp, fn, errors)])
     unique.peaks <- error.dt[, data.table(
       .SD[which.min(iteration)],
       penalties=.N
@@ -768,7 +904,7 @@ problem.target <- function
     stopping.candidates <- rbind(error.candidates, other.candidates)[done==FALSE]
     seconds.now <- as.numeric(Sys.time())
     minutes.elapsed <- (seconds.now-seconds.start)/60
-    cat(sprintf(
+    if(verbose)cat(sprintf(
       "%f minutes elapsed / %f limit\nTarget interval: %f %f change: %f %f\n",
       minutes.elapsed, minutes.limit,
       target.vec[1], target.vec[2],
@@ -796,7 +932,42 @@ problem.target <- function
 ### data.table with target intervals as a function of iteration,
 ### models is a data.table with one row per model for which the label
 ### error was computed.
-}
+}, ex=function(){
+
+  library(PeakSegPipeline)
+  data(Mono27ac)
+  ## Write the Mono27ac data set to disk.
+  data.dir <- file.path(
+    tempfile(),
+    "H3K27ac-H3K4me3_TDHAM_BP",
+    "samples",
+    "Mono1_H3K27ac",
+    "S001YW_NCMLS",
+    "problems",
+    "chr11:60000-580000")
+  dir.create(data.dir, recursive=TRUE, showWarnings=FALSE)
+  write.table(
+    Mono27ac$labels, file.path(data.dir, "labels.bed"),
+    col.names=FALSE, row.names=FALSE, quote=FALSE, sep="\t")
+  write.table(
+    Mono27ac$coverage, file.path(data.dir, "coverage.bedGraph"),
+    col.names=FALSE, row.names=FALSE, quote=FALSE, sep="\t")
+
+  ## Compute target interval. Specifying minutes.limit stops the
+  ## optimization after that number of minutes, resulting in an
+  ## imprecise target interval, but saving time (to avoid NOTE on
+  ## CRAN).
+  target.list <- problem.target(data.dir, minutes.limit=0.05)
+
+  ## These are all the models computed in order to find the target
+  ## interval.
+  print(target.list$models[, list(
+    penalty, log.penalty=log(penalty), peaks, total.cost, fn, fp, errors)])
+
+  ## This is the target interval in log(penalty) values.
+  print(target.list$target)
+
+})
 
 problem.predict <- function
 ### Predict peaks for a genomic segmentation problem.
