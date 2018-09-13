@@ -68,7 +68,7 @@ problem.joint.predict.job <- function
 ### project/jobs/jobID
 ){
   jprob.name <- chrom <- problemStart <- problemEnd <- problem.name <-
-    jprob.name <- NULL
+    jprob.name <- sample.loss.diff <- group.loss.diff <- NULL
   ## above to avoid "no visible binding for global variable" NOTEs in
   ## CRAN check.
   jobProblems <- fread(file.path(job.dir, "jobProblems.bed"))
@@ -122,7 +122,7 @@ problem.joint.targets <- function
 (problem.dir
 ### project/problems/problemID
  ){
-  segmentations <- NULL
+  segmentations <- model <- min.log.lambda <- max.log.lambda <- NULL
   ## above variable defined in RData file.
   labels.tsv.vec <- Sys.glob(file.path(
     problem.dir, "jointProblems", "*", "labels.tsv"))
@@ -367,6 +367,7 @@ problem.joint.predict <- function
 ### project/problems/problemID/jointProblems/jointProbID
 ){
   joint.model <- min.log.lambda <- max.log.lambda <- peaks <- NULL
+  model.list <- NULL
   ## above to avoid "no visible binding for global variable" NOTEs in
   ## CRAN check.
   segmentations.RData <- file.path(jointProblem.dir, "segmentations.RData")
@@ -456,7 +457,9 @@ problem.joint.target <- function
 (jointProblem.dir
 ### Joint problem directory.
 ){
-  annotation <- chromStart <- chromEnd <- NULL
+  annotation <- chromStart <- chromEnd <- sample.path <-
+    sample.group <- sample.id <- flat.errors <- peak.errors <-
+      errors <- complexity <- NULL
   ## above to avoid "no visible binding for global variable" NOTEs in
   ## CRAN check.
   segmentations.RData <- file.path(jointProblem.dir, "segmentations.RData")
@@ -607,6 +610,7 @@ problem.joint.plot <- function
     problem.name <- chrom <- problemEnd <- problemStart <- peakStart1 <-
       peakStart <- peakEnd <- sample.path <- chromStart <- chromEnd <-
         annotation <- count <- peak.type <- NULL
+  sample.peaks.vec <- peak.mean.vec <- NULL
   ## above to avoid "no visible binding for global variable" NOTEs in
   ## CRAN check.
   chunks.dir <- dirname(chunk.dir)

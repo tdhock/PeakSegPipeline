@@ -29,7 +29,7 @@ test_that("character penalty works", {
   loss.df <- read.table(names.list$loss)
   names(loss.df) <- c(
     "penalty", "segments", "peaks", "bases",
-    "mean.pen.cost", "total.cost", "status",
+    "mean.pen.cost", "total.cost", "equality.constraints",
     "mean.intervals", "max.intervals")
 })
 
@@ -38,3 +38,4 @@ test_that("error for numeric penalty", {
     PeakSegFPOP_disk(tmp, 10.5)
   }, "pen.str must be a character string that can be converted to a non-negative numeric scalar")
 })
+

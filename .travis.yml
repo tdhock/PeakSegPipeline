@@ -6,6 +6,7 @@ env:
   - TEST_SUITE=pipeline-noinput
   - TEST_SUITE=pipeline-input
   - TEST_SUITE=CRAN
+  - TEST_SUITE=TRAVIS
 
 before_install:
   - mkdir bin
@@ -20,6 +21,10 @@ before_install:
   - popd
   - travis-tool.sh bootstrap
   - sudo apt-get install -y bedtools libdb5.1++-dev libdb5.1-stl-dev texlive
+  - mkdir /tmp/tmp256K
+  - sudo mount -t tmpfs -o size=256K tmpfs /tmp/tmp256K
+  - mkdir /tmp/tmp160000
+  - sudo mount -t tmpfs -o size=160000 tmpfs /tmp/tmp160000
 
 install:
   - travis-tool.sh r_install devtools RJSONIO hexbin xtable future directlabels

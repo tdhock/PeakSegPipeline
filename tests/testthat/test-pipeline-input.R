@@ -98,6 +98,7 @@ test_that("error for non-integer data in bigWigs", {
     pipeline(non.integer.dir)
   }, "non-integer data in")
 })
+
 unlink(non.integer.dir, recursive=TRUE, force=TRUE)
 
 ## Pipeline should run to completion for integer count data.

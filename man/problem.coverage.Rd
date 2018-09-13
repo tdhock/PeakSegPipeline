@@ -6,10 +6,13 @@ particular genomic segmentation problem.}
 \usage{problem.coverage(problem.dir)}
 \arguments{
   \item{problem.dir}{Path to a directory like sampleID/problems/problemID where
-sampleID/coverage.bedGraph contains counts of aligned reads in the
-entire genome, and sampleID/problems/problemID/problem.bed
-contains one line that indicates the genomic coordinates of a
-particular segmentation problem.}
+sampleID/coverage.bigWig contains counts of aligned reads in the
+entire genome, and problemID is a chrom range string like
+chr6_dbb_hap3:3491790-3736386 that indicates the genomic
+coordinates of a particular segmentation problem. If
+problemID/coverage.bedGraph does not exist, or its first/last
+lines do not match the expected problemID, then we recreate it
+from sampleID/coverage.bigWig.}
 }
 
 \value{Nothing. If necessary, the bigWigToBedGraph command line program

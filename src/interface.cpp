@@ -29,6 +29,14 @@ void PeakSegFPOP_interface
   if(status==ERROR_INCONSISTENT_CHROMSTART_CHROMEND){
     error("there should be no gaps (columns 2-3) in input data file %s", bedGraph);
   }
+  if(status==ERROR_WRITING_COST_FUNCTIONS){
+    error("unable to write to cost function database file %s_penalty=%s.db",
+	  bedGraph, penalty);
+  }
+  if(status==ERROR_WRITING_LOSS_OUTPUT){
+    error("unable to write to loss output file %s_penalty=%s_loss.tsv",
+	  bedGraph, penalty);
+  }
   if(status != 0){
     error("error code %d", status);
   }

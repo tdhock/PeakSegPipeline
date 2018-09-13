@@ -58,6 +58,21 @@ counting function, which should be much faster than using an
 intermediate bedGraph
 file. http://www.cs.uleth.ca/~holzmann/C/system/shell_commands.html
 
+2018.09.10
+
+status column (feasible/infeasible) changed to n_equality_constraints
+(integer >= 0, zero means no equality constraints/feasible, positive
+means some equality constraints/infeasible).
+
+when we run out of disk space, error in R -- tested via tmpfs
+(testthat/test-out-of-disk-space.R).
+
+Bugfix for large penalties, test at
+testthat/test-CRAN-PeakSegFPOP_disk.R.
+
+New problem.sequentialSearch function, test at
+testthat/test-problem-sequentialSearch.R.
+
 2018.01.25
 
 New minutes.limit argument for problem.target, which can be used for

@@ -6,6 +6,10 @@ plot_all <- function
 ## The UCSC links in the HTML tables will be zoomed out from the peak
 ## this number of times.
 ){
+  jobPeaks <- jprob.name <- sample.loss.diff <- group.loss.diff <-
+    Input.up <- zoomPos <- n.groups.up <- str.groups.up <-
+      n.groups.down <- str.groups.down <- separate.problem <-
+        img <- n.samples.up <- NULL
   problemStart <- problem.name <- chrom <- problemEnd <-
     problem.name <- jobPeaks.RData <- peak.name <- peakStart <-
       peakEnd <- means <- peakBases <- samples.prop <- groups <-
