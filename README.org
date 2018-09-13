@@ -84,7 +84,7 @@ http://members.cbio.mines-paristech.fr/~thocking/hubs/test/input/
 
 ** R function usage/examples
 
-Our paper (TODO:LINK) describes two new algorithms, which are
+Our paper ([[https://github.com/tdhock/PeakSegFPOP-paper][github source]]) describes two new algorithms, which are
 implemented in this R package. Both algorithms read input data from
 disk (not R objects/memory) in order to handle very large data sets
 while using only O(log N) memory. So you never need to read the entire

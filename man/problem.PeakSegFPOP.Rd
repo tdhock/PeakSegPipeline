@@ -38,7 +38,7 @@ max.intervals=maximum number of intervals.}
 \examples{
 
 library(PeakSegPipeline)
-data(Mono27ac)
+data(Mono27ac, envir=environment())
 data.dir <- file.path(
   tempfile(),
   "H3K27ac-H3K4me3_TDHAM_BP",

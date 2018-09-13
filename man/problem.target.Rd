@@ -36,7 +36,7 @@ error was computed.}
 \examples{
 
 library(PeakSegPipeline)
-data(Mono27ac)
+data(Mono27ac, envir=environment())
 ## Write the Mono27ac data set to disk.
 data.dir <- file.path(
   tempfile(),

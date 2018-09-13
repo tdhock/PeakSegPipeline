@@ -317,8 +317,8 @@ problem.coverage <- function
     "(?<problemEnd>[0-9]+)")
   problem.base <- basename(problem.dir)
   problem <- data.table(str_match_named(problem.base, pattern, list(
-    chromStart=as.integer,
-    chromEnd=as.integer)))
+    problemStart=as.integer,
+    problemEnd=as.integer)))
   ## First check if problem/coverage.bedGraph has been created.
   prob.cov.bedGraph <- file.path(problem.dir, "coverage.bedGraph")
   coverage.ok <- tryCatch({
@@ -519,7 +519,7 @@ problem.PeakSegFPOP <- structure(function
 }, ex=function(){
 
   library(PeakSegPipeline)
-  data(Mono27ac)
+  data(Mono27ac, envir=environment())
   data.dir <- file.path(
     tempfile(),
     "H3K27ac-H3K4me3_TDHAM_BP",
@@ -935,7 +935,7 @@ problem.target <- structure(function
 }, ex=function(){
 
   library(PeakSegPipeline)
-  data(Mono27ac)
+  data(Mono27ac, envir=environment())
   ## Write the Mono27ac data set to disk.
   data.dir <- file.path(
     tempfile(),

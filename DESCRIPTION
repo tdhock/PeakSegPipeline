@@ -17,5 +17,4 @@ Imports: data.table (>= 1.9.8), PeakError, PeakSegJoint (>= 2017.12.23),
  penaltyLearning (>= 2017.07.11), namedCapture, xtable, 
  parallel, scales, Matrix, ggplot2
 Suggests: testthat, httr
-Remotes:
- tdhock/PeakSegJoint@3d0089843b2df939ad5f5db336685e6412953a36
+Remotes: tdhock/PeakSegJoint@3d0089843b2df939ad5f5db336685e6412953a36
