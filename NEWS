@@ -58,6 +58,10 @@ counting function, which should be much faster than using an
 intermediate bedGraph
 file. http://www.cs.uleth.ca/~holzmann/C/system/shell_commands.html
 
+2018.09.13
+
+build script only uses CRAN tests.
+
 2018.09.10
 
 status column (feasible/infeasible) changed to n_equality_constraints
