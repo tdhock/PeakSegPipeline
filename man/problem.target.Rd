@@ -63,7 +63,7 @@ target.list <- problem.target(data.dir, minutes.limit=0.05)
 ## These are all the models computed in order to find the target
 ## interval.
 print(target.list$models[, list(
-  penalty, log.penalty=log(penalty), peaks, total.cost, fn, fp, errors)])
+  penalty, log.penalty=log(penalty), peaks, total.loss, fn, fp, errors)])
 
 ## This is the target interval in log(penalty) values.
 print(target.list$target)

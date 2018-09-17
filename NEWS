@@ -58,6 +58,12 @@ counting function, which should be much faster than using an
 intermediate bedGraph
 file. http://www.cs.uleth.ca/~holzmann/C/system/shell_commands.html
 
+2018.09.17
+
+total.cost -> total.loss, less confusing nomenclature since we usually
+refer to the Poisson "loss" function, and the total "cost" function
+that we minimize includes the penalty and model complexity term.
+
 2018.09.13
 
 build script only uses CRAN tests.

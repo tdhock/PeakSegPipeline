@@ -265,7 +265,7 @@ PeakSegFPOP_disk <- structure(function # PeakSegFPOP on disk
   loss.df <- read.table(names.list$loss)
   names(loss.df) <- c(
     "penalty", "segments", "peaks", "bases",
-    "mean.pen.cost", "total.cost", "equality.constraints",
+    "mean.pen.cost", "total.loss", "equality.constraints",
     "mean.intervals", "max.intervals")
   loss.df
   
@@ -446,7 +446,7 @@ problem.PeakSegFPOP <- structure(function
     penalty.loss <- fread(penalty_loss.tsv)
     setnames(penalty.loss, c(
       "penalty", "segments", "peaks", "bases",
-      "mean.pen.cost", "total.cost", "equality.constraints",
+      "mean.pen.cost", "total.loss", "equality.constraints",
       "mean.intervals", "max.intervals"))
     loss.segments.consistent <-
       first.line$chromEnd-last.line$chromStart == penalty.loss$bases
@@ -493,7 +493,7 @@ problem.PeakSegFPOP <- structure(function
     penalty.loss <- fread(penalty_loss.tsv)
     setnames(penalty.loss, c(
       "penalty", "segments", "peaks", "bases",
-      "mean.pen.cost", "total.cost", "equality.constraints",
+      "mean.pen.cost", "total.loss", "equality.constraints",
       "mean.intervals", "max.intervals"))
   }
   penalty.segs <- fread(penalty_segments.bed)
@@ -507,10 +507,10 @@ problem.PeakSegFPOP <- structure(function
 ### loss has one row and contains the following columns. penalty=same
 ### as input, segments=number of segments in optimal model,
 ### peaks=number of peaks in optimal model, bases=number of positions
-### described in bedGraph file, total.cost=total Poisson loss=sum_i
+### described in bedGraph file, total.loss=total Poisson loss=sum_i
 ### m_i-z_i*log(m_i)=mean.pen.cost*bases-penalty*peaks,
 ### mean.pen.cost=mean penalized
-### cost=(total.cost+penalty*peaks)/bases, equality.constraints=number
+### cost=(total.loss+penalty*peaks)/bases, equality.constraints=number
 ### of adjacent segment means that have equal values in the optimal
 ### solution, mean.intervals=mean number of intervals/candidate
 ### changepoints stored in optimal cost functions -- useful for
@@ -668,7 +668,7 @@ problem.sequentialSearch <- structure(function
       next.pen <- NULL
     }
     if(!is.null(next.pen)){
-      next.pen <- (over$total.cost-under$total.cost)/(under$peaks-over$peaks)
+      next.pen <- (over$total.loss-under$total.loss)/(under$peaks-over$peaks)
       if(next.pen<0){
         ## sometimes happens for a large number of peaks -- cost is
         ## numerically unstable so we don't get a good penalty to try --
@@ -784,7 +784,7 @@ problem.target <- structure(function
   verbose=0
  ){
   status <- peaks <- errors <- fp <- fn <- penalty <- max.log.lambda <-
-    min.log.lambda <- penalty <- . <- done <- total.cost <- mean.pen.cost <-
+    min.log.lambda <- penalty <- . <- done <- total.loss <- mean.pen.cost <-
       bases <- no.next <- is.min <- min.err.interval <- max.lambda <-
         already.computed <- is.other <- dist <- min.lambda <- log.size <-
           mid.lambda <- NULL
@@ -856,7 +856,7 @@ problem.target <- structure(function
       penalties=.N
     ), by=list(peaks)]
     path.dt <- data.table(penaltyLearning::modelSelection(
-      unique.peaks, "total.cost", "peaks"))
+      unique.peaks, "total.loss", "peaks"))
     path.dt[, next.pen := max.lambda]
     path.dt[, already.computed := next.pen %in% names(error.list)]
     path.dt[, no.next := c(diff(peaks) == -1, NA)]
@@ -962,7 +962,7 @@ problem.target <- structure(function
   ## These are all the models computed in order to find the target
   ## interval.
   print(target.list$models[, list(
-    penalty, log.penalty=log(penalty), peaks, total.cost, fn, fp, errors)])
+    penalty, log.penalty=log(penalty), peaks, total.loss, fn, fp, errors)])
 
   ## This is the target interval in log(penalty) values.
   print(target.list$target)
