@@ -20,10 +20,10 @@ optimal model, timing is one row with the time and disk usage, and
 loss has one row and contains the following columns. penalty=same
 as input, segments=number of segments in optimal model,
 peaks=number of peaks in optimal model, bases=number of positions
-described in bedGraph file, total.cost=total Poisson loss=sum_i
+described in bedGraph file, total.loss=total Poisson loss=sum_i
 m_i-z_i*log(m_i)=mean.pen.cost*bases-penalty*peaks,
 mean.pen.cost=mean penalized
-cost=(total.cost+penalty*peaks)/bases, equality.constraints=number
+cost=(total.loss+penalty*peaks)/bases, equality.constraints=number
 of adjacent segment means that have equal values in the optimal
 solution, mean.intervals=mean number of intervals/candidate
 changepoints stored in optimal cost functions -- useful for

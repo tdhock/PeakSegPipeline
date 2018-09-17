@@ -29,7 +29,7 @@ test_that("character penalty works", {
   loss.df <- read.table(names.list$loss)
   names(loss.df) <- c(
     "penalty", "segments", "peaks", "bases",
-    "mean.pen.cost", "total.cost", "equality.constraints",
+    "mean.pen.cost", "total.loss", "equality.constraints",
     "mean.intervals", "max.intervals")
 })
 
