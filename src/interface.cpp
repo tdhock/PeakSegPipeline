@@ -7,10 +7,11 @@
 #include <R_ext/Rdynload.h>
 
 void PeakSegFPOP_interface
-(char **file_vec, char **pen_vec){
+(char **file_vec, char **pen_vec, int *free_changes_vec){
   char *bedGraph = file_vec[0];
   char *penalty = pen_vec[0];
-  int status = PeakSegFPOP_disk(bedGraph, penalty);
+  int allow_free_changes = free_changes_vec[0];
+  int status = PeakSegFPOP_disk(bedGraph, penalty, allow_free_changes);
   if(status==ERROR_PENALTY_NOT_FINITE){
     error("penalty=%s but must be finite", penalty);
   }
