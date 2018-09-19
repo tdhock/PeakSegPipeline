@@ -167,8 +167,8 @@ int PeakSegFPOP_disk(char *bedGraph_file_name, char* penalty_str, int allow_free
     cost_model_mat.push_back(empty_fun);
   }
   
-  PiecewisePoissonLossLog up_cost, down_cost, up_cost_prev, down_cost_prev, min_two_changes;
-  PiecewisePoissonLossLog min_prev_cost;
+  PiecewisePoissonLossLog up_cost, down_cost, up_cost_prev, down_cost_prev;
+  PiecewisePoissonLossLog no_change_cost, changes_cost, change_diff_state_cost, change_same_state_cost;
   int verbose=0;
   cum_weight_i = 0;
   double total_intervals = 0.0, max_intervals = 0.0;
@@ -186,49 +186,23 @@ int PeakSegFPOP_disk(char *bedGraph_file_name, char* penalty_str, int allow_free
 	(1.0, -coverage, 0.0,
 	 min_log_mean, max_log_mean, -1, -INFINITY, -1);
     }else{
-      // if data_i is up, it could have come from down_cost_prev.
-      min_prev_cost.set_to_min_less_of(&down_cost_prev, verbose);
-      min_prev_cost.set_prev_seg_end(data_i-1, data_count);
-      int status = min_prev_cost.check_min_of(&down_cost_prev, &down_cost_prev);
-      if(status){
-	Rprintf("BAD MIN LESS CHECK data_i=%d status=%d\n", data_i, status);
-	min_prev_cost.set_to_min_less_of(&down_cost_prev, true);
-	Rprintf("=prev down cost\n");
-	down_cost_prev.print();
-	Rprintf("=min less(prev down cost)\n");
-	min_prev_cost.print();
-	throw status;
-      }
-      // C^up_t(m) = (gamma_t + w_{1:t-1} * M^up_t(m))/w_{1:t}, where
-      // M^up_t(m) = min{
-      //   C^up_{t-1}(m),
-      //   C^{<=}_down_{t-1}(m) + lambda/w_{1:t-1}
-      // in other words, we need to divide the penalty by the previous cumsum,
-      // and add that to the min-less-ified function, before applying the min-env.
-      // cost + lambda * model.complexity =
-      // cost + penalty * peaks =>
-      // penalty = lambda * model.complexity / peaks.
-      // lambda is output by exactModelSelection,
-      // penalty is input by PeakSegFPOP.
-      min_prev_cost.add(0.0, 0.0, penalty/cum_weight_prev_i);
+      // cost of non-dec change down->up.
+      change_diff_state_cost.set_to_min_less_of(&down_cost_prev, verbose);
+      change_diff_state_cost.set_prev_seg_end(data_i-1, data_count);
+      change_diff_state_cost.add(0.0, 0.0, penalty/cum_weight_prev_i);
       if(data_i==1){
-	up_cost = min_prev_cost;
+	up_cost = change_diff_state_cost;
       }else{
-	up_cost.set_to_min_env_of(&min_prev_cost, &up_cost_prev, verbose);
-	status = up_cost.check_min_of(&min_prev_cost, &up_cost_prev);
-	if(status){
-	  Rprintf("BAD MIN ENV CHECK data_i=%d status=%d\n", data_i, status);
-	  up_cost.set_to_min_env_of(&min_prev_cost, &up_cost_prev, true);
-	  Rprintf("=prev down cost\n");
-	  down_cost_prev.print();
-	  Rprintf("=min less(prev down cost) + %f\n", penalty);
-	  min_prev_cost.print();
-	  Rprintf("=prev up cost\n");
-	  up_cost_prev.print();
-	  Rprintf("=new up cost model\n");
-	  up_cost.print();
-	  throw status;
+	if(allow_free_changes){
+	  // cost of non-dec change up->up.
+	  change_same_state_cost.set_to_min_less_of(&up_cost_prev, verbose);
+	  change_same_state_cost.set_prev_seg_end(data_i-1, 0);
+	  changes_cost.set_to_min_env_of
+	    (&change_same_state_cost, &change_diff_state_cost, verbose);
+	}else{
+	  changes_cost = change_diff_state_cost;
 	}
+	up_cost.set_to_min_env_of(&changes_cost, &up_cost_prev, verbose);
       }
       up_cost.multiply(cum_weight_prev_i);
       up_cost.add
@@ -238,45 +212,31 @@ int PeakSegFPOP_disk(char *bedGraph_file_name, char* penalty_str, int allow_free
       up_cost.multiply(1/cum_weight_i);
       //Rprintf("computing down cost\n");
       // compute down_cost.
-      if(data_i==1){
-	//for second data point, the cost is only a function of the
-	//previous down cost (there is no first up cost).
-	down_cost = down_cost_prev;
-      }else{
-	// if data_i is down, it could have come from up_cost_prev.
-	// if(data_i==2329683){
-	//   Rprintf("computing cost data_i=%d\n", data_i);
-	//   verbose=1;
-	// }else{
-	//   verbose=0;
-	// }
-	min_prev_cost.set_to_min_more_of(&up_cost_prev, verbose);
-	min_prev_cost.set_prev_seg_end(data_i-1, 0);
-	status = min_prev_cost.check_min_of(&up_cost_prev, &up_cost_prev);
-	if(status){
-	  Rprintf("BAD MIN MORE CHECK data_i=%d status=%d\n", data_i, status);
-	  min_prev_cost.set_to_min_more_of(&up_cost_prev, true);
-	  Rprintf("=prev up cost\n");
-	  up_cost_prev.print();
-	  Rprintf("=min more(prev up cost)\n");
-	  min_prev_cost.print();
-	  throw status;
+      if(allow_free_changes){
+	// cost of non-increasing change down->down.
+	change_same_state_cost.set_to_min_more_of(&down_cost_prev, verbose);
+	change_same_state_cost.set_prev_seg_end(data_i-1, data_count);
+	if(data_i==1){
+	  //for second data point, the only changepoint possible is
+	  //down->down (there is no up cost at the first data point).
+	  changes_cost = change_same_state_cost;
+	}else{
+	  // cost of non-increasing change up->down
+	  change_diff_state_cost.set_to_min_more_of(&up_cost_prev, verbose);
+	  change_diff_state_cost.set_prev_seg_end(data_i-1, 0);
+	  changes_cost.set_to_min_env_of
+	    (&change_diff_state_cost, &change_same_state_cost, verbose);
 	}
-	//NO PENALTY FOR DOWN CHANGE
-	down_cost.set_to_min_env_of(&min_prev_cost, &down_cost_prev, verbose);
-	status = down_cost.check_min_of(&min_prev_cost, &down_cost_prev);
-	if(status){
-	  Rprintf("BAD MIN ENV CHECK data_i=%d status=%d\n", data_i, status);
-	  down_cost.set_to_min_env_of(&min_prev_cost, &down_cost_prev, true);
-	  Rprintf("=prev up cost\n");
-	  up_cost_prev.print();
-	  Rprintf("=min more(prev up cost)\n");
-	  min_prev_cost.print();
-	  Rprintf("=prev down cost\n");
-	  down_cost_prev.print();
-	  Rprintf("=new down cost model\n");
-	  down_cost.print();
-	  throw status;
+	down_cost.set_to_min_env_of
+	  (&changes_cost, &down_cost_prev, verbose);
+      }else{
+	if(data_i==1){
+	  down_cost = down_cost_prev;
+	}else{
+	  change_diff_state_cost.set_to_min_more_of(&up_cost_prev, verbose);
+	  change_diff_state_cost.set_prev_seg_end(data_i-1, 0);
+	  down_cost.set_to_min_env_of
+	    (&change_diff_state_cost, &down_cost_prev, verbose);
 	}
       }
       down_cost.multiply(cum_weight_prev_i);
@@ -321,11 +281,12 @@ int PeakSegFPOP_disk(char *bedGraph_file_name, char* penalty_str, int allow_free
   down_cost.Minimize
     (&best_cost, &best_log_mean,
      &prev_seg_end, &prev_log_mean, &prev_seg_offset);
-  //Rprintf("mean=%f end_i=%d chromEnd=%d\n", exp(best_log_mean), prev_seg_end, down_cost.chromEnd);
+  //Rprintf("mean=%f end_i=%d chromEnd=%d offset=%d\n", exp(best_log_mean), prev_seg_end, down_cost.chromEnd, prev_seg_offset);
   prev_chromEnd = down_cost.chromEnd;
   // mean_vec[0] = exp(best_log_mean);
   // end_vec[0] = prev_seg_end;
   int n_equality_constraints = 0;
+  int state_offset = data_count;
   line_i=1;
   while(0 <= prev_seg_end){
     line_i++;
@@ -334,11 +295,12 @@ int PeakSegFPOP_disk(char *bedGraph_file_name, char* penalty_str, int allow_free
     //Rprintf("decoding prev_seg_end=%d prev_seg_offset=%d\n", prev_seg_end, prev_seg_offset);
     segments_file << chrom << "\t" << up_cost.chromEnd << "\t" << prev_chromEnd << "\t";
     // change prev_seg_offset for next iteration.
-    if(prev_seg_offset==0){
-      segments_file << "background"; // prev segment is down.
+    if(state_offset==data_count){
+      segments_file << "background";
     }else{
       segments_file << "peak";
     }
+    state_offset = prev_seg_offset;
     segments_file << "\t" << exp(best_log_mean) << "\n";
     prev_chromEnd = up_cost.chromEnd;
     if(prev_log_mean != INFINITY){

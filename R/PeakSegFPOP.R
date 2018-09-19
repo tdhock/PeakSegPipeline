@@ -244,7 +244,10 @@ PeakSegFPOP_disk <- structure(function # PeakSegFPOP on disk
     penalty=pen.str,
     allow.free.changes=allow.free.changes,
     PACKAGE="PeakSegPipeline")
-  prefix <- paste0(bedGraph.file, "_penalty=", pen.str)
+  prefix <- paste0(
+    bedGraph.file, "_",
+    ifelse(allow.free.changes, "free", ""),
+    "penalty=", pen.str)
   result$segments <- paste0(prefix, "_segments.bed")
   result$db <- paste0(prefix, ".db")
   result$loss <- paste0(prefix, "_loss.tsv")
@@ -273,6 +276,18 @@ PeakSegFPOP_disk <- structure(function # PeakSegFPOP on disk
     four, tmp <- tempfile(),
     sep="\t", row.names=FALSE, col.names=FALSE)
   names.list <- PeakSegFPOP_disk(tmp, "10.5")
+  unlink(names.list$db)
+  seg.df <- read.table(names.list$segments)
+  names(seg.df) <- c("chrom", "chromStart", "chromEnd", "status", "mean")
+  seg.df
+  loss.df <- read.table(names.list$loss)
+  names(loss.df) <- c(
+    "penalty", "segments", "peaks", "bases",
+    "mean.pen.cost", "total.cost", "equality.constraints",
+    "mean.intervals", "max.intervals")
+  loss.df
+  
+  names.list <- PeakSegFPOP_disk(tmp, "10.5", allow.free.changes=TRUE)
   unlink(names.list$db)
   seg.df <- read.table(names.list$segments)
   names(seg.df) <- c("chrom", "chromStart", "chromEnd", "status", "mean")
