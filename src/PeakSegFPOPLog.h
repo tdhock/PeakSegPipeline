@@ -9,5 +9,4 @@
 #define ERROR_WRITING_COST_FUNCTIONS 7
 #define ERROR_WRITING_LOSS_OUTPUT 7
 
-int PeakSegFPOP_disk(char *, char *);
-
+int PeakSegFPOP_disk(char *, char *, int);

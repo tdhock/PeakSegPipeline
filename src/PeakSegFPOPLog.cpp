@@ -43,7 +43,7 @@ void PiecewiseFunRestore(PiecewisePoissonLossLog&fun, const void *src){
   }
 }
 
-int PeakSegFPOP_disk(char *bedGraph_file_name, char* penalty_str){
+int PeakSegFPOP_disk(char *bedGraph_file_name, char* penalty_str, int allow_free_changes){
   double penalty = atof(penalty_str);
   if(penalty == INFINITY){
     //ok but maybe we should special case this, no need to run PDPA.
@@ -163,7 +163,7 @@ int PeakSegFPOP_disk(char *bedGraph_file_name, char* penalty_str){
     cost_model_mat.push_back(empty_fun);
   }
   
-  PiecewisePoissonLossLog up_cost, down_cost, up_cost_prev, down_cost_prev;
+  PiecewisePoissonLossLog up_cost, down_cost, up_cost_prev, down_cost_prev, min_two_changes;
   PiecewisePoissonLossLog min_prev_cost;
   int verbose=0;
   cum_weight_i = 0;
@@ -180,10 +180,11 @@ int PeakSegFPOP_disk(char *bedGraph_file_name, char* penalty_str){
       // initialization Cdown_1(m)=gamma_1(m)/w_1
       down_cost.piece_list.emplace_back
 	(1.0, -coverage, 0.0,
-	 min_log_mean, max_log_mean, -1, false);
+	 min_log_mean, max_log_mean, -1, -INFINITY, -1);
     }else{
       // if data_i is up, it could have come from down_cost_prev.
       min_prev_cost.set_to_min_less_of(&down_cost_prev, verbose);
+      min_prev_cost.set_prev_seg_end(data_i-1, data_count);
       int status = min_prev_cost.check_min_of(&down_cost_prev, &down_cost_prev);
       if(status){
 	Rprintf("BAD MIN LESS CHECK data_i=%d status=%d\n", data_i, status);
@@ -200,7 +201,6 @@ int PeakSegFPOP_disk(char *bedGraph_file_name, char* penalty_str){
       //   C^{<=}_down_{t-1}(m) + lambda/w_{1:t-1}
       // in other words, we need to divide the penalty by the previous cumsum,
       // and add that to the min-less-ified function, before applying the min-env.
-      min_prev_cost.set_prev_seg_end(data_i-1);
       // cost + lambda * model.complexity =
       // cost + penalty * peaks =>
       // penalty = lambda * model.complexity / peaks.
@@ -247,6 +247,7 @@ int PeakSegFPOP_disk(char *bedGraph_file_name, char* penalty_str){
 	//   verbose=0;
 	// }
 	min_prev_cost.set_to_min_more_of(&up_cost_prev, verbose);
+	min_prev_cost.set_prev_seg_end(data_i-1, 0);
 	status = min_prev_cost.check_min_of(&up_cost_prev, &up_cost_prev);
 	if(status){
 	  Rprintf("BAD MIN MORE CHECK data_i=%d status=%d\n", data_i, status);
@@ -257,7 +258,6 @@ int PeakSegFPOP_disk(char *bedGraph_file_name, char* penalty_str){
 	  min_prev_cost.print();
 	  throw status;
 	}
-	min_prev_cost.set_prev_seg_end(data_i-1);
 	//NO PENALTY FOR DOWN CHANGE
 	down_cost.set_to_min_env_of(&min_prev_cost, &down_cost_prev, verbose);
 	status = down_cost.check_min_of(&min_prev_cost, &down_cost_prev);
@@ -310,13 +310,13 @@ int PeakSegFPOP_disk(char *bedGraph_file_name, char* penalty_str){
   //Rprintf("AFTER\n");
   // Decoding the cost_model_vec, and writing to the output matrices.
   int prev_seg_end;
-  int prev_seg_offset = 0;
-  // last segment is down (offset N) so the second to last segment is
+  int prev_seg_offset;
+  // last segment is down (offset N=data_count) so the second to last segment is
   // up (offset 0).
   down_cost = cost_model_mat[data_count*2-1];
   down_cost.Minimize
     (&best_cost, &best_log_mean,
-     &prev_seg_end, &prev_log_mean);
+     &prev_seg_end, &prev_log_mean, &prev_seg_offset);
   //Rprintf("mean=%f end_i=%d chromEnd=%d\n", exp(best_log_mean), prev_seg_end, down_cost.chromEnd);
   prev_chromEnd = down_cost.chromEnd;
   // mean_vec[0] = exp(best_log_mean);
@@ -331,12 +331,8 @@ int PeakSegFPOP_disk(char *bedGraph_file_name, char* penalty_str){
     segments_file << chrom << "\t" << up_cost.chromEnd << "\t" << prev_chromEnd << "\t";
     // change prev_seg_offset for next iteration.
     if(prev_seg_offset==0){
-      //up_cost is actually up
-      prev_seg_offset = data_count;
       segments_file << "background"; // prev segment is down.
     }else{
-      //up_cost is actually down
-      prev_seg_offset = 0;
       segments_file << "peak";
     }
     segments_file << "\t" << exp(best_log_mean) << "\n";
@@ -348,7 +344,7 @@ int PeakSegFPOP_disk(char *bedGraph_file_name, char* penalty_str){
       n_equality_constraints++;
     }
     up_cost.findMean
-      (best_log_mean, &prev_seg_end, &prev_log_mean);
+      (best_log_mean, &prev_seg_end, &prev_log_mean, &prev_seg_offset);
     //Rprintf("mean=%f end=%d chromEnd=%d\n", exp(best_log_mean), prev_seg_end, up_cost.chromEnd);
   }//for(data_i
   // need to close the database file, otherwise it takes up disk space

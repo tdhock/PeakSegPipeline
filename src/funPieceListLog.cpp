@@ -13,7 +13,7 @@
 #define ABS(x) ((x)<0 ? -(x) : (x))
 
 PoissonLossPieceLog::PoissonLossPieceLog
-(double li, double lo, double co, double m, double M, int i, double prev){
+(double li, double lo, double co, double m, double M, int i, double prev, int o){
   Linear = li;
   Log = lo;
   Constant = co;
@@ -21,6 +21,7 @@ PoissonLossPieceLog::PoissonLossPieceLog
   max_log_mean = M;
   data_i = i;
   prev_log_mean = prev;
+  offset = o;
 }
 
 PoissonLossPieceLog::PoissonLossPieceLog(){
@@ -303,7 +304,7 @@ void PiecewisePoissonLossLog::set_to_min_less_of
 	  piece_list.emplace_back
 	    (it->Linear, it->Log, it->Constant,
 	     prev_min_log_mean, it->max_log_mean,
-	     PREV_NOT_SET, INFINITY); // equality constraint active on convex piece.
+	     PREV_NOT_SET, INFINITY, PREV_NOT_SET); // equality constraint active on convex piece.
 	  prev_min_log_mean = it->max_log_mean;
 	}
       }else{//not degenerate linear
@@ -347,7 +348,7 @@ void PiecewisePoissonLossLog::set_to_min_less_of
 	  if(prev_min_log_mean < mu){
 	    piece_list.emplace_back
 	      (it->Linear, it->Log, it->Constant, prev_min_log_mean, mu,
-	       PREV_NOT_SET, INFINITY); // equality constraint active on convex piece.
+	       PREV_NOT_SET, INFINITY, PREV_NOT_SET); // equality constraint active on convex piece.
 	  }
 	  prev_min_log_mean = mu;
 	  prev_best_log_mean = mu;
@@ -360,7 +361,7 @@ void PiecewisePoissonLossLog::set_to_min_less_of
 	  if(verbose)Rprintf("min after interval\n");
 	  piece_list.emplace_back
 	    (it->Linear, it->Log, it->Constant, prev_min_log_mean, it->max_log_mean,
-	     PREV_NOT_SET, INFINITY); // equality constraint active on convex piece.
+	     PREV_NOT_SET, INFINITY, PREV_NOT_SET); // equality constraint active on convex piece.
 	  prev_min_log_mean = it->max_log_mean;
 	}//if(non-degenerate mu in interval
       }//if(degenerate linear cost.
@@ -401,7 +402,7 @@ void PiecewisePoissonLossLog::set_to_min_less_of
 	    piece_list.emplace_back
 	      (0, 0, prev_min_cost,
 	       prev_min_log_mean, mu, PREV_NOT_SET,
-	       prev_best_log_mean);// equality constraint inactive.
+	       prev_best_log_mean, PREV_NOT_SET);// equality constraint inactive.
 	    prev_min_cost = INFINITY;
 	    prev_min_log_mean = mu;
 	    it--;
@@ -414,7 +415,7 @@ void PiecewisePoissonLossLog::set_to_min_less_of
 	    (0, 0, prev_min_cost,
 	     prev_min_log_mean, it->max_log_mean, 
 	     PREV_NOT_SET,
-	     prev_best_log_mean);
+	     prev_best_log_mean, PREV_NOT_SET);
 	  prev_min_cost = INFINITY;
 	  prev_min_log_mean = it->max_log_mean;
 	}
@@ -432,7 +433,7 @@ void PiecewisePoissonLossLog::set_to_min_less_of
     piece_list.emplace_back
       (0, 0, prev_min_cost,
        prev_min_log_mean, it->max_log_mean, PREV_NOT_SET,
-       prev_best_log_mean);//equality constraint inactive on constant piece.
+       prev_best_log_mean, PREV_NOT_SET);//equality constraint inactive on constant piece.
   }
 }
 
@@ -463,7 +464,7 @@ void PiecewisePoissonLossLog::set_to_min_more_of
 	//should just store this interval.
 	piece_list.emplace_front
 	  (it->Linear, it->Log, it->Constant, it->min_log_mean, prev_max_log_mean,
-	   PREV_NOT_SET, INFINITY); // equality constraint active on convex piece.
+	   PREV_NOT_SET, INFINITY, PREV_NOT_SET); // equality constraint active on convex piece.
 	prev_max_log_mean = it->min_log_mean;
       }else{
 	double mu = it->argmin();
@@ -518,7 +519,7 @@ void PiecewisePoissonLossLog::set_to_min_more_of
 	    if(verbose)Rprintf("constant interval, storing numerically constant convex piece.\n");
 	    piece_list.emplace_front
 	      (it->Linear, it->Log, it->Constant, it->min_log_mean, prev_max_log_mean,
-	       PREV_NOT_SET, INFINITY); // equality constraint active on convex piece.
+	       PREV_NOT_SET, INFINITY, PREV_NOT_SET); // equality constraint active on convex piece.
 	    prev_max_log_mean = it->min_log_mean;
 	  }
 	}else if(it->min_log_mean < mu && NEWTON_EPSILON < this_cost_left-mu_cost && prev_ok){
@@ -530,7 +531,7 @@ void PiecewisePoissonLossLog::set_to_min_more_of
 	  if(mu < prev_max_log_mean){ 
 	    piece_list.emplace_front
 	      (it->Linear, it->Log, it->Constant, mu, prev_max_log_mean, 
-	       PREV_NOT_SET, INFINITY); // equality constraint active on convex piece.
+	       PREV_NOT_SET, INFINITY, PREV_NOT_SET); // equality constraint active on convex piece.
 	  }
 	  prev_max_log_mean = mu;
 	  prev_best_log_mean = mu;
@@ -542,7 +543,7 @@ void PiecewisePoissonLossLog::set_to_min_more_of
 	  if(verbose)Rprintf("min before this interval\n");
 	  piece_list.emplace_front
 	    (it->Linear, it->Log, it->Constant, it->min_log_mean, prev_max_log_mean,
-	     PREV_NOT_SET, INFINITY); // equality constraint active on convex piece.
+	     PREV_NOT_SET, INFINITY, PREV_NOT_SET); // equality constraint active on convex piece.
 	  prev_max_log_mean = it->min_log_mean;
 	}
       }//if(degenerate linear)else
@@ -584,7 +585,7 @@ void PiecewisePoissonLossLog::set_to_min_more_of
 	  (0, 0, prev_min_cost,
 	   mu, prev_max_log_mean,
 	   PREV_NOT_SET,
-	   prev_best_log_mean);// equality constraint inactive on constant piece.
+	   prev_best_log_mean, PREV_NOT_SET);// equality constraint inactive on constant piece.
 	prev_min_cost = INFINITY;
 	prev_max_log_mean = mu;
 	it++;
@@ -595,7 +596,7 @@ void PiecewisePoissonLossLog::set_to_min_more_of
 	  (0, 0, prev_min_cost,
 	   it->min_log_mean, prev_max_log_mean,
 	   PREV_NOT_SET,
-	   prev_best_log_mean);// equality constraint inactive on constant piece.
+	   prev_best_log_mean, PREV_NOT_SET);// equality constraint inactive on constant piece.
 	prev_min_cost = INFINITY;
 	prev_max_log_mean = it->min_log_mean;
       }
@@ -611,7 +612,7 @@ void PiecewisePoissonLossLog::set_to_min_more_of
       (0, 0, prev_min_cost,
        it->min_log_mean, prev_max_log_mean,
        PREV_NOT_SET,
-       prev_best_log_mean);//equality constraint inactive on constant piece.
+       prev_best_log_mean, PREV_NOT_SET);//equality constraint inactive on constant piece.
   }
 }
 
@@ -633,20 +634,22 @@ void PiecewisePoissonLossLog::multiply(double x){
   }
 }
 
-void PiecewisePoissonLossLog::set_prev_seg_end(int prev_seg_end){
+void PiecewisePoissonLossLog::set_prev_seg_end(int prev_seg_end, int state_offset){
   PoissonLossPieceListLog::iterator it;
   for(it=piece_list.begin(); it != piece_list.end(); it++){
     it->data_i = prev_seg_end;
+    it->offset = state_offset;
   }
 }
 
 void PiecewisePoissonLossLog::findMean
-(double log_mean, int *seg_end, double *prev_log_mean){
+(double log_mean, int *seg_end, double *prev_log_mean, int *offset){
   PoissonLossPieceListLog::iterator it;
   for(it=piece_list.begin(); it != piece_list.end(); it++){
     if(it->min_log_mean <= log_mean && log_mean <= it->max_log_mean){
       *seg_end = it->data_i;
       *prev_log_mean = it->prev_log_mean;
+      *offset = it->offset;
       return;
     }
   }
@@ -690,7 +693,8 @@ void PiecewisePoissonLossLog::Minimize
 (double *best_cost,
  double *best_log_mean,
  int *data_i,
- double *prev_log_mean){
+ double *prev_log_mean,
+ int *offset){
   double candidate_cost, candidate_log_mean;
   PoissonLossPieceListLog::iterator it;
   *best_cost = INFINITY;
@@ -707,6 +711,7 @@ void PiecewisePoissonLossLog::Minimize
       *best_log_mean = candidate_log_mean;
       *data_i = it->data_i;
       *prev_log_mean = it->prev_log_mean;
+      *offset = it->offset;
     }
   }
 }
@@ -954,7 +959,7 @@ void PiecewisePoissonLossLog::push_min_pieces
      it1->Log - it2->Log,
      it1->Constant - it2->Constant,
      last_min_log_mean, first_max_log_mean,
-     -5, false);
+     -5, -INFINITY, -5);
   // Evaluate the middle in the original space, to avoid problems when
   // first_max_log_mean is -Inf.
   double mid_mean = (exp(first_max_log_mean) + exp(last_min_log_mean))/2;
@@ -1280,6 +1285,6 @@ void PiecewisePoissonLossLog::push_piece
     piece_list.emplace_back
       (it->Linear, it->Log, it->Constant,
        min_log_mean, max_log_mean,
-       it->data_i, it->prev_log_mean);
+       it->data_i, it->prev_log_mean, it->offset);
   }
 }
