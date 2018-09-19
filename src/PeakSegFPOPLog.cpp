@@ -202,7 +202,7 @@ int PeakSegFPOP_disk(char *bedGraph_file_name, char* penalty_str, int allow_free
 	}else{
 	  changes_cost = change_diff_state_cost;
 	}
-	up_cost.set_to_min_env_of(&changes_cost, &up_cost_prev, verbose);
+	up_cost.set_to_min_env_of(&up_cost_prev, &changes_cost, verbose);
       }
       up_cost.multiply(cum_weight_prev_i);
       up_cost.add
@@ -228,7 +228,7 @@ int PeakSegFPOP_disk(char *bedGraph_file_name, char* penalty_str, int allow_free
 	    (&change_diff_state_cost, &change_same_state_cost, verbose);
 	}
 	down_cost.set_to_min_env_of
-	  (&changes_cost, &down_cost_prev, verbose);
+	  (&down_cost_prev, &changes_cost, verbose);
       }else{
 	if(data_i==1){
 	  down_cost = down_cost_prev;

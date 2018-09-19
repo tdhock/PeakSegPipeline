@@ -515,7 +515,7 @@ problem.PeakSegFPOP <- structure(function
     penalty.db <- paste0(pre, ".db")
     unlink(penalty.db)#in case interrupted previously.
     seconds <- system.time({
-      PeakSegFPOP_disk(prob.cov.bedGraph, penalty.str)
+      PeakSegFPOP_disk(prob.cov.bedGraph, penalty.str, allow.free.changes)
     })[["elapsed"]]
     megabytes <- if(file.exists(penalty.db)){
       file.size(penalty.db)/1024/1024
@@ -575,8 +575,8 @@ problem.PeakSegFPOP <- structure(function
     Mono27ac$coverage, file.path(data.dir, "coverage.bedGraph"),
     col.names=FALSE, row.names=FALSE, quote=FALSE, sep="\t")
 
-  ## Compute one model with penalty=1952.6
-  fit <- problem.PeakSegFPOP(data.dir, "1952.6")
+  ## Compute one model 
+  fit <- problem.PeakSegFPOP(data.dir, "9000", allow.free.changes=TRUE)
   
   ## Visualize that model.
   ann.colors <- c(
@@ -594,6 +594,7 @@ problem.PeakSegFPOP <- structure(function
     constraint=ifelse(diff(mean)==0, "equality", "inequality"),
     chromStart=chromEnd[-1],
     chromEnd=chromEnd[-1])]
+
   ggplot()+
     theme_bw()+
     penaltyLearning::geom_tallrect(aes(
@@ -618,12 +619,63 @@ problem.PeakSegFPOP <- structure(function
       color="green",
       size=1,
       data=in.labels(fit$segments))+
-    geom_vline(aes(
-      xintercept=chromEnd, linetype=constraint),
-      color="green",
-      data=in.labels(changes))+
+    ## geom_vline(aes(
+    ##   xintercept=chromEnd, linetype=constraint),
+    ##   color="green",
+    ##   data=in.labels(changes))+
     scale_linetype_manual(values=c(inequality="dotted", equality="solid"))+
     coord_cartesian(xlim=c(lab.min, lab.max))
+
+  peak.y <- -2
+  fit$segments[, diff := c(0, diff(status=="peak"))]
+  peak.segs <- fit$segments[status=="peak"]
+  peak.segs[, peak.i := cumsum(diff)]
+  peak.dt <- peak.segs[, list(
+    chromStart=min(chromStart),
+    chromEnd=max(chromEnd)
+    ), by=list(peak.i)]
+  ggplot()+
+    theme_bw()+
+    penaltyLearning::geom_tallrect(aes(
+      xmin=chromStart, xmax=chromEnd,
+      fill=annotation),
+      color="grey",
+      data=Mono27ac$labels)+
+    scale_fill_manual("label", values=ann.colors)+
+    geom_step(aes(
+      chromStart, count),
+      color="grey50",
+      data=Mono27ac$coverage)+
+    geom_segment(aes(
+      chromStart, mean,
+      xend=chromEnd, yend=mean),
+      color="green",
+      size=1,
+      data=fit$segments)+
+    geom_segment(aes(
+      chromStart, mean,
+      xend=chromEnd, yend=mean),
+      color="green",
+      size=1,
+      data=fit$segments)+
+    geom_segment(aes(
+      chromStart, peak.y,
+      xend=chromEnd, yend=peak.y),
+      color="deepskyblue",
+      size=1.5,
+      data=peak.dt)+
+    geom_point(aes(
+      chromStart, peak.y),
+      color="deepskyblue",
+      shape=1,
+      data=peak.dt)+
+    ## geom_vline(aes(
+    ##   xintercept=chromEnd, linetype=constraint),
+    ##   color="green",
+    ##   data=in.labels(changes))+
+    scale_linetype_manual(values=c(inequality="dotted", equality="solid"))+
+    coord_cartesian(xlim=c(2e5, 3e5))
+
   
 })
 
