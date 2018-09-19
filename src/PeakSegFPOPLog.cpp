@@ -100,7 +100,11 @@ int PeakSegFPOP_disk(char *bedGraph_file_name, char* penalty_str, int allow_free
   double best_cost, best_log_mean, prev_log_mean;
   // open segments file for writing.
   std::string penalty_prefix = bedGraph_file_name;
-  penalty_prefix += "_penalty=";
+  penalty_prefix += "_";
+  if(allow_free_changes){
+    penalty_prefix += "free";
+  }
+  penalty_prefix += "penalty=";
   penalty_prefix += penalty_str;
   std::string segments_file_name = penalty_prefix + "_segments.bed";
   std::ofstream segments_file;

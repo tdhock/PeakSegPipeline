@@ -88,7 +88,7 @@ void coverage_interface
   
 R_CMethodDef cMethods[] = {
   {"PeakSegFPOP_interface",
-   (DL_FUNC) &PeakSegFPOP_interface, 2
+   (DL_FUNC) &PeakSegFPOP_interface, 3
    //,{REALSXP, REALSXP, INTSXP, INTSXP, REALSXP}
   },
   {"denormalize_interface",

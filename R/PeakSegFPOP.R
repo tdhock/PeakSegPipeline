@@ -193,7 +193,7 @@ PeakSegFPOP_disk <- structure(function # PeakSegFPOP on disk
 ### columns: chrom, chromStart, chromEnd, coverage. The algorithm
 ### creates a large temporary file in the same directory, so make sure
 ### that there is disk space available on that device.
-  pen.str
+  pen.str,
 ### character scalar that can be converted to a numeric scalar via
 ### as.numeric: non-negative penalty. More penalty means fewer
 ### peaks. 0 and Inf are OK. Character is required rather than
@@ -201,7 +201,21 @@ PeakSegFPOP_disk <- structure(function # PeakSegFPOP on disk
 ### output files, which are in the same directory as bedGraph.file,
 ### and named using the penalty value,
 ### e.g. coverage.bedGraph_penalty=136500650856.439_loss.tsv
+  allow.free.changes=FALSE
+### Allow free changes? If FALSE then the original model with two
+### states (up/down) and two changes (up->down is a non-increasing
+### change with no penalty, down->up is a non-decreasing change that
+### costs penalty). If TRUE then there are two more possible changes:
+### up->up non-decreasing for free, down->down non-increasing for
+### free.
 ){
+  if(!(
+    is.logical(allow.free.changes) &&
+    length(allow.free.changes)==1 &&
+    is.finite(allow.free.changes)
+  )){
+    stop("allow.free.changes must be TRUE or FALSE")
+  }
   if(!(
     is.character(bedGraph.file) &&
     length(bedGraph.file)==1 &&
@@ -228,6 +242,7 @@ PeakSegFPOP_disk <- structure(function # PeakSegFPOP on disk
     "PeakSegFPOP_interface",
     bedGraph.file=as.character(norm.file),
     penalty=pen.str,
+    allow.free.changes=allow.free.changes,
     PACKAGE="PeakSegPipeline")
   prefix <- paste0(bedGraph.file, "_penalty=", pen.str)
   result$segments <- paste0(prefix, "_segments.bed")
@@ -424,15 +439,27 @@ problem.PeakSegFPOP <- structure(function
 ### Path to a directory like sampleID/problems/problemID which
 ### contains a coverage.bedGraph file with the aligned read counts for
 ### one genomic segmentation problem.
- penalty.str
+ penalty.str,
 ### Penalty parameter to pass to PeakSegFPOP_disk.
+  allow.free.changes=FALSE
+### Same as PeakSegFPOP_disk
  ){
+  if(!(
+    is.logical(allow.free.changes) &&
+    length(allow.free.changes)==1 &&
+    is.finite(allow.free.changes)
+  )){
+    stop("allow.free.changes must be TRUE or FALSE")
+  }
   stopifnot(is.character(problem.dir))
   stopifnot(length(problem.dir)==1)
   stopifnot(is.character(penalty.str))
   stopifnot(length(penalty.str)==1)
   prob.cov.bedGraph <- file.path(problem.dir, "coverage.bedGraph")
-  pre <- paste0(prob.cov.bedGraph, "_penalty=", penalty.str)
+  pre <- paste0(
+    prob.cov.bedGraph, "_",
+    ifelse(allow.free.changes, "free", ""),
+    "penalty=", penalty.str)
   penalty_segments.bed <- paste0(pre, "_segments.bed")
   penalty_loss.tsv <- paste0(pre, "_loss.tsv")
   penalty_timing.tsv <- paste0(pre, "_timing.tsv")
