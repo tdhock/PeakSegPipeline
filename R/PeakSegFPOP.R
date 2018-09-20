@@ -576,8 +576,186 @@ problem.PeakSegFPOP <- structure(function
     col.names=FALSE, row.names=FALSE, quote=FALSE, sep="\t")
 
   ## Compute one model 
-  fit <- problem.PeakSegFPOP(data.dir, "9000", allow.free.changes=TRUE)
+  fit <- problem.PeakSegFPOP(data.dir, "5000", allow.free.changes=TRUE)
+  ## Visualize that model.
+  ann.colors <- c(
+    noPeaks="#f6f4bf",
+    peakStart="#ffafaf",
+    peakEnd="#ff4c4c",
+    peaks="#a445ee")
+  library(ggplot2)
+  lab.min <- Mono27ac$labels[1, chromStart]
+  lab.max <- Mono27ac$labels[.N, chromEnd]
+  in.labels <- function(dt){
+    dt[lab.min < chromEnd & chromStart < lab.max]
+  }
+
+  ggplot()+
+    theme_bw()+
+    penaltyLearning::geom_tallrect(aes(
+      xmin=chromStart, xmax=chromEnd,
+      fill=annotation),
+      color="grey",
+      data=Mono27ac$labels)+
+    scale_fill_manual("label", values=ann.colors)+
+    geom_step(aes(
+      chromStart, count),
+      color="grey50",
+      data=in.labels(Mono27ac$coverage))+
+    geom_segment(aes(
+      chromStart, mean,
+      xend=chromEnd, yend=mean),
+      color="green",
+      size=1,
+      data=in.labels(fit$segments))+
+    geom_segment(aes(
+      chromStart, mean,
+      xend=chromEnd, yend=mean),
+      color="green",
+      size=1,
+      data=in.labels(fit$segments))+
+    ## geom_vline(aes(
+    ##   xintercept=chromEnd, linetype=constraint),
+    ##   color="green",
+    ##   data=in.labels(changes))+
+    scale_linetype_manual(values=c(inequality="dotted", equality="solid"))+
+    coord_cartesian(xlim=c(lab.min, lab.max))
+
+  peak.y <- -1
+  peak.yy <- -2
+  sorted.segs <- fit$segments[order(chromStart)]
+  sorted.segs[, diff.status := c(0, diff(status=="peak"))]
+  sorted.segs[, peak.i := cumsum(diff.status>0)]
+  sorted.segs[, diff.after := c(diff(mean), NA)]
+  peak.dt <- sorted.segs[0 < peak.i, {
+    is.peak <- status=="peak"
+    list(
+      chromStart=min(chromStart[is.peak]),
+      chromEnd=max(chromEnd[is.peak]),
+      max.diff.after=chromEnd[which.max(diff.after)],
+      min.diff.after=chromEnd[which.min(diff.after)],
+      last.peak.mean=mean[max(which(is.peak))]
+    )}, by=list(peak.i)]
+  gg <- ggplot()+
+    theme_bw()+
+    penaltyLearning::geom_tallrect(aes(
+      xmin=chromStart, xmax=chromEnd,
+      fill=annotation),
+      color="grey",
+      data=Mono27ac$labels)+
+    scale_fill_manual("label", values=ann.colors)+
+    geom_step(aes(
+      chromStart, count),
+      color="grey50",
+      data=Mono27ac$coverage)+
+    geom_segment(aes(
+      chromStart, mean,
+      xend=chromEnd, yend=mean),
+      color="green",
+      size=1,
+      data=sorted.segs)+
+    geom_segment(aes(
+      chromStart, mean,
+      xend=chromEnd, yend=mean),
+      color="green",
+      size=1,
+      data=sorted.segs)+
+    geom_segment(aes(
+      chromStart, peak.y,
+      xend=chromEnd, yend=peak.y),
+      color="deepskyblue",
+      size=1.5,
+      data=peak.dt)+
+    geom_label(aes(
+      chromStart, peak.y, label=peak.i),
+      color="deepskyblue",
+      data=peak.dt)+
+    geom_segment(aes(
+      max.diff.after, peak.yy,
+      xend=min.diff.after, yend=peak.yy),
+      color="deepskyblue",
+      size=1.5,
+      data=peak.dt)+
+    geom_label(aes(
+      max.diff.after, peak.yy, label=peak.i),
+      color="deepskyblue",
+      data=peak.dt)+
+    geom_label(aes(
+      chromEnd, last.peak.mean, label=peak.i),
+      color="green",
+      data=peak.dt)+
+    scale_linetype_manual(values=c(inequality="dotted", equality="solid"))
+  print(gg)
+
+  gg+
+    coord_cartesian(xlim=c(2e5, 3e5))
+
+  gg+
+    coord_cartesian(xlim=c(4.5e5, 5.5e5))
+
+
+  peak.y <- -1
+  peak.yy <- -2
+  gg <- ggplot()+
+    theme_bw()+
+    penaltyLearning::geom_tallrect(aes(
+      xmin=chromStart, xmax=chromEnd,
+      fill=annotation),
+      color="grey",
+      data=Mono27ac$labels)+
+    scale_fill_manual("label", values=ann.colors)+
+    geom_step(aes(
+      chromStart, count),
+      color="grey50",
+      data=Mono27ac$coverage)+
+    geom_segment(aes(
+      chromStart, mean,
+      xend=chromEnd, yend=mean),
+      color="green",
+      size=1,
+      data=sorted.segs)+
+    geom_segment(aes(
+      chromStart, mean,
+      xend=chromEnd, yend=mean),
+      color="green",
+      size=1,
+      data=sorted.segs)+
+    geom_segment(aes(
+      chromStart, peak.y,
+      xend=chromEnd, yend=peak.y),
+      color="deepskyblue",
+      size=1.5,
+      data=peak.dt)+
+    geom_label(aes(
+      chromStart, peak.y, label=peak.i),
+      color="deepskyblue",
+      data=peak.dt)+
+    geom_segment(aes(
+      max.diff.after, peak.yy,
+      xend=min.diff.after, yend=peak.yy),
+      color="deepskyblue",
+      size=1.5,
+      data=peak.dt)+
+    geom_label(aes(
+      max.diff.after, peak.yy, label=peak.i),
+      color="deepskyblue",
+      data=peak.dt)+
+    geom_label(aes(
+      chromEnd, last.peak.mean, label=peak.i),
+      color="green",
+      data=peak.dt)+
+    scale_linetype_manual(values=c(inequality="dotted", equality="solid"))
+  print(gg)
+
+  gg+
+    coord_cartesian(xlim=c(2e5, 3e5))
+
+  gg+
+    coord_cartesian(xlim=c(4.5e5, 5.5e5))
+
   
+  ## Compute one two change model 
+  fit <- problem.PeakSegFPOP(data.dir, "3000", allow.free.changes=FALSE)
   ## Visualize that model.
   ann.colors <- c(
     noPeaks="#f6f4bf",
@@ -626,15 +804,10 @@ problem.PeakSegFPOP <- structure(function
     scale_linetype_manual(values=c(inequality="dotted", equality="solid"))+
     coord_cartesian(xlim=c(lab.min, lab.max))
 
-  peak.y <- -2
-  fit$segments[, diff := c(0, diff(status=="peak"))]
-  peak.segs <- fit$segments[status=="peak"]
-  peak.segs[, peak.i := cumsum(diff)]
-  peak.dt <- peak.segs[, list(
-    chromStart=min(chromStart),
-    chromEnd=max(chromEnd)
-    ), by=list(peak.i)]
-  ggplot()+
+  peak.y <- -1
+  peak.dt <- fit$segments[status=="peak"]
+  peak.dt[, peak.i := seq_along(chrom)]
+  gg <- ggplot()+
     theme_bw()+
     penaltyLearning::geom_tallrect(aes(
       xmin=chromStart, xmax=chromEnd,
@@ -651,30 +824,35 @@ problem.PeakSegFPOP <- structure(function
       xend=chromEnd, yend=mean),
       color="green",
       size=1,
-      data=fit$segments)+
+      data=sorted.segs)+
     geom_segment(aes(
       chromStart, mean,
       xend=chromEnd, yend=mean),
       color="green",
       size=1,
-      data=fit$segments)+
+      data=sorted.segs)+
+    geom_vline(aes(
+      xintercept=chromEnd, linetype=constraint),
+      color="green",
+      data=changes)+
     geom_segment(aes(
       chromStart, peak.y,
       xend=chromEnd, yend=peak.y),
       color="deepskyblue",
       size=1.5,
       data=peak.dt)+
-    geom_point(aes(
-      chromStart, peak.y),
+    geom_label(aes(
+      chromStart, peak.y, label=peak.i),
       color="deepskyblue",
-      shape=1,
       data=peak.dt)+
-    ## geom_vline(aes(
-    ##   xintercept=chromEnd, linetype=constraint),
-    ##   color="green",
-    ##   data=in.labels(changes))+
-    scale_linetype_manual(values=c(inequality="dotted", equality="solid"))+
+    scale_linetype_manual(values=c(inequality="dotted", equality="solid"))
+  print(gg)
+
+  gg+
     coord_cartesian(xlim=c(2e5, 3e5))
+
+  gg+
+    coord_cartesian(xlim=c(4.5e5, 5.5e5))
 
   
 })
