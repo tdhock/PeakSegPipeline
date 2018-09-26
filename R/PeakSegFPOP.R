@@ -540,8 +540,23 @@ problem.PeakSegFPOP <- structure(function
   }
   penalty.segs <- fread(penalty_segments.bed)
   setnames(penalty.segs, c("chrom","chromStart", "chromEnd", "status", "mean"))
+  sorted.segs <- penalty.segs[order(chromStart)]
+  sorted.segs[, diff.status := c(0, diff(status=="peak"))]
+  sorted.segs[, peak.i := cumsum(diff.status>0)]
+  sorted.segs[, diff.after := c(diff(mean), NA)]
+  sorted.segs[, annotation := ifelse(status=="peak", "peakStart", "peakEnd")]
+  state.dt <- sorted.segs[, {
+    extreme <-.SD[which.max(chromEnd)]
+    list(
+      stateStart=min(chromStart),
+      stateEnd=max(chromEnd),
+      extremeMid=extreme[, as.integer((chromEnd+chromStart)/2)],
+      extremeMean=extreme$mean
+    )}, by=list(peak.i, annotation)]
+  penalty.loss[, peaks := nrow(state.dt[annotation=="peakStart"])]
   list(
-    segments=penalty.segs,
+    states=state.dt,
+    segments=sorted.segs,
     loss=penalty.loss,
     timing=timing)
 ### List of data.tables: segments has one row for every segment in the
@@ -871,8 +886,11 @@ problem.sequentialSearch <- structure(function
 ### interval of minimal error penalty values.
   peaks.int,
 ### int: target number of peaks.
-  verbose=0
+  verbose=0,
 ### Print messages?
+  allow.free.changes=FALSE
+### TRUE for four edge state graph with free changes, FALSE for two
+### edges.
 ){
   stopifnot(
     is.integer(peaks.int) &&
@@ -895,7 +913,10 @@ problem.sequentialSearch <- structure(function
     iteration <- iteration+1
     model.list[next.str] <- mclapply.or.stop(
       next.str, function(penalty.str){
-        L <- problem.PeakSegFPOP(problem.dir, penalty.str)
+        L <- problem.PeakSegFPOP(
+          problem.dir,
+          penalty.str,
+          allow.free.changes=allow.free.changes)
         L$loss$seconds <- L$timing$seconds
         L$loss$megabytes <- L$timing$megabytes
         L$loss$iteration <- iteration
