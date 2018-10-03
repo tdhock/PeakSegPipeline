@@ -13,7 +13,7 @@ create_problems_all <- function
 ### with labels.
 (data.dir.arg,
 ### a directory with labels.bed and coverage.bedGraph.
-  PBS.header=PBS.header.default
+  PBS.header=getOption("PeakSegPipeline.header", PBS.header.default)
 ### Header for sh files.
 ){
   problemStart1 <- problemStart <- problem.name <- chrom <- problemEnd <-
