@@ -58,6 +58,10 @@ counting function, which should be much faster than using an
 intermediate bedGraph
 file. http://www.cs.uleth.ca/~holzmann/C/system/shell_commands.html
 
+2018.10.3
+
+Remove PeakSegFPOP C++ solver, import PeakSegDisk instead.
+
 2018.09.17
 
 total.cost -> total.loss, less confusing nomenclature since we usually
