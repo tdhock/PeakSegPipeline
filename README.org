@@ -10,17 +10,16 @@ sharp H3K4me3 data), jointly using multiple samples and cell types.
   genome browser and then create labels (specific genomic regions
   where you have observed presence or absence of peaks in specific
   samples). For more details about labeling see [[#label-data][Input Files -> Label Data]] below.
-- *Single-sample peak calling using PeakSegFPOP.* This repository
-  includes a limited memory implementation of PeakSegFPOP, a Generalized
-  Functional Pruning Optimal Partitioning algorithm
-  (GFPOP, [[https://arxiv.org/abs/1703.03352][arXiv:1703.03352]]), which is used to predict preliminary peaks for
-  each sample independently.
+- *Single-sample peak calling using PeakSegFPOP.* We use the efficient
+  [[https://github.com/tdhock/PeakSegDisk][PeakSegDisk::problem.PeakSegFPOP]] implementation of Generalized
+  Functional Pruning Optimal Partitioning ([[https://arxiv.org/abs/1810.00117][arXiv:1810.00117]]) to
+  predict preliminary peaks for each sample independently.
 - *Multiple-sample peak calling using PeakSegJoint.* After
   single-sample analysis, peaks on different samples are clustered
   into genomic regions with overlapping peaks. In each cluster we run
-  [[https://github.com/tdhock/PeakSegJoint][PeakSegJoint]] to find the most likely common peak positions across
-  multiple samples -- this includes a prediction of which samples are
-  up and down for each genomic region.
+  [[https://github.com/tdhock/PeakSegJoint][PeakSegJoint]] to approximately compute the most likely common peak
+  positions across multiple samples -- this includes a prediction of
+  which samples are up and down for each genomic region.
 
 There are two major differences between PeakSegPipeline and all of the
 other peak detection algorithms for ChIP-seq data analysis:
@@ -53,7 +52,7 @@ efficient indexed access.
 
 Install a C++ compiler and a BerkeleyDB STL development library, [[https://github.com/tdhock/PeakSegPipeline/wiki/FAQ#Installing-BerkeleyDB-STL][as
 explained in our FAQ]]. BerkeleyDB STL is used by
-=PeakSegPipeline::PeakSegFPOP_disk= to write a large temporary file to
+=PeakSegDisk::PeakSegFPOP_disk= to write a large temporary file to
 disk.
 
 Finally, install the PeakSegPipeline R package.
@@ -81,99 +80,6 @@ PeakSegPipeline on them. If everything worked, you can view the
 results by opening =~/PeakSegPipeline-test/input/index.html= in a web
 browser, and it should be the same as the results shown on
 http://members.cbio.mines-paristech.fr/~thocking/hubs/test/input/
-
-** R function usage/examples
-
-Our paper ([[https://github.com/tdhock/PeakSegFPOP-paper][github source]]) describes two new algorithms, which are
-implemented in this R package. Both algorithms read input data from
-disk (not R objects/memory) in order to handle very large data sets
-while using only O(log N) memory. So you never need to read the entire
-data set into R/memory, and first we describe how to write your data
-set to a file on disk. 
-
-*** Writing a data set to a coverage.bedGraph file
-
-Write your data set to a [[https://genome.ucsc.edu/goldenPath/help/bedgraph.html][bedGraph]] file:
-plain text, with 4 tab-separated columns, chrom (chr), chromStart
-(int), chromEnd (int), coverage (int). The data to segment using the
-up-down constrained Poisson segmentation model should be non-negative
-integers in column 4. If your data are not genomic, that is fine, just
-make up a name for the first column (it is ignored). For example if
-you want to run the algo on the 6 data points [5, 5, 18, 15, 20, 2]
-you should create the following file, named coverage.bedGraph:
-
-#+BEGIN_SRC text
-c	0	2	5
-c	2	3	18
-c	3	4	15
-c	4	5	20
-c	5	6	2
-#+END_SRC
-
-Note that runs of data points with the same value should be combined
-into a single line in the bedGraph file (e.g. the two data 5,5 at the
-beginning of the data sequence becomes one line with start=0 end=2 at
-the beginning of the bedGraph file). Also it is recommended to put the
-file in a folder with a name that is consistent with the start/end
-positions of the data. In the example above it would be
-=sampleID/problems/c:0-6/coverage.bedGraph=
-
-*** PeakSegPipeline::problem.PeakSegFPOP 
-
-The first algorithm is Generalized Functional Pruning Optimal
-Partitioning (GFPOP) with up-down constraints between adjacent segment
-means. To use this algorithm you must give the folder name (not the
-coverage.bedGraph file name) to the problem.PeakSegFPOP function:
-
-#+BEGIN_SRC R
-PeakSegPipeline::problem.PeakSegFPOP("sampleID/problems/c:0-6", "0.1")
-#+END_SRC
-
-Note that the second argument must be a character string that
-represents a penalty value (non-negative real number, larger penalties
-yield fewer peaks). The smallest value is "0" which yields max peaks,
-and the largest value is "Inf" which yields no peaks. It must be an R
-character string (not a real number) because that string is used to
-create files such as
-sampleID/problems/c:0-6/coverage.bedGraph_penalty=0.1_loss.tsv which
-are used to store/cache the results. If the files already exist (and
-are consistent) then problem.PeakSegFPOP just reads them; otherwise it
-runs the dynamic programming C++ code in order to create those files.
-It returns the model as a named list of data.tables -- see
-=help(problem.PeakSegFPOP)= for details of how to interpret.
-
-*Computational complexity:* O(N log N) time, O(N log N) disk, O(log N)
-memory. Basically you will never have to worry about running out of
-memory, but make sure you have some free space on the disk where you
-put your bedGraph file. The algorithm stores the optimal cost
-functions in a file named
-sampleID/problem/c:0-6/coverage.bedGraph_penalty=0.1.db -- for large
-genomic data sets (e.g. bedGraph file with 10 million lines) the db
-file is about 80GB.
-
-*** PeakSegPipeline::problem.sequentialSearch
-
-GFPOP can only compute an optimal model for a given penalty value (and
-we can not directly specify the number of peaks). Thus we provide a
-sequential search algorithm which computes the model with a given
-number of peaks. Actually, some numbers of peaks are not computable
-via GFPOP, and in this case the sequential search returns the next
-simpler model. The first argument again must specify the folder which
-contains your coverage.bedGraph data file. For example,
-
-#+BEGIN_SRC R
-PeakSegPipeline::problem.sequentialSearch("sampleID/problems/c:0-6", 17L)
-#+END_SRC
-
-computes the most likely model with at most 17 peaks.
-
-*Computational complexity:* O(N*log(N)*log(P)) time, O(N log N) disk,
-O(log N) memory. The sequential search has the same storage
-requirements as one run of GFPOP, so make sure you have some free disk
-space. Note that it is slower than GFPOP by a factor of O(log P) --
-this is because it needs to call GFPOP to solve for that number of
-penalties/models before finding the one with the desired number of
-peaks.
 
 ** Pipeline Input Files
 

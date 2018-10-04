@@ -1,20 +1,20 @@
 Package: PeakSegPipeline
 Type: Package
 Title: Genome-Wide Peak Calling Using PeakSegFPOP and PeakSegJoint
-Version: 2018.09.17
+Version: 2018.10.3
 Author: Toby Dylan Hocking
 Maintainer: Toby Dylan Hocking <toby.hocking@r-project.org>
 Description: Implementations of supervised machine learning
  algorithms for peak detection in ChIP-seq data.
- PeakSegFPOP <arXiv:1703.03352> for single-sample peak calling
+ PeakSegFPOP <arXiv:1810.00117> for single-sample peak calling
  (independantly for each sample and genomic problem).
  PeakSegJoint <arXiv:1506.01286>
  for joint peak calling (for each peak, jointly using all samples).
 License: GPL-3
-SystemRequirements: db_stl, bedGraphToBigWig, bigWigToBedGraph, bedToBigBed
+SystemRequirements: bedGraphToBigWig, bigWigToBedGraph, bedToBigBed
 Depends: R (>= 2.10)
 Imports: data.table (>= 1.9.8), PeakError, PeakSegJoint (>= 2017.12.23),
  penaltyLearning (>= 2017.07.11), namedCapture, xtable, 
- parallel, scales, Matrix, ggplot2
+ parallel, scales, Matrix, ggplot2, PeakSegDisk
 Suggests: testthat, httr
-Remotes: tdhock/PeakSegJoint@3d0089843b2df939ad5f5db336685e6412953a36
+Remotes: tdhock/PeakSegDisk
