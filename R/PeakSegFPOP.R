@@ -284,10 +284,11 @@ problem.coverage <- function
       sep="\t",
       col.names=FALSE)
   }
-### Nothing. If necessary, the bigWigToBedGraph command line program
-### is used to create problemID/coverage.bedGraph and then we (1) stop
-### if there are any negative or non-integer data and (2) add lines
-### with zero counts for missing data.
+  problem
+### problem data.table. If necessary, the bigWigToBedGraph command
+### line program is used to create problemID/coverage.bedGraph and
+### then we (1) stop if there are any negative or non-integer data and
+### (2) add lines with zero counts for missing data.
 }
 
 problem.features <- function
@@ -360,20 +361,31 @@ problem.target <- structure(function
   stopifnot(is.numeric(minutes.limit))
   stopifnot(is.character(problem.dir))
   stopifnot(length(problem.dir)==1)
-  problem.coverage(problem.dir)
+  problem <- problem.coverage(problem.dir)
   ## Check if problem/labels.bed exists.
-  problem.labels <- tryCatch({
-    prob.lab.bed <- file.path(problem.dir, "labels.bed")
-    problem.labels <- fread(prob.lab.bed)
-    setnames(problem.labels, c("chrom", "chromStart", "chromEnd", "annotation"))
-    problem.labels
+  problems.dir <- dirname(problem.dir)
+  sample.dir <- dirname(problems.dir)
+  sample.labels.bed <- file.path(sample.dir, "labels.bed")
+  sample.labels <- tryCatch({
+    fread(
+      sample.labels.bed,
+      col.names=c(
+        "chrom", "chromStart", "chromEnd", "annotation"))
   }, error=function(e){
-    data.frame(
+    data.table(
       chrom=character(),
       chromStart=integer(),
       chromEnd=integer(),
       annotation=character())
   })
+  if(verbose)cat(nrow(sample.labels), "labels in", sample.labels.bed, "\n")
+  setkey(problem, chrom, problemStart, problemEnd)
+  setkey(sample.labels, chrom, chromStart, chromEnd)
+  problem.labels <- foverlaps(problem, sample.labels, nomatch=0L)
+  problem.labels[, data.table(
+    chrom, chromStart, chromEnd, annotation)]
+  problem.name <- basename(problem.dir)
+  if(verbose)cat(nrow(problem.labels), "labels in", problem.name, "\n")
   ## Compute the label error for one penalty parameter.
   getError <- function(penalty.str){
     stopifnot(is.character(penalty.str))
