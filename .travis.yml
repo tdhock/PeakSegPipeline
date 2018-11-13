@@ -19,7 +19,9 @@ before_install:
   - export PATH=$(pwd):$PATH
   - popd
   - travis-tool.sh bootstrap
-  - sudo apt-get install -y bedtools libdb5.1++-dev libdb5.1-stl-dev texlive
+  - sudo mkdir /etc/slurm-llnl
+  - sudo cp slurm.conf /etc/slurm-llnl
+  - sudo apt-get install -y bedtools libdb5.1++-dev libdb5.1-stl-dev texlive slurm-wlm
   - mkdir /tmp/tmp256K
   - sudo mount -t tmpfs -o size=256K tmpfs /tmp/tmp256K
   - mkdir /tmp/tmp160000
