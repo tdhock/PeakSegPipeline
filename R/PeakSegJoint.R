@@ -23,7 +23,7 @@ problem.joint.predict.many <- function
       }else{
         tryCatch({
           jprob.peaks <- fread(jpeaks.bed)
-          setnames(
+          setnames( #errors if bed file empty.
             jprob.peaks,
             c("chrom", "chromStart", "chromEnd", "name", "mean"))
           TRUE
@@ -654,11 +654,7 @@ problem.joint.plot <- function
     chunk.cov <- chunk[, readCoverage(problem.dir, chunkStart, chunkEnd)]
     coverage.list[[problem.dir]] <- chunk.cov
     ## Also store peaks in this chunk, if there are any.
-    sample.peaks <- tryCatch({
-      fread(file.path(problem.dir, "peaks.bed"))
-    }, error=function(e){
-      data.table()
-    })
+    sample.peaks <- fread(file.path(problem.dir, "peaks.bed"))
     if(nrow(sample.peaks)){
       setnames(sample.peaks, c("chrom", "peakStart", "peakEnd", "status", "mean"))
       sample.peaks[, peakStart1 := peakStart + 1L]

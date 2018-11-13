@@ -15,10 +15,10 @@ lines do not match the expected problemID, then we recreate it
 from sampleID/coverage.bigWig.}
 }
 
-\value{Nothing. If necessary, the bigWigToBedGraph command line program
-is used to create problemID/coverage.bedGraph and then we (1) stop
-if there are any negative or non-integer data and (2) add lines
-with zero counts for missing data.}
+\value{problem data.table. If necessary, the bigWigToBedGraph command
+line program is used to create problemID/coverage.bedGraph and
+then we (1) stop if there are any negative or non-integer data and
+(2) add lines with zero counts for missing data.}
 
 \author{Toby Dylan Hocking}
 

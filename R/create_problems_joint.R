@@ -54,15 +54,15 @@ create_problems_joint <- function
       sample.id <- basename(sample.dir)
       group.dir <- dirname(sample.dir)
       sample.group <- basename(group.dir)
-      peaks.list[[peaks.bed]] <- tryCatch({
-        sample.peaks <- fread(peaks.bed)
+      ## no peaks gives a warning, which is handled.
+      sample.peaks <- suppressWarnings(fread(peaks.bed))
+      if(nrow(sample.peaks)){
         setnames(
           sample.peaks,
           c("chrom", "chromStart", "chromEnd", "status", "mean"))
-        data.table(sample.id, sample.group, sample.peaks)
-      }, error=function(e){
-        ## do nothing
-      })
+        peaks.list[[peaks.bed]] <- data.table(
+          sample.id, sample.group, sample.peaks)
+      }
     }
     peaks <- do.call(rbind, peaks.list)
   }
@@ -78,15 +78,19 @@ create_problems_joint <- function
       clusterEnd=max(chromEnd)
     ), by=cluster]
     clusters[, clusterStart1 := clusterStart + 1L]
-    setkey(clusters, clusterStart1, clusterEnd)#for join with labels later.
     cat(nrow(peaks), "total peaks form",
         nrow(clusters), "overlapping peak clusters.\n")
     list(
       peaks=clusters[, .(clusterStart, clusterEnd)])
   }else{
     cat("No predicted peaks.\n")
+    clusters <- data.table(
+      cluster=integer(),
+      clusterStart1=integer(),
+      clusterEnd=integer())
     list()
   }
+  setkey(clusters, clusterStart1, clusterEnd)#for join with labels later.
   labels.bed.vec <- Sys.glob(file.path(
     samples.dir, "*", "*", "problems", problem.name, "labels.bed"))
   labels.list <- list()
@@ -151,7 +155,7 @@ create_problems_joint <- function
     problems[
       separate.problem$chromEnd < problemEnd,
       problemEnd := separate.problem$chromEnd]
-    chrom <- peaks$chrom[1]
+    chrom <- sub(":.*", "", problem.name)
     problem.info <- problems[, data.table(
       problemStart,
       problemEnd,

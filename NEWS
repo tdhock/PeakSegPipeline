@@ -13,6 +13,10 @@ counting function, which should be much faster than using an
 intermediate bedGraph
 file. http://www.cs.uleth.ca/~holzmann/C/system/shell_commands.html
 
+2018.11.xx
+
+require data.table >= 1.11.6 to fread empty file as null instead of error.
+
 2018.10.3
 
 Remove PeakSegFPOP C++ solver, import PeakSegDisk instead.

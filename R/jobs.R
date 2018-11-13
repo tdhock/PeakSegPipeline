@@ -1,5 +1,14 @@
+jobs_create <- function
 ### Setup a data directory for analysis with PeakSegPipeline.
-jobs_create <- function(data.dir.arg, verbose=FALSE){
+(data.dir.arg,
+### path to project directory.
+  verbose=FALSE
+### TRUE for output, FALSE otherwise.
+){
+  bases <- problemEnd <- problemStart <- problem.name <- chrom <- row.i <-
+    problemStart1 <- chromStart1 <- chromStart <- chromEnd <- chunk.limits <-
+      chunk.name <- . <- regions.by.chunk.file <- NULL
+  ## above to avoid CRAN NOTE.
   if(FALSE){
     data.dir.arg <- "~/genomic-ml/PeakSegFPOP/labels/ATAC_JV_adipose/"
   }
@@ -62,14 +71,8 @@ jobs_create <- function(data.dir.arg, verbose=FALSE){
     sample.dir <- sample.dir.vec[[sample.i]]
     problems.dir <- file.path(sample.dir, "problems")
     labels.bed <- file.path(sample.dir, "labels.bed")
-    labels <- tryCatch({
-      labels <- fread(labels.bed)
-      setnames(labels, c("chrom", "chromStart", "chromEnd", "annotation"))
-      labels
-    }, error=function(e){
-      if(verbose)cat("No labels in", labels.bed, "\n")
-      data.table()
-    })
+    labels <- fread(labels.bed, col.names=c(
+      "chrom", "chromStart", "chromEnd", "annotation"))
     labels.by.problem <- if(length(labels)){
       just.to.check <- PeakError(Peaks(), labels)
       labels[, chromStart1 := chromStart + 1L]
@@ -189,10 +192,15 @@ jobs_submit_batchtools <- structure(function
 (jobs,
 ### data.table from jobs_create.
   resources=list(
-    walltime = 3600, memory = 1024, ncpus=1, ntasks=1,
+    walltime = 24*60,#minutes
+    memory = 2000,#megabytes per cpu
+    ncpus=2,
+    ntasks=1,
     chunks.as.arrayjobs=TRUE)
 ### List of resources for each job, passed to batchtools::submitJobs.
 ){
+  step <- arg <- fun <- NULL
+  ## Above to avoid CRAN NOTE.
   requireNamespace("batchtools")
   data.dir <- jobs[step==2, arg]
   registry.dir <- file.path(data.dir, "registry")
@@ -214,8 +222,11 @@ jobs_submit_batchtools <- structure(function
     }, 1:nrow(step.jobs), reg=reg, more.args=list(job.dt=step.jobs))
     job.table <- batchtools::getJobTable(reg=reg)
     chunks <- data.table(job.table, chunk=1)
-    batchtools::setJobNames(job.table$job.id, step.jobs[, paste(
-      fun, basename(arg))])
+    batchtools::setJobNames(job.table$job.id, step.jobs[, paste0(
+      sub("problem.", "", fun),
+      "_",
+      basename(arg)
+    )])
     resources[["afterok"]] <- afterok
     batchtools::submitJobs(chunks, resources=resources, reg=reg)
     ##system("squeue -u th798")
@@ -226,6 +237,30 @@ jobs_submit_batchtools <- structure(function
   if(FALSE){
     jobs <- jobs_create("~/genomic-ml/PeakSegFPOP/labels/ATAC_JV_adipose/")
     jobs_submit_batchtools(jobs)
+  }
+})
+
+jobs_submit_mclapply <- structure(function
+### Run PeakSegPipeline jobs in this R session,
+### parallelizing the jobs in each step via mclapply.or.stop.
+(jobs
+### data.table from jobs_create.
+){
+  steps <- jobs[, list(
+    jobs=.N
+  ), by=list(step)][order(step)]
+  for(step.i in 1:nrow(steps)){
+    step.jobs <- jobs[step==step.i]
+    mclapply.or.stop(1:nrow(step.jobs), function(task.i){
+      job <- step.jobs[task.i]
+      fun <- get(job$fun)
+      fun(job$arg)
+    })
+  }
+}, ex=function(){
+  if(FALSE){
+    jobs <- jobs_create("~/genomic-ml/PeakSegFPOP/labels/ATAC_JV_adipose/")
+    jobs_submit_mclapply(jobs)
   }
 })
 

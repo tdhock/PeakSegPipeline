@@ -200,12 +200,14 @@ problem.coverage <- function
   prob.cov.bedGraph <- file.path(problem.dir, "coverage.bedGraph")
   coverage.ok <- tryCatch({
     head.cmd <- paste("head -1", prob.cov.bedGraph) 
-    first.cov <- fread(head.cmd)
-    setnames(first.cov, c("chrom", "chromStart", "chromEnd", "coverage"))
+    first.cov <- fread(cmd=head.cmd, col.names=c(
+      "chrom", "chromStart", "chromEnd", "coverage"))
     tail.cmd <- paste("tail -1", prob.cov.bedGraph)
-    last.cov <- fread(tail.cmd)
-    setnames(last.cov, c("chrom", "chromStart", "chromEnd", "coverage"))
-    last.cov$chromEnd == problem$problemEnd &&
+    last.cov <- fread(cmd=tail.cmd, col.names=c(
+      "chrom", "chromStart", "chromEnd", "coverage"))
+    is.integer(first.cov$chromEnd) &&
+      is.integer(last.cov$chromEnd) &&
+      last.cov$chromEnd == problem$problemEnd &&
       first.cov$chromStart == problem$problemStart
   }, error=function(e){
     FALSE
@@ -349,7 +351,8 @@ problem.target <- structure(function
     min.log.lambda <- penalty <- . <- done <- total.loss <- mean.pen.cost <-
       bases <- no.next <- is.min <- min.err.interval <- max.lambda <-
         already.computed <- is.other <- dist <- min.lambda <- log.size <-
-          mid.lambda <- NULL
+          mid.lambda <- chrom <- problemStart <- problemEnd <- chromEnd <-
+            annotation <- NULL
   ## above to avoid "no visible binding for global variable" NOTEs in
   ## CRAN check.
   if(is.null(minutes.limit)){
@@ -366,18 +369,17 @@ problem.target <- structure(function
   problems.dir <- dirname(problem.dir)
   sample.dir <- dirname(problems.dir)
   sample.labels.bed <- file.path(sample.dir, "labels.bed")
-  sample.labels <- tryCatch({
-    fread(
+  sample.labels <- fread(
       sample.labels.bed,
       col.names=c(
         "chrom", "chromStart", "chromEnd", "annotation"))
-  }, error=function(e){
-    data.table(
+  if(nrow(sample.labels)==0){
+    sample.labels <- data.table(
       chrom=character(),
       chromStart=integer(),
       chromEnd=integer(),
       annotation=character())
-  })
+  }
   if(verbose)cat(nrow(sample.labels), "labels in", sample.labels.bed, "\n")
   setkey(problem, chrom, problemStart, problemEnd)
   setkey(sample.labels, chrom, chromStart, chromEnd)

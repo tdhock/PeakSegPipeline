@@ -93,11 +93,7 @@ genomesFile genomes.txt
 email ", email), file.path(data.dir.path, "hub.txt"))
   ## create jointProblems.bigBed
   jproblems.glob <- file.path(data.dir.path, "problems", "*", "jointProblems.bed")
-  jprobs <- tryCatch({
-    fread(paste("cat", jproblems.glob))
-  }, error=function(e){
-    data.table()
-  })
+  jprobs <- fread(cmd=paste("cat", jproblems.glob))
   jointProblems.bed <- file.path(data.dir.path, "jointProblems.bed")
   if(nrow(jprobs)){
     setnames(jprobs, c("chrom", "problemStart", "problemEnd"))

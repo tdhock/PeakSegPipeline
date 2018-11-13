@@ -4,7 +4,7 @@ library(data.table)
 context("noinput")
 options(
   mc.cores=parallel::detectCores(),
-  PeakSegPipeline.problem.target.minutes=5)
+  PeakSegPipeline.problem.target.minutes=1)
 
 download.to <- function
 (u, f, writeFun=if(grepl("bigWig", f))writeBin else writeLines){
@@ -112,6 +112,22 @@ system(paste("bigWigToBedGraph", demo.bigWig, "/dev/stdout|head"))
 index.html <- file.path(demo.dir, "index.html")
 unlink(index.html)
 pipeline(demo.dir)
+test_that("index.html is created", {
+  expect_true(file.exists(index.html))
+})
+
+## Pipeline should run to completion using SLURM.
+unlink(index.html)
+jobs <- jobs_create(demo.dir)
+res.list <- list(
+    walltime = 3600, #in minutes
+    ncpus=1,
+    ntasks=1,
+    chunks.as.arrayjobs=TRUE)
+jobs_submit_batchtools(jobs, res.list)
+reg.dir <- file.path(demo.dir, "registry", "1")
+reg <- loadRegistry(reg.dir)
+result <- batchtools::waitForJobs(res=res)
 test_that("index.html is created", {
   expect_true(file.exists(index.html))
 })
