@@ -1,50 +1,5 @@
 TODOs
 
-C++/R function that computes total Poisson loss using bedGraph and bed
-file input -- this may be more numerically stable than the cost that
-results from PeakSegFPOP. For example
-
-> system("head labels/H3K4me3_XJ_immune/samples/tcell/McGill0107/problems/chr22:16847850-20509431/coverage.bedGraph_penalty=0_loss.tsv labels/H3K4me3_XJ_immune/samples/tcel\
- l/McGill0107/problems/chr22:16847850-20509431/coverage.bedGraph_penalty=5.83435542852498e-10_loss.tsv labels/H3K4me3_XJ_immune/samples/tcell/McGill0107/problems/chr22:16847\
- 850-20509431/coverage.bedGraph_penalty=0.000172220048971656_loss.tsv")
- ==> labels/H3K4me3_XJ_immune/samples/tcell/McGill0107/problems/chr22:16847850-20509431/coverage.bedGraph_penalty=0_loss.tsv <==
- 0       135835  67917   3661581 -6.0018530211077560921  -21976270.986880756915  infeasible      2.8921437994722953846   6
-
- ==> labels/H3K4me3_XJ_immune/samples/tcell/McGill0107/problems/chr22:16847850-20509431/coverage.bedGraph_penalty=5.83435542852498e-10_loss.tsv <==
- 5.8343554285249800245e-10       135831  67915   3661581 -6.0018530211010858721  -21976270.986895956099  infeasible      2.8940798153034301698   6
-
- ==> labels/H3K4me3_XJ_immune/samples/tcell/McGill0107/problems/chr22:16847850-20509431/coverage.bedGraph_penalty=0.000172220048971656_loss.tsv <==
- 0.00017222004897165599582       123445  61722   3661581 -6.0018501174476162063  -21976270.98465982452   infeasible      2.9924208443271766988   7
- > 
-
-there seems to be a difference between PeakSegFPOP and manual computation of the cost,
-at either the fifth or sixth decimal place:
-penalty                           0  5.8343554285249800245e-10   0.000172220048971656 
-PeakSegFPOP -21976270.9868 80756915    -21976270.9868 95956099 -21976270.98465 982452 
-manual      -21976270.9868 76085401    -21976270.9868 76085401 -21976270.98465 505615
-
-Note above there is no difference in the manual cost between 0 and
-5.8e-10, but there is a difference between the PeakSegFPOP cost, at
-the fifth decimal place. This is a numerical error: the model with 0
-penalty should always have at least as low of cost as any other
-models. But in the PeakSegFPOP numbers, the model with penalty=5.8e-10
-has a slightly lower cost.
-
-Test via R/data.table code:
-cov.dt <- fread("labels/H3K4me3_XJ_immune/samples/tcell/McGill0107/problems/chr22:16847850-20509431/coverage.bedGraph")
-setnames(cov.dt, c("chrom", "chromStart", "chromEnd", "count"))
-cov.dt[, chromStart1 := chromStart +1L]
-setkey(cov.dt, chromStart1, chromEnd)
-segs.dt <- fread("labels/H3K4me3_XJ_immune/samples/tcell/McGill0107/problems/chr22:16847850-20509431/coverage.bedGraph_penalty=5.83435542852498e-10_segments.bed")
-setnames(segs.dt, c("chrom", "segStart", "segEnd", "status", "mean"))
-segs.dt[, segStart1 := segStart + 1L]
-setkey(segs.dt, segStart1, segEnd)
-over.dt <- foverlaps(cov.dt, segs.dt, nomatch=0L)
-sprintf("%.12f", over.dt[, PeakSegDP::PoissonLoss(count, mean, chromEnd-chromStart)])
-
-Remove stderr from tail since that confuses some users:
-tail: cannot open .bedGraph file for reading no such file or directory
-
 warning/error for convert_labels when a chunk has no noPeaks labels.
 
 error in convert_labels for noPeaks label with sample groups up?
