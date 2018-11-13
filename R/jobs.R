@@ -56,7 +56,6 @@ jobs_create <- function(data.dir.arg, verbose=FALSE){
   sample.dir.glob <- file.path(samples.dir, "*", "*")
   unlinkProblems(file.path(sample.dir.glob, "problems", "*"))
   unlinkProblems(file.path(data.dir, "problems", "*"))
-
   sample.dir.vec <- Sys.glob(sample.dir.glob)
   all.job.list <- list()
   for(sample.i in seq_along(sample.dir.vec)){
@@ -100,7 +99,6 @@ jobs_create <- function(data.dir.arg, verbose=FALSE){
     ##   fun="problem.predict",
     ##   arg=file.path(problems.dir, problems$problem.name))
   }#for(sample.i
-
   chunk.limits.RData <- file.path(data.dir, "chunk.limits.RData")
   if(file.exists(chunk.limits.RData)){
     objs <- load(chunk.limits.RData)
@@ -156,7 +154,6 @@ jobs_create <- function(data.dir.arg, verbose=FALSE){
     job.dir <- file.path(data.dir, "jobs", problem.i)
     dir.create(job.dir, showWarnings=FALSE, recursive=TRUE)
   }#for(problem.i
-
   all.job.list[["Step4 train joint"]] <- data.table(
     step=4,
     fun="problem.joint.targets.train",
@@ -182,10 +179,20 @@ jobs_create <- function(data.dir.arg, verbose=FALSE){
     job.chunks[, list(jobs=.N, chunks=length(unique(chunk))), by=list(step)]
   }
   all.job
+### data.table with one row for each job and three columns: fun, arg,
+### step. fun is the function to call with argument arg, in order
+### specified by step (smaller steps first).
 }
 
+jobs_submit_batchtools <- structure(function
 ### Submit PeakSegPipeline jobs via batchtools.
-jobs_submit_batchtools <- structure(function(jobs){
+(jobs,
+### data.table from jobs_create.
+  resources=list(
+    walltime = 3600, memory = 1024, ncpus=1, ntasks=1,
+    chunks.as.arrayjobs=TRUE)
+### List of resources for each job, passed to batchtools::submitJobs.
+){
   requireNamespace("batchtools")
   data.dir <- jobs[step==2, arg]
   registry.dir <- file.path(data.dir, "registry")
@@ -199,23 +206,20 @@ jobs_submit_batchtools <- structure(function(jobs){
     unlink(step.dir, recursive=TRUE)
     reg <- batchtools::makeRegistry(step.dir)
     step.jobs <- jobs[step==step.i]#[1:min(2, .N)]#for testing
-    batchMap(function(task.i, job.dt){
+    batchtools::batchMap(function(task.i, job.dt){
       library(PeakSegPipeline)
       job <- job.dt[task.i]
       fun <- get(job$fun)
       fun(job$arg)
     }, 1:nrow(step.jobs), reg=reg, more.args=list(job.dt=step.jobs))
-    job.table <- getJobTable(reg=reg)
+    job.table <- batchtools::getJobTable(reg=reg)
     chunks <- data.table(job.table, chunk=1)
-    setJobNames(job.table$job.id, step.jobs[, paste(
+    batchtools::setJobNames(job.table$job.id, step.jobs[, paste(
       fun, basename(arg))])
-    submitJobs(chunks, resources = list(
-      walltime = 3600, memory = 1024, ncpus=1, ntasks=1,
-      afterok=afterok,
-      chunks.as.arrayjobs=TRUE),
-      reg=reg)
+    resources[["afterok"]] <- afterok
+    batchtools::submitJobs(chunks, resources=resources, reg=reg)
     ##system("squeue -u th798")
-    (jobs.done <- getJobTable(reg=reg))
+    (jobs.done <- batchtools::getJobTable(reg=reg))
     afterok <- sub("_.*", "", jobs.done$batch.id)[[1]]
   }
 }, ex=function(){

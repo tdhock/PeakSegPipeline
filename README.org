@@ -245,6 +245,18 @@ the gap file contains one line for every gap in the reference (unknown
 / NNN sequence). If there are no gaps in your genome, then you can use
 =yourGenome_chromInfo.txt= as a =problems.bed= file.
 
+
+** Running PeakSegPipeline on a cluster via batchtools
+
+I use the following in my ~/.batchtools.conf.R file:
+
+#+BEGIN_SRC R
+  cluster.functions = makeClusterFunctionsSlurm(system.file(
+    file.path("templates", "slurm-afterok.tmpl"),
+    package="PeakSegPipeline",
+    mustWork=TRUE))
+#+END_SRC
+
 ** Running steps of the pipeline in parallel
 
 The PeakSegPipeline consists of seven steps. Below we give the command
