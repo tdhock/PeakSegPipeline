@@ -98,7 +98,6 @@ chr10	125919472	128616069
 }
 
 ## Pipeline should raise error for non-integer data.
-system(paste("bigWigToBedGraph", bigWig.file, "/dev/stdout|head"))
 test_that("error for non-integer data in bigWigs", {
   expect_error({
     pipeline(non.integer.dir)
@@ -117,25 +116,25 @@ for(labels.bed in labels.bed.vec){
 
 ## Pipeline should run to completion for integer count data.
 unlink(index.html)
-pipeline(demo.dir)
-test_that("index.html is created", {
+test_that("index.html is created via pipeline fun", {
+  pipeline(demo.dir)
   expect_true(file.exists(index.html))
 })
 
 ## Pipeline should run to completion using SLURM.
 unlink(index.html)
-jobs <- jobs_create(demo.dir)
-res.list <- list(
+test_that("index.html is created via batchtools", {
+  jobs <- jobs_create(demo.dir)
+  res.list <- list(
     walltime = 3600, #in minutes
     ncpus=1,
     ntasks=1,
     chunks.as.arrayjobs=TRUE)
-jobs_submit_batchtools(jobs, res.list)
-reg.dir <- file.path(demo.dir, "registry", "6")
-print(getwd())
-reg <- batchtools::loadRegistry(reg.dir)
-result <- batchtools::waitForJobs(reg=reg)
-test_that("index.html is created", {
+  jobs_submit_batchtools(jobs, res.list)
+  reg.dir <- file.path(demo.dir, "registry", "6")
+  print(getwd())
+  reg <- batchtools::loadRegistry(reg.dir)
+  result <- batchtools::waitForJobs(reg=reg)
   expect_true(file.exists(index.html))
 })
 

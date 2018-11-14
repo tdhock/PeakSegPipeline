@@ -91,13 +91,11 @@ for(set.dir in c(non.integer.dir, demo.dir)){
 }
 
 ## Pipeline should raise error for non-integer data.
-system(paste("bigWigToBedGraph", bigWig.file, "/dev/stdout|head"))
 test_that("error for non-integer data in bigWigs", {
   expect_error({
     pipeline(non.integer.dir)
   }, "non-integer data in")
 })
-
 unlink(non.integer.dir, recursive=TRUE, force=TRUE)
 
 ## Set time limit.
@@ -111,8 +109,8 @@ for(labels.bed in labels.bed.vec){
 
 ## Pipeline should run to completion for integer count data.
 unlink(index.html)
-pipeline(demo.dir)
 test_that("index.html is created", {
+  pipeline(demo.dir)
   expect_true(file.exists(index.html))
 })
 

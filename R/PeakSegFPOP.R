@@ -163,6 +163,23 @@ problem.predict.allSamples <- function
 ### data.table of predicted peaks.
 }
 
+problem.table <- function
+### Convert a path with a problem string to a data.table.
+(problem.dir
+### path with a problem string, e.g. chrX:6000-1000000
+){
+  pattern <- paste0(
+    "(?<chrom>chr[^:]+)",
+    ":",
+    "(?<problemStart>[0-9]+)",
+    "-",
+    "(?<problemEnd>[0-9]+)")
+  data.table(str_match_named(problem.dir, pattern, list(
+    problemStart=as.integer,
+    problemEnd=as.integer)))
+### data.table with columns chrom, problemStart, problemEnd.
+}
+
 problem.coverage <- function
 ### Ensure that coverage.bedGraph has been correctly computed for a
 ### particular genomic segmentation problem.
@@ -185,17 +202,7 @@ problem.coverage <- function
   stopifnot(length(problem.dir)==1)
   problems.dir <- dirname(problem.dir)
   sample.dir <- dirname(problems.dir)
-  ## Get problem from directory name.
-  pattern <- paste0(
-    "(?<chrom>chr[^:]+)",
-    ":",
-    "(?<problemStart>[0-9]+)",
-    "-",
-    "(?<problemEnd>[0-9]+)")
-  problem.base <- basename(problem.dir)
-  problem <- data.table(str_match_named(problem.base, pattern, list(
-    problemStart=as.integer,
-    problemEnd=as.integer)))
+  problem <- problem.table(problem.dir)
   ## First check if problem/coverage.bedGraph has been created.
   prob.cov.bedGraph <- file.path(problem.dir, "coverage.bedGraph")
   coverage.ok <- tryCatch({
@@ -369,6 +376,7 @@ problem.target <- structure(function
   stopifnot(is.numeric(minutes.limit))
   stopifnot(is.character(problem.dir))
   stopifnot(length(problem.dir)==1)
+  problem.coverage(problem.dir)
   labels.dt <- problem.labels(problem.dir)
   problem.name <- basename(problem.dir)
   if(verbose)cat(nrow(problem.labels), "labels in", problem.name, "\n")
@@ -567,13 +575,13 @@ problem.labels <- function
       chromEnd=integer(),
       annotation=character())
   }
-  problem <- problem.coverage(problem.dir)
+  problem <- problem.table(problem.dir)
   problem[, problemStart1 := problemStart +1L]
   sample.labels[, chromStart1 := chromStart +1L]
   setkey(problem, chrom, problemStart1, problemEnd)
   setkey(sample.labels, chrom, chromStart1, chromEnd)
-  problem.labels <- foverlaps(problem, sample.labels, nomatch=0L)
-  problem.labels[, data.table(
+  labels.dt <- foverlaps(problem, sample.labels, nomatch=0L)
+  labels.dt[, data.table(
     chrom, chromStart, chromEnd, annotation)]
 ### data.table with one row for each label and columns chrom,
 ### chromStart, chromEnd, annotation.
