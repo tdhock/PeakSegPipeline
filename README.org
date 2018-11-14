@@ -248,8 +248,8 @@ the gap file contains one line for every gap in the reference (unknown
 
 ** Running PeakSegPipeline on a cluster via batchtools
 
-The batchtools package is an interface to several cluster
-systems. PeakSegPipeline on
+PeakSegPipeline uses [[https://mllg.github.io/batchtools/articles/batchtools.html][batchtools]] to launch jobs on the [[https://slurm.schedmd.com/][SLURM]] cluster
+system.
 
 I use the following in my ~/.batchtools.conf.R file:
 

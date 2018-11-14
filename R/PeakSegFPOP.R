@@ -202,6 +202,7 @@ problem.coverage <- function
   ## CRAN check.
   stopifnot(is.character(problem.dir))
   stopifnot(length(problem.dir)==1)
+  dir.create(problem.dir, showWarnings=FALSE, recursive=TRUE)
   problems.dir <- dirname(problem.dir)
   sample.dir <- dirname(problems.dir)
   problem <- problem.table(problem.dir)

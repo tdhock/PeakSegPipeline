@@ -122,6 +122,19 @@ test_that("index.html is created via pipeline fun", {
   expect_true(file.exists(index.html))
 })
 
+## Remove one sampleID/problems dir to simulate what happens when
+## running jobs_create (which does not create problems dirs) then
+## jobs_submit.
+one.problem.dir <- dirname(labels.bed)
+one.problems.dir <- dirname(one.problem.dir)
+unlink(one.problems.dir, recursive=TRUE)
+test_that("problem.coverage makes a directory", {
+  prob <- problem.coverage(one.problem.dir)
+  expect_true(file.exists(file.path(one.problem.dir, "coverage.bedGraph")))
+})
+limit.file <- file.path(one.problem.dir, "target.minutes")
+fwrite(limit.dt, limit.file, col.names=FALSE)
+       
 ## Pipeline should run to completion using SLURM.
 unlink(index.html)
 test_that("index.html is created via batchtools", {
