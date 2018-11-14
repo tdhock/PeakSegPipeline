@@ -106,11 +106,11 @@ test_that("error for non-integer data in bigWigs", {
 unlink(non.integer.dir, recursive=TRUE, force=TRUE)
 
 ## Set time limit.
-labels.bed.vec <- Sys.glob(file.path(
-  demo.dir, "samples", "*", "*", "problems", "*", "labels.bed"))
+(prob.dir.vec <- Sys.glob(file.path(
+  demo.dir, "samples", "*", "*", "problems", "chr10:18024675-38818835")))
 limit.dt <- data.table(minutes=2)
-for(labels.bed in labels.bed.vec){
-  limit.file <- sub("labels.bed", "target.minutes", labels.bed)
+for(prob.dir in prob.dir.vec){
+  limit.file <- file.path(prob.dir, "target.minutes")
   fwrite(limit.dt, limit.file, col.names=FALSE)
 }
 
@@ -125,14 +125,13 @@ test_that("index.html is created via pipeline fun", {
 ## Remove one sampleID/problems dir to simulate what happens when
 ## running jobs_create (which does not create problems dirs) then
 ## jobs_submit.
-one.problem.dir <- dirname(labels.bed)
-one.problems.dir <- dirname(one.problem.dir)
+one.problems.dir <- dirname(prob.dir)
 unlink(one.problems.dir, recursive=TRUE)
 test_that("problem.coverage makes a directory", {
-  prob <- problem.coverage(one.problem.dir)
-  expect_true(file.exists(file.path(one.problem.dir, "coverage.bedGraph")))
+  prob <- problem.coverage(prob.dir)
+  expect_true(file.exists(file.path(prob.dir, "coverage.bedGraph")))
 })
-limit.file <- file.path(one.problem.dir, "target.minutes")
+limit.file <- file.path(prob.dir, "target.minutes")
 fwrite(limit.dt, limit.file, col.names=FALSE)
        
 ## Pipeline should run to completion using SLURM.
