@@ -227,10 +227,19 @@ problem.joint.train <- function
     cat("Training", model.name, "model using", n.keep, "finite targets.\n")
     target.mat <- all.target.mat[keep,]
     feature.mat <- mat.list$features[keep,]
+    n.finite.vec <- colSums(is.finite(target.mat))
+    max.folds <- min(n.finite.vec)
+    n.folds <- min(max.folds, 5)
+    fold.vec <- rep(NA, nrow(target.mat))
+    col.with.fewer.finite <- which.min(n.finite.vec)
+    fewer.is.finite <- is.finite(target.mat[, col.with.fewer.finite])
     set.seed(1)
+    fold.vec[fewer.is.finite] <- sample(rep(1:n.folds, l=sum(fewer.is.finite)))
+    fold.vec[is.na(fold.vec)] <- sample(rep(n.folds:1, l=sum(is.na(fold.vec))))
     joint.model <- penaltyLearning::IntervalRegressionCV(
       feature.mat, target.mat,
-      min.observations=n.keep)
+      min.observations=n.keep,
+      fold.vec=fold.vec)
     joint.model$train.mean.vec <- colMeans(feature.mat)
     pred.log.penalty <- joint.model$predict(feature.mat)
     pred.dt <- data.table(
