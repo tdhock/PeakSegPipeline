@@ -108,16 +108,17 @@ unlink(non.integer.dir, recursive=TRUE, force=TRUE)
 ## Set time limit.
 labels.bed.vec <- Sys.glob(file.path(
   demo.dir, "samples", "*", "*", "problems", "*", "labels.bed"))
-limit.dt <- data.table(minutes=5)
+limit.dt <- data.table(minutes=2)
 for(labels.bed in labels.bed.vec){
   limit.file <- sub("labels.bed", "target.minutes", labels.bed)
   fwrite(limit.dt, limit.file, col.names=FALSE)
 }
 
 ## Pipeline should run to completion for integer count data.
+print(getwd())
 unlink(index.html)
 test_that("index.html is created via pipeline fun", {
-  pipeline(demo.dir)
+  pipeline(demo.dir, verbose=1)
   expect_true(file.exists(index.html))
 })
 
@@ -132,7 +133,6 @@ test_that("index.html is created via batchtools", {
     chunks.as.arrayjobs=TRUE)
   jobs_submit_batchtools(jobs, res.list)
   reg.dir <- file.path(demo.dir, "registry", "6")
-  print(getwd())
   reg <- batchtools::loadRegistry(reg.dir)
   result <- batchtools::waitForJobs(reg=reg)
   expect_true(file.exists(index.html))

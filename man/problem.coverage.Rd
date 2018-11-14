@@ -3,7 +3,7 @@
 \title{problem coverage}
 \description{Ensure that coverage.bedGraph has been correctly computed for a
 particular genomic segmentation problem.}
-\usage{problem.coverage(problem.dir)}
+\usage{problem.coverage(problem.dir, verbose = 0)}
 \arguments{
   \item{problem.dir}{Path to a directory like sampleID/problems/problemID where
 sampleID/coverage.bigWig contains counts of aligned reads in the
@@ -13,6 +13,7 @@ coordinates of a particular segmentation problem. If
 problemID/coverage.bedGraph does not exist, or its first/last
 lines do not match the expected problemID, then we recreate it
 from sampleID/coverage.bigWig.}
+  \item{verbose}{print messages?}
 }
 
 \value{problem data.table. If necessary, the bigWigToBedGraph command

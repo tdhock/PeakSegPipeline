@@ -38,7 +38,7 @@ error was computed.}
 library(PeakSegPipeline)
 data(Mono27ac, envir=environment())
 ## Write the Mono27ac data set to disk.
-data.dir <- file.path(
+problem.dir <- file.path(
   tempfile(),
   "H3K27ac-H3K4me3_TDHAM_BP",
   "samples",
@@ -46,22 +46,22 @@ data.dir <- file.path(
   "S001YW_NCMLS",
   "problems",
   "chr11:60000-580000")
-dir.create(data.dir, recursive=TRUE, showWarnings=FALSE)
+dir.create(problem.dir, recursive=TRUE, showWarnings=FALSE)
 write.table(
-  Mono27ac$labels, file.path(data.dir, "labels.bed"),
+  Mono27ac$labels, file.path(problem.dir, "labels.bed"),
   col.names=FALSE, row.names=FALSE, quote=FALSE, sep="\t")
 write.table(
-  Mono27ac$coverage, file.path(data.dir, "coverage.bedGraph"),
+  Mono27ac$coverage, file.path(problem.dir, "coverage.bedGraph"),
   col.names=FALSE, row.names=FALSE, quote=FALSE, sep="\t")
 ## Creating a target.minutes file stops the optimization after that
 ## number of minutes, resulting in an imprecise target interval, but
 ## saving time (to avoid NOTE on CRAN).
 write.table(
-  data.frame(minutes=0.05), file.path(data.dir, "target.minutes"),
+  data.frame(minutes=0.05), file.path(problem.dir, "target.minutes"),
   col.names=FALSE, row.names=FALSE, quote=FALSE)
 
 ## Compute target interval.
-target.list <- problem.target(data.dir)
+target.list <- problem.target(problem.dir)
 
 ## These are all the models computed in order to find the target
 ## interval.

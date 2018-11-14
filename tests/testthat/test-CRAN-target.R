@@ -21,7 +21,7 @@ write.table(
   Mono27ac$coverage, file.path(problem.dir, "coverage.bedGraph"),
   col.names=FALSE, row.names=FALSE, quote=FALSE, sep="\t")
 write.table(
-  data.frame(minutes=0.05), file.path(data.dir, "target.minutes"),
+  data.frame(minutes=0.05), file.path(problem.dir, "target.minutes"),
   col.names=FALSE, row.names=FALSE, quote=FALSE)
 test_that("problem.target uses problem/labels.bed if present", {
   target.list <- problem.target(problem.dir)

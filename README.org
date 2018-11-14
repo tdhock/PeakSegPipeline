@@ -248,6 +248,9 @@ the gap file contains one line for every gap in the reference (unknown
 
 ** Running PeakSegPipeline on a cluster via batchtools
 
+The batchtools package is an interface to several cluster
+systems. PeakSegPipeline on
+
 I use the following in my ~/.batchtools.conf.R file:
 
 #+BEGIN_SRC R
