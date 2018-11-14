@@ -191,7 +191,7 @@ plot_all <- function
       "peaks_matrix_", suffix, ".tsv.gz")
     path.tsv.gz <- file.path(set.dir, base.tsv.gz)
     cmd <- paste("zcat", path.tsv.gz)
-    fread(cmd, ...)
+    fread(cmd=cmd, ...)
   }
   header.dt <- zcat("sample", nrows=1)
   col.name.vec <- names(header.dt)

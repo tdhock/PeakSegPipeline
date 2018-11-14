@@ -334,17 +334,16 @@ problem.target <- structure(function
 ### until it finds an interval of penalty values with minimal label
 ### error. The calls to PeakSegFPOP are parallelized using mclapply if
 ### you set options(mc.cores).
+### A time limit in minutes may be specified in a file
+### problem.dir/target.minutes;
+### the search will stop at a sub-optimal target interval
+### if this many minutes has elapsed. Useful for testing environments
+### with build time limits (travis). 
 (problem.dir,
 ### problemID directory in which coverage.bedGraph has already been
 ### computed. If there is a labels.bed file then the number of
 ### incorrect labels will be computed in order to find the target
 ### interval of minimal error penalty values.
-  minutes.limit=NULL,
-### Time limit; the search will stop at a sub-optimal target interval
-### if this many minutes has elapsed. Useful for testing environments
-### with build time limits (travis). Default NULL means to use the
-### value in option PeakSegPipeline.problem.target.minutes (or Inf if
-### that option is not set).
   verbose=0
  ){
   status <- peaks <- errors <- fp <- fn <- penalty <- max.log.lambda <-
@@ -355,37 +354,22 @@ problem.target <- structure(function
             annotation <- NULL
   ## above to avoid "no visible binding for global variable" NOTEs in
   ## CRAN check.
-  if(is.null(minutes.limit)){
-    ## here rather than in the arguments in order to avoid Rd NOTE
-    ## about lines wider than 90 characters.
-    minutes.limit <- getOption("PeakSegPipeline.problem.target.minutes", Inf)
+  minutes.file <- file.path(problem.dir, "target.minutes")
+  minutes.limit <- Inf
+  if(file.exists(minutes.file)){
+    minutes.dt <- fread(minutes.file)
+    if(nrow(minutes.dt)==1 && ncol(minutes.dt)==1){
+      setnames(minutes.dt, "minutes")
+      if(is.numeric(minutes.dt$minutes)){
+        minutes.limit <- minutes.dt$minutes
+      }
+    }
   }
   seconds.start <- as.numeric(Sys.time())
   stopifnot(is.numeric(minutes.limit))
   stopifnot(is.character(problem.dir))
   stopifnot(length(problem.dir)==1)
-  problem <- problem.coverage(problem.dir)
-  ## Check if problem/labels.bed exists.
-  problems.dir <- dirname(problem.dir)
-  sample.dir <- dirname(problems.dir)
-  sample.labels.bed <- file.path(sample.dir, "labels.bed")
-  sample.labels <- fread(
-      sample.labels.bed,
-      col.names=c(
-        "chrom", "chromStart", "chromEnd", "annotation"))
-  if(nrow(sample.labels)==0){
-    sample.labels <- data.table(
-      chrom=character(),
-      chromStart=integer(),
-      chromEnd=integer(),
-      annotation=character())
-  }
-  if(verbose)cat(nrow(sample.labels), "labels in", sample.labels.bed, "\n")
-  setkey(problem, chrom, problemStart, problemEnd)
-  setkey(sample.labels, chrom, chromStart, chromEnd)
-  problem.labels <- foverlaps(problem, sample.labels, nomatch=0L)
-  problem.labels[, data.table(
-    chrom, chromStart, chromEnd, annotation)]
+  labels.dt <- problem.labels(problem.dir)
   problem.name <- basename(problem.dir)
   if(verbose)cat(nrow(problem.labels), "labels in", problem.name, "\n")
   ## Compute the label error for one penalty parameter.
@@ -395,7 +379,7 @@ problem.target <- structure(function
     result <- problem.PeakSegFPOP(problem.dir, penalty.str)
     penalty.peaks <- result$segments[status=="peak",]
     tryCatch({
-      penalty.error <- PeakErrorChrom(penalty.peaks, problem.labels)
+      penalty.error <- PeakErrorChrom(penalty.peaks, labels.dt)
     }, error=function(e){
       stop("try deleting _segments.bed and recomputing, error computing number of incorrect labels: ", e)
     })
@@ -543,6 +527,50 @@ problem.target <- structure(function
   print(target.list$target)
 
 })
+
+problem.labels <- function
+### read problemID/labels.bed if it exists, otherwise read
+### sampleID/labels.bed
+(problem.dir
+  ## project/samples/groupID/sampleID/problems/problemID
+){
+  problem.labels.bed <- file.path(problem.dir, "labels.bed")
+  if(file.exists(problem.labels.bed)){
+    return(fread(problem.labels.bed, col.names=c(
+      "chrom", "chromStart", "chromEnd", "annotation")))
+  }
+  problems.dir <- dirname(problem.dir)
+  sample.dir <- dirname(problems.dir)
+  sample.labels.bed <- file.path(sample.dir, "labels.bed")
+  if(!file.exists(sample.labels.bed)){
+    stop(
+      "need labels to compute target interval but none found for problem; ",
+      "please create either ",
+      sample.labels.bed, " or ",
+      problem.labels.bed)
+  }
+  sample.labels <- fread(
+    sample.labels.bed,
+    col.names=c(
+      "chrom", "chromStart", "chromEnd", "annotation"))
+  if(nrow(sample.labels)==0){
+    sample.labels <- data.table(
+      chrom=character(),
+      chromStart=integer(),
+      chromEnd=integer(),
+      annotation=character())
+  }
+  problem <- problem.coverage(problem.dir)
+  problem[, problemStart1 := problemStart +1L]
+  sample.labels[, chromStart1 := chromStart +1L]
+  setkey(problem, chrom, problemStart1, problemEnd)
+  setkey(sample.labels, chrom, chromStart1, chromEnd)
+  problem.labels <- foverlaps(problem, sample.labels, nomatch=0L)
+  problem.labels[, data.table(
+    chrom, chromStart, chromEnd, annotation)]
+### data.table with one row for each label and columns chrom,
+### chromStart, chromEnd, annotation.
+}  
 
 problem.predict <- function
 ### Predict peaks for a genomic segmentation problem.

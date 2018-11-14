@@ -3,8 +3,11 @@ library(PeakSegPipeline)
 library(data.table)
 context("noinput")
 options(
-  mc.cores=parallel::detectCores(),
-  PeakSegPipeline.problem.target.minutes=1)
+  mc.cores=parallel::detectCores())
+test.data.dir <- file.path(Sys.getenv("HOME"), "PeakSegPipeline-test")
+non.integer.dir <- file.path(test.data.dir, "non-integer")
+demo.dir <- file.path(test.data.dir, "noinput")
+index.html <- file.path(demo.dir, "index.html")
 
 download.to <- function
 (u, f, writeFun=if(grepl("bigWig", f))writeBin else writeLines){
@@ -51,10 +54,6 @@ chr10:38,731,066-38,750,574 peakEnd bcell kidney
 chr10:38,750,960-38,790,663 noPeaks
 "
 
-test.data.dir <- file.path(Sys.getenv("HOME"), "PeakSegPipeline-test")
-##test.data.dir <- file.path(tempdir(), "PeakSegPipeline-test")
-non.integer.dir <- file.path(test.data.dir, "non-integer")
-demo.dir <- file.path(test.data.dir, "noinput")
 chrom.sizes.file <- tempfile()
 chrom.sizes <- data.table(chrom="chr10", bases=128616069)
 fwrite(chrom.sizes, chrom.sizes.file, sep="\t", col.names=FALSE)
@@ -107,9 +106,16 @@ test_that("error for non-integer data in bigWigs", {
 })
 unlink(non.integer.dir, recursive=TRUE, force=TRUE)
 
+## Set time limit.
+labels.bed.vec <- Sys.glob(file.path(
+  demo.dir, "samples", "*", "*", "problems", "*", "labels.bed"))
+limit.dt <- data.table(minutes=5)
+for(labels.bed in labels.bed.vec){
+  limit.file <- sub("labels.bed", "target.minutes", labels.bed)
+  fwrite(limit.dt, limit.file, col.names=FALSE)
+}
+
 ## Pipeline should run to completion for integer count data.
-system(paste("bigWigToBedGraph", demo.bigWig, "/dev/stdout|head"))
-index.html <- file.path(demo.dir, "index.html")
 unlink(index.html)
 pipeline(demo.dir)
 test_that("index.html is created", {
@@ -125,9 +131,10 @@ res.list <- list(
     ntasks=1,
     chunks.as.arrayjobs=TRUE)
 jobs_submit_batchtools(jobs, res.list)
-reg.dir <- file.path(demo.dir, "registry", "1")
-reg <- loadRegistry(reg.dir)
-result <- batchtools::waitForJobs(res=res)
+reg.dir <- file.path(demo.dir, "registry", "6")
+print(getwd())
+reg <- batchtools::loadRegistry(reg.dir)
+result <- batchtools::waitForJobs(reg=reg)
 test_that("index.html is created", {
   expect_true(file.exists(index.html))
 })

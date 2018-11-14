@@ -3,8 +3,11 @@ library(PeakSegPipeline)
 library(data.table)
 context("input")
 options(
-  mc.cores=parallel::detectCores(),
-  PeakSegPipeline.problem.target.minutes=5)
+  mc.cores=parallel::detectCores())
+test.data.dir <- file.path(Sys.getenv("HOME"), "PeakSegPipeline-test")
+non.integer.dir <- file.path(test.data.dir, "non-integer")
+demo.dir <- file.path(test.data.dir, "input")
+index.html <- file.path(demo.dir, "index.html")
 
 download.to <- function
 (u, f, writeFun=if(grepl("bigWig", f))writeBin else writeLines){
@@ -55,10 +58,6 @@ chr10:38,815,201-38,816,355 peakStart kidney Input
 chr10:38,818,377-38,819,342 peakEnd kidney Input
 "
 
-test.data.dir <- file.path(Sys.getenv("HOME"), "PeakSegPipeline-test")
-##test.data.dir <- file.path(tempdir(), "PeakSegPipeline-test")
-non.integer.dir <- file.path(test.data.dir, "non-integer")
-demo.dir <- file.path(test.data.dir, "input")
 chrom.sizes.file <- tempfile()
 chrom.sizes <- data.table(chrom="chr10", bases=128616069)
 fwrite(chrom.sizes, chrom.sizes.file, sep="\t", col.names=FALSE)
@@ -101,9 +100,16 @@ test_that("error for non-integer data in bigWigs", {
 
 unlink(non.integer.dir, recursive=TRUE, force=TRUE)
 
+## Set time limit.
+labels.bed.vec <- Sys.glob(file.path(
+  demo.dir, "samples", "*", "*", "problems", "*", "labels.bed"))
+limit.dt <- data.table(minutes=5)
+for(labels.bed in labels.bed.vec){
+  limit.file <- sub("labels.bed", "target.minutes", labels.bed)
+  fwrite(limit.dt, limit.file, col.names=FALSE)
+}
+
 ## Pipeline should run to completion for integer count data.
-system(paste("bigWigToBedGraph", demo.bigWig, "/dev/stdout|head"))
-index.html <- file.path(demo.dir, "index.html")
 unlink(index.html)
 pipeline(demo.dir)
 test_that("index.html is created", {

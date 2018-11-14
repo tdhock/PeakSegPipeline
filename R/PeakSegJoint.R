@@ -653,8 +653,9 @@ problem.joint.plot <- function
     sample.group <- basename(group.dir)
     chunk.cov <- chunk[, readCoverage(problem.dir, chunkStart, chunkEnd)]
     coverage.list[[problem.dir]] <- chunk.cov
-    ## Also store peaks in this chunk, if there are any.
-    sample.peaks <- fread(file.path(problem.dir, "peaks.bed"))
+    ## Also store peaks in this chunk, if there are any. (if not there
+    ## will be a warning which is suppressed)
+    sample.peaks <- suppressWarnings(fread(file.path(problem.dir, "peaks.bed")))
     if(nrow(sample.peaks)){
       setnames(sample.peaks, c("chrom", "peakStart", "peakEnd", "status", "mean"))
       sample.peaks[, peakStart1 := peakStart + 1L]
@@ -676,28 +677,31 @@ problem.joint.plot <- function
   joint.peaks.list <- list()
   for(joint.i in 1:nrow(probs.in.chunk)){
     prob <- probs.in.chunk[joint.i,]
-    peakInfo <- readRDS(file.path(
-      prob.dir, "jointProblems", prob$problem.name, "peakInfo.rds"))
-    joint.peaks.list[[prob$problem.name]] <- peakInfo[, {
-      is.peak <- as.logical(sample.peaks.vec[[1]])
-      if(any(is.peak)){
-        mean.vec <- peak.mean.vec[[1]]
-        sample.path <- rownames(mean.vec)[is.peak]
-        data.table(
-          chrom, peakStart, peakEnd,
-          sample.path,
-          mean=mean.vec[is.peak],
-          sample.id=sub(".*/", "", sample.path),
-          sample.group=sub("/.*", "", sample.path))
-      }
-    }]
+    peakInfo.rds <- file.path(
+      prob.dir, "jointProblems", prob$problem.name, "peakInfo.rds")
+    if(file.exists(peakInfo.rds)){
+      peakInfo <- readRDS(peakInfo.rds)
+      joint.peaks.list[[prob$problem.name]] <- peakInfo[, {
+        is.peak <- as.logical(sample.peaks.vec[[1]])
+        if(any(is.peak)){
+          mean.vec <- peak.mean.vec[[1]]
+          sample.path <- rownames(mean.vec)[is.peak]
+          data.table(
+            chrom, peakStart, peakEnd,
+            sample.path,
+            mean=mean.vec[is.peak],
+            sample.id=sub(".*/", "", sample.path),
+            sample.group=sub("/.*", "", sample.path))
+        }
+      }]
+    }
   }
   joint.peaks <- do.call(rbind, joint.peaks.list)
   cat(
     "Read joint peak predictions:",
     nrow(joint.peaks), "peaks in",
-    length(joint.peaks.list), "genomic regions,",
-    nrow(probs.in.chunk), "peakInfo.RData files.\n"
+    length(joint.peaks.list), "peakInfo.RData files,",
+    nrow(probs.in.chunk), "problems.\n"
   )
   ann.colors <-
     c(noPeaks="#f6f4bf",

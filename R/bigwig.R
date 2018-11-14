@@ -26,7 +26,7 @@ readBigWig <- function
     "bigWigToBedGraph -chrom=%s -start=%d -end=%d %s /dev/stdout",
     chrom, start, end,
     bigwig.file)
-  bg <- fread(cmd, drop=1)
+  bg <- fread(cmd=cmd, drop=1)
   if(nrow(bg)==0){
     data.table(chromStart=integer(),
                chromEnd=integer(),
@@ -54,7 +54,7 @@ bigWigInfo <- function
   stopifnot(is.character(bigwig.file))
   stopifnot(length(bigwig.file) == 1)
   cmd <- paste("bigWigInfo", bigwig.file, "-chroms | grep '^\\s'")
-  chroms <- fread(cmd, header=FALSE, sep=" ")
+  chroms <- fread(cmd=cmd, header=FALSE, sep=" ")
   setnames(chroms, c("chrom", "chrom.int", "chromEnd"))
   chroms$chrom <- sub("\\s*", "", chroms$chrom)
   chroms
