@@ -246,6 +246,8 @@ jobs_submit_mclapply <- structure(function
 (jobs
 ### data.table from jobs_create.
 ){
+  step <- arg <- fun <- NULL
+  ## Above to avoid CRAN NOTE.
   steps <- jobs[, list(
     jobs=.N
   ), by=list(step)][order(step)]

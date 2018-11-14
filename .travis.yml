@@ -21,7 +21,7 @@ before_install:
   - travis-tool.sh bootstrap
   - sudo mkdir /etc/slurm-llnl
   - sudo cp slurm.conf /etc/slurm-llnl
-  - sudo apt-get install -y bedtools libdb5.1++-dev libdb5.1-stl-dev texlive slurm-llnl #slurm-wlm does not exist on ubuntu 14.04
+  - sudo apt-get install -y bedtools libdb5.1++-dev libdb5.1-stl-dev texlive texlive-fonts-extra slurm-llnl #slurm-wlm does not exist on ubuntu 14.04
   - mkdir /tmp/tmp256K
   - sudo mount -t tmpfs -o size=256K tmpfs /tmp/tmp256K
   - mkdir /tmp/tmp160000

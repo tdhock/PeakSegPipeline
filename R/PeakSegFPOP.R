@@ -511,12 +511,15 @@ problem.target <- structure(function
   write.table(
     Mono27ac$coverage, file.path(data.dir, "coverage.bedGraph"),
     col.names=FALSE, row.names=FALSE, quote=FALSE, sep="\t")
+  ## Creating a target.minutes file stops the optimization after that
+  ## number of minutes, resulting in an imprecise target interval, but
+  ## saving time (to avoid NOTE on CRAN).
+  write.table(
+    data.frame(minutes=0.05), file.path(data.dir, "target.minutes"),
+    col.names=FALSE, row.names=FALSE, quote=FALSE)
 
-  ## Compute target interval. Specifying minutes.limit stops the
-  ## optimization after that number of minutes, resulting in an
-  ## imprecise target interval, but saving time (to avoid NOTE on
-  ## CRAN).
-  target.list <- problem.target(data.dir, minutes.limit=0.05)
+  ## Compute target interval.
+  target.list <- problem.target(data.dir)
 
   ## These are all the models computed in order to find the target
   ## interval.
@@ -534,6 +537,10 @@ problem.labels <- function
 (problem.dir
   ## project/samples/groupID/sampleID/problems/problemID
 ){
+  problemStart1 <- problemStart <- chromStart1 <- chromStart <-
+    chrom <- problemEnd <- chromEnd <- annotation <- NULL
+  ## above to avoid "no visible binding for global variable" NOTEs in
+  ## CRAN check.
   problem.labels.bed <- file.path(problem.dir, "labels.bed")
   if(file.exists(problem.labels.bed)){
     return(fread(problem.labels.bed, col.names=c(

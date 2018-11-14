@@ -20,9 +20,11 @@ write.table(
 write.table(
   Mono27ac$coverage, file.path(problem.dir, "coverage.bedGraph"),
   col.names=FALSE, row.names=FALSE, quote=FALSE, sep="\t")
-
+write.table(
+  data.frame(minutes=0.05), file.path(data.dir, "target.minutes"),
+  col.names=FALSE, row.names=FALSE, quote=FALSE)
 test_that("problem.target uses problem/labels.bed if present", {
-  target.list <- problem.target(problem.dir, minutes.limit=0.05)
+  target.list <- problem.target(problem.dir)
   expect_is(target.list, "list")
   expect_is(target.list$target, "numeric")
   expect_identical(length(target.list$target), 2L)
@@ -33,7 +35,7 @@ test_that("problem.target uses problem/labels.bed if present", {
 unlink(problem.labels.bed)
 test_that("problem.target errors if no labels", {
   expect_error({
-    problem.target(problem.dir, minutes.limit=0.05)
+    problem.target(problem.dir)
   }, "need labels to compute target interval")
 })
 
@@ -44,7 +46,7 @@ write.table(
   Mono27ac$labels, sample.labels.bed,
   col.names=FALSE, row.names=FALSE, quote=FALSE, sep="\t")
 test_that("problem.target uses sampleID/labels.bed if present", {
-  target.list <- problem.target(problem.dir, minutes.limit=0.05)
+  target.list <- problem.target(problem.dir)
   expect_is(target.list, "list")
   expect_is(target.list$target, "numeric")
   expect_identical(length(target.list$target), 2L)
