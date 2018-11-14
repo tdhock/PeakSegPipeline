@@ -249,15 +249,31 @@ the gap file contains one line for every gap in the reference (unknown
 ** Running PeakSegPipeline on a cluster via batchtools
 
 PeakSegPipeline uses [[https://mllg.github.io/batchtools/articles/batchtools.html][batchtools]] to launch jobs on the [[https://slurm.schedmd.com/][SLURM]] cluster
-system.
-
-I use the following in my ~/.batchtools.conf.R file:
+system. [[file:inst/templates/slurm-afterok.tmpl][The PeakSegPipeline SLURM template]] which adds support for
+dependencies between jobs must be used, by specifying the following
+batchtools configuration (I put it in =~/.batchtools.conf.R=):
 
 #+BEGIN_SRC R
   cluster.functions = makeClusterFunctionsSlurm(system.file(
     file.path("templates", "slurm-afterok.tmpl"),
     package="PeakSegPipeline",
     mustWork=TRUE))
+#+END_SRC
+
+Before running the pipeline, make sure to convert labels from
+=~/PeakSegPipeline-test/demo/labels/*.txt= files to
+=~/PeakSegPipeline-test/demo/samples/*/*/labels.bed= files using the
+following R command:
+
+#+BEGIN_SRC R
+PeakSegPipeline::convert_labels("~/PeakSegPipeline-test/demo")
+#+END_SRC
+
+To run the pipeline on the SLURM cluster, use
+
+#+BEGIN_SRC R
+jobs <- PeakSegPipeline::jobs_create("~/PeakSegPipeline-test/demo")
+PeakSegPipeline::jobs_submit_batchtools(jobs)
 #+END_SRC
 
 ** Running steps of the pipeline in parallel

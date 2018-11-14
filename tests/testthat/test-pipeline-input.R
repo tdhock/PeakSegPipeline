@@ -125,10 +125,13 @@ test_that("error for non-integer data in bigWigs", {
 unlink(non.integer.dir, recursive=TRUE, force=TRUE)
 
 ## Set time limit.
-(prob.dir.vec <- Sys.glob(file.path(
-  demo.dir, "samples", "*", "*", "problems", "chr10:18024675-38818835")))
-limit.dt <- data.table(minutes=2)
+(sample.dir.vec <- Sys.glob(file.path(
+  demo.dir, "samples", "*", "*")))
+prob.dir.vec <- file.path(
+  sample.dir.vec, "problems", "chr10:18024675-38818835")
+limit.dt <- data.table(minutes=5)
 for(prob.dir in prob.dir.vec){
+  dir.create(prob.dir, showWarnings=FALSE, recursive=TRUE)
   limit.file <- file.path(prob.dir, "target.minutes")
   fwrite(limit.dt, limit.file, col.names=FALSE)
 }
