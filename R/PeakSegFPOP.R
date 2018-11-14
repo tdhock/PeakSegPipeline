@@ -183,7 +183,7 @@ problem.table <- function
 problem.coverage <- function
 ### Ensure that coverage.bedGraph has been correctly computed for a
 ### particular genomic segmentation problem.
-(problem.dir
+(problem.dir,
 ### Path to a directory like sampleID/problems/problemID where
 ### sampleID/coverage.bigWig contains counts of aligned reads in the
 ### entire genome, and problemID is a chrom range string like
@@ -192,6 +192,8 @@ problem.coverage <- function
 ### problemID/coverage.bedGraph does not exist, or its first/last
 ### lines do not match the expected problemID, then we recreate it
 ### from sampleID/coverage.bigWig.
+  verbose=0
+### print messages?
 ){
   chrom <- problemStart <- problemEnd <- count.num.str <- coverage <-
     count.int <- count.int.str <- chromStart <- chromEnd <- J <-
@@ -206,13 +208,11 @@ problem.coverage <- function
   ## First check if problem/coverage.bedGraph has been created.
   prob.cov.bedGraph <- file.path(problem.dir, "coverage.bedGraph")
   coverage.ok <- tryCatch({
-    head.cmd <- paste("head -1", prob.cov.bedGraph) 
-    first.cov <- fread(cmd=head.cmd, col.names=c(
-      "chrom", "chromStart", "chromEnd", "coverage"))
-    tail.cmd <- paste("tail -1", prob.cov.bedGraph)
-    last.cov <- fread(cmd=tail.cmd, col.names=c(
-      "chrom", "chromStart", "chromEnd", "coverage"))
-    is.integer(first.cov$chromEnd) &&
+    first.cov <- suppressWarnings(fread.first(prob.cov.bedGraph, c(
+      "chrom", "chromStart", "chromEnd", "coverage")))
+    last.cov <- suppressWarnings(fread.last(prob.cov.bedGraph, c(
+      "chrom", "chromStart", "chromEnd", "coverage")))
+    is.integer(first.cov$chromStart) &&
       is.integer(last.cov$chromEnd) &&
       last.cov$chromEnd == problem$problemEnd &&
       first.cov$chromStart == problem$problemStart
@@ -235,13 +235,17 @@ problem.coverage <- function
            " need ", coverage.bigWig,
            " which does not exist.")
     }
-    cat(cov.cmd, "\n")
-    status <- system(cov.cmd)
-    if(status != 0){
-      stop("non-zero status code ", status)
+    system.or.stop(cov.cmd, verbose=verbose)
+    prob.cov <- suppressWarnings(fread(prob.cov.bedGraph, col.names=c(
+      "chrom", "chromStart", "chromEnd", "coverage")))
+    if(nrow(prob.cov)==0){
+      stop(
+        "coverage/count data file ",
+        prob.cov.bedGraph,
+        " is empty; typically this happens when ",
+        coverage.bigWig,
+        " has no data in this genomic region")
     }
-    prob.cov <- fread(prob.cov.bedGraph)
-    setnames(prob.cov, c("chrom", "chromStart", "chromEnd", "coverage"))
     if(any(prob.cov$coverage < 0)){
       stop("negative coverage in ", prob.cov.bedGraph)
     }
@@ -376,10 +380,10 @@ problem.target <- structure(function
   stopifnot(is.numeric(minutes.limit))
   stopifnot(is.character(problem.dir))
   stopifnot(length(problem.dir)==1)
-  problem.coverage(problem.dir)
+  problem.coverage(problem.dir, verbose=verbose)
   labels.dt <- problem.labels(problem.dir)
   problem.name <- basename(problem.dir)
-  if(verbose)cat(nrow(problem.labels), "labels in", problem.name, "\n")
+  if(verbose)cat(nrow(labels.dt), "labels in", problem.name, "\n")
   ## Compute the label error for one penalty parameter.
   getError <- function(penalty.str){
     stopifnot(is.character(penalty.str))
@@ -504,7 +508,7 @@ problem.target <- structure(function
   library(PeakSegPipeline)
   data(Mono27ac, envir=environment())
   ## Write the Mono27ac data set to disk.
-  data.dir <- file.path(
+  problem.dir <- file.path(
     tempfile(),
     "H3K27ac-H3K4me3_TDHAM_BP",
     "samples",
@@ -512,22 +516,22 @@ problem.target <- structure(function
     "S001YW_NCMLS",
     "problems",
     "chr11:60000-580000")
-  dir.create(data.dir, recursive=TRUE, showWarnings=FALSE)
+  dir.create(problem.dir, recursive=TRUE, showWarnings=FALSE)
   write.table(
-    Mono27ac$labels, file.path(data.dir, "labels.bed"),
+    Mono27ac$labels, file.path(problem.dir, "labels.bed"),
     col.names=FALSE, row.names=FALSE, quote=FALSE, sep="\t")
   write.table(
-    Mono27ac$coverage, file.path(data.dir, "coverage.bedGraph"),
+    Mono27ac$coverage, file.path(problem.dir, "coverage.bedGraph"),
     col.names=FALSE, row.names=FALSE, quote=FALSE, sep="\t")
   ## Creating a target.minutes file stops the optimization after that
   ## number of minutes, resulting in an imprecise target interval, but
   ## saving time (to avoid NOTE on CRAN).
   write.table(
-    data.frame(minutes=0.05), file.path(data.dir, "target.minutes"),
+    data.frame(minutes=0.05), file.path(problem.dir, "target.minutes"),
     col.names=FALSE, row.names=FALSE, quote=FALSE)
 
   ## Compute target interval.
-  target.list <- problem.target(data.dir)
+  target.list <- problem.target(problem.dir)
 
   ## These are all the models computed in order to find the target
   ## interval.

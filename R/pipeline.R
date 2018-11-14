@@ -1,5 +1,10 @@
+pipeline <- function
 ### Run entire PeakSegFPOP + PeakSegJoint pipeline.
-pipeline <- function(set.dir.path){
+(set.dir.path,
+### data set directory.
+  verbose=0
+### print messages?
+){
   set.dir <- normalizePath(set.dir.path, mustWork=TRUE)
   ## First convert labels.
   convert_labels(set.dir)
@@ -11,7 +16,7 @@ pipeline <- function(set.dir.path){
     samples.dir, "*", "*", "problems", "*", "labels.bed"))
   lapply(labels.bed.vec, function(labels.bed){
     sample.dir <- dirname(labels.bed)
-    problem.target(sample.dir)
+    problem.target(sample.dir, verbose=verbose)
   })
   ## Train single-sample model.
   problem.train(set.dir)
