@@ -13,9 +13,15 @@ counting function, which should be much faster than using an
 intermediate bedGraph
 file. http://www.cs.uleth.ca/~holzmann/C/system/shell_commands.html
 
-2018.11.xx
+2018.11.15
 
 require data.table >= 1.11.6 to fread empty file as null instead of error.
+
+jobs_* functions to support SLURM via batchtools.
+
+Testing pipeline-noinput on Travis with SLURM.
+
+verbose flag added to several functions.
 
 2018.10.3
 

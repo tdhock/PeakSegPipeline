@@ -71,7 +71,7 @@ R -e 'source("https://raw.githubusercontent.com/tdhock/PeakSegPipeline/master/te
 #+END_SRC
 
 This is the TEST_SUITE=pipeline-input test that is run by [[https://travis-ci.org/tdhock/PeakSegPipeline][Travis-CI]]
-after every push to this repo -- it should take 30-60 minutes to run,
+after every push to this repo -- it should take about 20 minutes to run,
 depending on the speed of your computer ([[https://github.com/tdhock/PeakSegPipeline/wiki/test-pipeline-input][for debugging on your
 computer, it may be useful to look at the expected terminal
 output]]). The test script will first download some bigWigs and labels
