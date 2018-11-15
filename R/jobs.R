@@ -171,10 +171,11 @@ jobs_submit_batchtools <- structure(function
     jobs=.N
   ), by=list(step)][order(step)]
   afterok <- NULL
+  reg.list <- list()
   for(step.i in 1:nrow(steps)){
     step.dir <- file.path(registry.dir, step.i)
     unlink(step.dir, recursive=TRUE)
-    reg <- batchtools::makeRegistry(step.dir)
+    reg <- reg.list[[step.i]] <- batchtools::makeRegistry(step.dir)
     step.jobs <- jobs[step==step.i]#[1:min(2, .N)]#for testing
     batchtools::batchMap(function(task.i, job.dt){
       library(PeakSegPipeline)
@@ -195,6 +196,8 @@ jobs_submit_batchtools <- structure(function
     (jobs.done <- batchtools::getJobTable(reg=reg))
     afterok <- sub("_.*", "", jobs.done$batch.id)[[1]]
   }
+  reg.list
+### A list of registry objects.
 }, ex=function(){
   if(FALSE){
     jobs <- jobs_create("~/genomic-ml/PeakSegFPOP/labels/ATAC_JV_adipose/")
