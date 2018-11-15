@@ -15,3 +15,4 @@ importFrom("stats", "chisq.test", "dnorm", "median")
 importFrom("utils", "download.file")
 import(ggplot2)
 import(PeakSegDisk)
+

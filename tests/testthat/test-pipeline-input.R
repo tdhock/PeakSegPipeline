@@ -3,8 +3,11 @@ library(PeakSegPipeline)
 library(data.table)
 context("input")
 options(
-  mc.cores=parallel::detectCores(),
-  PeakSegPipeline.problem.target.minutes=5)
+  mc.cores=parallel::detectCores())
+test.data.dir <- file.path(Sys.getenv("HOME"), "PeakSegPipeline-test")
+non.integer.dir <- file.path(test.data.dir, "non-integer")
+demo.dir <- file.path(test.data.dir, "input")
+index.html <- file.path(demo.dir, "index.html")
 
 download.to <- function
 (u, f, writeFun=if(grepl("bigWig", f))writeBin else writeLines){
@@ -55,10 +58,6 @@ chr10:38,815,201-38,816,355 peakStart kidney Input
 chr10:38,818,377-38,819,342 peakEnd kidney Input
 "
 
-test.data.dir <- file.path(Sys.getenv("HOME"), "PeakSegPipeline-test")
-##test.data.dir <- file.path(tempdir(), "PeakSegPipeline-test")
-non.integer.dir <- file.path(test.data.dir, "non-integer")
-demo.dir <- file.path(test.data.dir, "input")
 chrom.sizes.file <- tempfile()
 chrom.sizes <- data.table(chrom="chr10", bases=128616069)
 fwrite(chrom.sizes, chrom.sizes.file, sep="\t", col.names=FALSE)
@@ -82,6 +81,32 @@ for(bigWig.part in bigWig.part.vec){
   }
 }
 
+sample.dir <- dirname(demo.bigWig)
+problem.dir <- file.path(sample.dir, "problems", "chr10:18024675-38818835")
+coverage.bedGraph <- file.path(problem.dir, "coverage.bedGraph")
+unlink(coverage.bedGraph)
+test_that("computing coverage is silent by default", {
+  out.vec <- capture.output({
+    problem <- problem.coverage(problem.dir)
+  })
+  expect_identical(out.vec, character())
+})
+
+unlink(coverage.bedGraph)
+test_that("computing coverage is verbose when creating file", {
+  out.vec <- capture.output({
+    problem <- problem.coverage(problem.dir, verbose=1)
+  })
+  expect_match(out.vec, "bigWigToBedGraph")
+})
+
+test_that("computing coverage is silent when not creating file", {
+  out.vec <- capture.output({
+    problem <- problem.coverage(problem.dir, verbose=1)
+  })
+  expect_identical(out.vec, character())
+})
+
 for(set.dir in c(non.integer.dir, demo.dir)){
   labels.file <- file.path(set.dir, "labels", "some_labels.txt")
   dir.create(dirname(labels.file), showWarnings=FALSE, recursive=TRUE)
@@ -92,21 +117,29 @@ for(set.dir in c(non.integer.dir, demo.dir)){
 }
 
 ## Pipeline should raise error for non-integer data.
-system(paste("bigWigToBedGraph", bigWig.file, "/dev/stdout|head"))
 test_that("error for non-integer data in bigWigs", {
   expect_error({
     pipeline(non.integer.dir)
   }, "non-integer data in")
 })
-
 unlink(non.integer.dir, recursive=TRUE, force=TRUE)
 
+## Set time limit.
+(sample.dir.vec <- Sys.glob(file.path(
+  demo.dir, "samples", "*", "*")))
+prob.dir.vec <- file.path(
+  sample.dir.vec, "problems", "chr10:18024675-38818835")
+limit.dt <- data.table(minutes=5)
+for(prob.dir in prob.dir.vec){
+  dir.create(prob.dir, showWarnings=FALSE, recursive=TRUE)
+  limit.file <- file.path(prob.dir, "target.minutes")
+  fwrite(limit.dt, limit.file, col.names=FALSE)
+}
+
 ## Pipeline should run to completion for integer count data.
-system(paste("bigWigToBedGraph", demo.bigWig, "/dev/stdout|head"))
-index.html <- file.path(demo.dir, "index.html")
 unlink(index.html)
-pipeline(demo.dir)
 test_that("index.html is created", {
+  pipeline(demo.dir, verbose=1)
   expect_true(file.exists(index.html))
 })
 

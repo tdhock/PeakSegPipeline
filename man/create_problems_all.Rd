@@ -3,7 +3,8 @@
 \title{create problems all}
 \description{Create problems directory with sub-directories for each problem
 with labels.}
-\usage{create_problems_all(data.dir.arg, PBS.header = PBS.header.default)}
+\usage{create_problems_all(data.dir.arg, PBS.header = getOption("PeakSegPipeline.header", 
+    PBS.header.default))}
 \arguments{
   \item{data.dir.arg}{a directory with labels.bed and coverage.bedGraph.}
   \item{PBS.header}{Header for sh files.}

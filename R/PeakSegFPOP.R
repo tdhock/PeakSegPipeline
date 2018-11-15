@@ -163,10 +163,27 @@ problem.predict.allSamples <- function
 ### data.table of predicted peaks.
 }
 
+problem.table <- function
+### Convert a path with a problem string to a data.table.
+(problem.dir
+### path with a problem string, e.g. chrX:6000-1000000
+){
+  pattern <- paste0(
+    "(?<chrom>chr[^:]+)",
+    ":",
+    "(?<problemStart>[0-9]+)",
+    "-",
+    "(?<problemEnd>[0-9]+)")
+  data.table(str_match_named(problem.dir, pattern, list(
+    problemStart=as.integer,
+    problemEnd=as.integer)))
+### data.table with columns chrom, problemStart, problemEnd.
+}
+
 problem.coverage <- function
 ### Ensure that coverage.bedGraph has been correctly computed for a
 ### particular genomic segmentation problem.
-(problem.dir
+(problem.dir,
 ### Path to a directory like sampleID/problems/problemID where
 ### sampleID/coverage.bigWig contains counts of aligned reads in the
 ### entire genome, and problemID is a chrom range string like
@@ -175,6 +192,8 @@ problem.coverage <- function
 ### problemID/coverage.bedGraph does not exist, or its first/last
 ### lines do not match the expected problemID, then we recreate it
 ### from sampleID/coverage.bigWig.
+  verbose=0
+### print messages?
 ){
   chrom <- problemStart <- problemEnd <- count.num.str <- coverage <-
     count.int <- count.int.str <- chromStart <- chromEnd <- J <-
@@ -183,29 +202,20 @@ problem.coverage <- function
   ## CRAN check.
   stopifnot(is.character(problem.dir))
   stopifnot(length(problem.dir)==1)
+  dir.create(problem.dir, showWarnings=FALSE, recursive=TRUE)
   problems.dir <- dirname(problem.dir)
   sample.dir <- dirname(problems.dir)
-  ## Get problem from directory name.
-  pattern <- paste0(
-    "(?<chrom>chr[^:]+)",
-    ":",
-    "(?<problemStart>[0-9]+)",
-    "-",
-    "(?<problemEnd>[0-9]+)")
-  problem.base <- basename(problem.dir)
-  problem <- data.table(str_match_named(problem.base, pattern, list(
-    problemStart=as.integer,
-    problemEnd=as.integer)))
+  problem <- problem.table(problem.dir)
   ## First check if problem/coverage.bedGraph has been created.
   prob.cov.bedGraph <- file.path(problem.dir, "coverage.bedGraph")
   coverage.ok <- tryCatch({
-    head.cmd <- paste("head -1", prob.cov.bedGraph) 
-    first.cov <- fread(head.cmd)
-    setnames(first.cov, c("chrom", "chromStart", "chromEnd", "coverage"))
-    tail.cmd <- paste("tail -1", prob.cov.bedGraph)
-    last.cov <- fread(tail.cmd)
-    setnames(last.cov, c("chrom", "chromStart", "chromEnd", "coverage"))
-    last.cov$chromEnd == problem$problemEnd &&
+    first.cov <- suppressWarnings(fread.first(prob.cov.bedGraph, c(
+      "chrom", "chromStart", "chromEnd", "coverage")))
+    last.cov <- suppressWarnings(fread.last(prob.cov.bedGraph, c(
+      "chrom", "chromStart", "chromEnd", "coverage")))
+    is.integer(first.cov$chromStart) &&
+      is.integer(last.cov$chromEnd) &&
+      last.cov$chromEnd == problem$problemEnd &&
       first.cov$chromStart == problem$problemStart
   }, error=function(e){
     FALSE
@@ -226,13 +236,17 @@ problem.coverage <- function
            " need ", coverage.bigWig,
            " which does not exist.")
     }
-    cat(cov.cmd, "\n")
-    status <- system(cov.cmd)
-    if(status != 0){
-      stop("non-zero status code ", status)
+    system.or.stop(cov.cmd, verbose=verbose)
+    prob.cov <- suppressWarnings(fread(prob.cov.bedGraph, col.names=c(
+      "chrom", "chromStart", "chromEnd", "coverage")))
+    if(nrow(prob.cov)==0){
+      stop(
+        "coverage/count data file ",
+        prob.cov.bedGraph,
+        " is empty; typically this happens when ",
+        coverage.bigWig,
+        " has no data in this genomic region")
     }
-    prob.cov <- fread(prob.cov.bedGraph)
-    setnames(prob.cov, c("chrom", "chromStart", "chromEnd", "coverage"))
     if(any(prob.cov$coverage < 0)){
       stop("negative coverage in ", prob.cov.bedGraph)
     }
@@ -284,10 +298,11 @@ problem.coverage <- function
       sep="\t",
       col.names=FALSE)
   }
-### Nothing. If necessary, the bigWigToBedGraph command line program
-### is used to create problemID/coverage.bedGraph and then we (1) stop
-### if there are any negative or non-integer data and (2) add lines
-### with zero counts for missing data.
+  problem
+### problem data.table. If necessary, the bigWigToBedGraph command
+### line program is used to create problemID/coverage.bedGraph and
+### then we (1) stop if there are any negative or non-integer data and
+### (2) add lines with zero counts for missing data.
 }
 
 problem.features <- function
@@ -331,49 +346,45 @@ problem.target <- structure(function
 ### until it finds an interval of penalty values with minimal label
 ### error. The calls to PeakSegFPOP are parallelized using mclapply if
 ### you set options(mc.cores).
+### A time limit in minutes may be specified in a file
+### problem.dir/target.minutes;
+### the search will stop at a sub-optimal target interval
+### if this many minutes has elapsed. Useful for testing environments
+### with build time limits (travis). 
 (problem.dir,
 ### problemID directory in which coverage.bedGraph has already been
 ### computed. If there is a labels.bed file then the number of
 ### incorrect labels will be computed in order to find the target
 ### interval of minimal error penalty values.
-  minutes.limit=NULL,
-### Time limit; the search will stop at a sub-optimal target interval
-### if this many minutes has elapsed. Useful for testing environments
-### with build time limits (travis). Default NULL means to use the
-### value in option PeakSegPipeline.problem.target.minutes (or Inf if
-### that option is not set).
   verbose=0
  ){
   status <- peaks <- errors <- fp <- fn <- penalty <- max.log.lambda <-
     min.log.lambda <- penalty <- . <- done <- total.loss <- mean.pen.cost <-
       bases <- no.next <- is.min <- min.err.interval <- max.lambda <-
         already.computed <- is.other <- dist <- min.lambda <- log.size <-
-          mid.lambda <- NULL
+          mid.lambda <- chrom <- problemStart <- problemEnd <- chromEnd <-
+            annotation <- NULL
   ## above to avoid "no visible binding for global variable" NOTEs in
   ## CRAN check.
-  if(is.null(minutes.limit)){
-    ## here rather than in the arguments in order to avoid Rd NOTE
-    ## about lines wider than 90 characters.
-    minutes.limit <- getOption("PeakSegPipeline.problem.target.minutes", Inf)
+  minutes.file <- file.path(problem.dir, "target.minutes")
+  minutes.limit <- Inf
+  if(file.exists(minutes.file)){
+    minutes.dt <- fread(minutes.file)
+    if(nrow(minutes.dt)==1 && ncol(minutes.dt)==1){
+      setnames(minutes.dt, "minutes")
+      if(is.numeric(minutes.dt$minutes)){
+        minutes.limit <- minutes.dt$minutes
+      }
+    }
   }
   seconds.start <- as.numeric(Sys.time())
   stopifnot(is.numeric(minutes.limit))
   stopifnot(is.character(problem.dir))
   stopifnot(length(problem.dir)==1)
-  problem.coverage(problem.dir)
-  ## Check if problem/labels.bed exists.
-  problem.labels <- tryCatch({
-    prob.lab.bed <- file.path(problem.dir, "labels.bed")
-    problem.labels <- fread(prob.lab.bed)
-    setnames(problem.labels, c("chrom", "chromStart", "chromEnd", "annotation"))
-    problem.labels
-  }, error=function(e){
-    data.frame(
-      chrom=character(),
-      chromStart=integer(),
-      chromEnd=integer(),
-      annotation=character())
-  })
+  problem.coverage(problem.dir, verbose=verbose)
+  labels.dt <- problem.labels(problem.dir)
+  problem.name <- basename(problem.dir)
+  if(verbose)cat(nrow(labels.dt), "labels in", problem.name, "\n")
   ## Compute the label error for one penalty parameter.
   getError <- function(penalty.str){
     stopifnot(is.character(penalty.str))
@@ -381,7 +392,7 @@ problem.target <- structure(function
     result <- problem.PeakSegFPOP(problem.dir, penalty.str)
     penalty.peaks <- result$segments[status=="peak",]
     tryCatch({
-      penalty.error <- PeakErrorChrom(penalty.peaks, problem.labels)
+      penalty.error <- PeakErrorChrom(penalty.peaks, labels.dt)
     }, error=function(e){
       stop("try deleting _segments.bed and recomputing, error computing number of incorrect labels: ", e)
     })
@@ -498,7 +509,7 @@ problem.target <- structure(function
   library(PeakSegPipeline)
   data(Mono27ac, envir=environment())
   ## Write the Mono27ac data set to disk.
-  data.dir <- file.path(
+  problem.dir <- file.path(
     tempfile(),
     "H3K27ac-H3K4me3_TDHAM_BP",
     "samples",
@@ -506,19 +517,22 @@ problem.target <- structure(function
     "S001YW_NCMLS",
     "problems",
     "chr11:60000-580000")
-  dir.create(data.dir, recursive=TRUE, showWarnings=FALSE)
+  dir.create(problem.dir, recursive=TRUE, showWarnings=FALSE)
   write.table(
-    Mono27ac$labels, file.path(data.dir, "labels.bed"),
+    Mono27ac$labels, file.path(problem.dir, "labels.bed"),
     col.names=FALSE, row.names=FALSE, quote=FALSE, sep="\t")
   write.table(
-    Mono27ac$coverage, file.path(data.dir, "coverage.bedGraph"),
+    Mono27ac$coverage, file.path(problem.dir, "coverage.bedGraph"),
     col.names=FALSE, row.names=FALSE, quote=FALSE, sep="\t")
+  ## Creating a target.minutes file stops the optimization after that
+  ## number of minutes, resulting in an imprecise target interval, but
+  ## saving time (to avoid NOTE on CRAN).
+  write.table(
+    data.frame(minutes=0.05), file.path(problem.dir, "target.minutes"),
+    col.names=FALSE, row.names=FALSE, quote=FALSE)
 
-  ## Compute target interval. Specifying minutes.limit stops the
-  ## optimization after that number of minutes, resulting in an
-  ## imprecise target interval, but saving time (to avoid NOTE on
-  ## CRAN).
-  target.list <- problem.target(data.dir, minutes.limit=0.05)
+  ## Compute target interval.
+  target.list <- problem.target(problem.dir)
 
   ## These are all the models computed in order to find the target
   ## interval.
@@ -529,6 +543,54 @@ problem.target <- structure(function
   print(target.list$target)
 
 })
+
+problem.labels <- function
+### read problemID/labels.bed if it exists, otherwise read
+### sampleID/labels.bed
+(problem.dir
+  ## project/samples/groupID/sampleID/problems/problemID
+){
+  problemStart1 <- problemStart <- chromStart1 <- chromStart <-
+    chrom <- problemEnd <- chromEnd <- annotation <- NULL
+  ## above to avoid "no visible binding for global variable" NOTEs in
+  ## CRAN check.
+  problem.labels.bed <- file.path(problem.dir, "labels.bed")
+  if(file.exists(problem.labels.bed)){
+    return(fread(problem.labels.bed, col.names=c(
+      "chrom", "chromStart", "chromEnd", "annotation")))
+  }
+  problems.dir <- dirname(problem.dir)
+  sample.dir <- dirname(problems.dir)
+  sample.labels.bed <- file.path(sample.dir, "labels.bed")
+  if(!file.exists(sample.labels.bed)){
+    stop(
+      "need labels to compute target interval but none found for problem; ",
+      "please create either ",
+      sample.labels.bed, " or ",
+      problem.labels.bed)
+  }
+  sample.labels <- fread(
+    sample.labels.bed,
+    col.names=c(
+      "chrom", "chromStart", "chromEnd", "annotation"))
+  if(nrow(sample.labels)==0){
+    sample.labels <- data.table(
+      chrom=character(),
+      chromStart=integer(),
+      chromEnd=integer(),
+      annotation=character())
+  }
+  problem <- problem.table(problem.dir)
+  problem[, problemStart1 := problemStart +1L]
+  sample.labels[, chromStart1 := chromStart +1L]
+  setkey(problem, chrom, problemStart1, problemEnd)
+  setkey(sample.labels, chrom, chromStart1, chromEnd)
+  labels.dt <- foverlaps(problem, sample.labels, nomatch=0L)
+  labels.dt[, data.table(
+    chrom, chromStart, chromEnd, annotation)]
+### data.table with one row for each label and columns chrom,
+### chromStart, chromEnd, annotation.
+}  
 
 problem.predict <- function
 ### Predict peaks for a genomic segmentation problem.

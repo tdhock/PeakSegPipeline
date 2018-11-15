@@ -23,7 +23,7 @@ problem.joint.predict.many <- function
       }else{
         tryCatch({
           jprob.peaks <- fread(jpeaks.bed)
-          setnames(
+          setnames( #errors if bed file empty.
             jprob.peaks,
             c("chrom", "chromStart", "chromEnd", "name", "mean"))
           TRUE
@@ -227,10 +227,19 @@ problem.joint.train <- function
     cat("Training", model.name, "model using", n.keep, "finite targets.\n")
     target.mat <- all.target.mat[keep,]
     feature.mat <- mat.list$features[keep,]
+    n.finite.vec <- colSums(is.finite(target.mat))
+    max.folds <- min(n.finite.vec)
+    n.folds <- min(max.folds, 5)
+    fold.vec <- rep(NA, nrow(target.mat))
+    col.with.fewer.finite <- which.min(n.finite.vec)
+    fewer.is.finite <- is.finite(target.mat[, col.with.fewer.finite])
     set.seed(1)
+    fold.vec[fewer.is.finite] <- sample(rep(1:n.folds, l=sum(fewer.is.finite)))
+    fold.vec[is.na(fold.vec)] <- sample(rep(n.folds:1, l=sum(is.na(fold.vec))))
     joint.model <- penaltyLearning::IntervalRegressionCV(
       feature.mat, target.mat,
-      min.observations=n.keep)
+      min.observations=n.keep,
+      fold.vec=fold.vec)
     joint.model$train.mean.vec <- colMeans(feature.mat)
     pred.log.penalty <- joint.model$predict(feature.mat)
     pred.dt <- data.table(
@@ -653,12 +662,9 @@ problem.joint.plot <- function
     sample.group <- basename(group.dir)
     chunk.cov <- chunk[, readCoverage(problem.dir, chunkStart, chunkEnd)]
     coverage.list[[problem.dir]] <- chunk.cov
-    ## Also store peaks in this chunk, if there are any.
-    sample.peaks <- tryCatch({
-      fread(file.path(problem.dir, "peaks.bed"))
-    }, error=function(e){
-      data.table()
-    })
+    ## Also store peaks in this chunk, if there are any. (if not there
+    ## will be a warning which is suppressed)
+    sample.peaks <- suppressWarnings(fread(file.path(problem.dir, "peaks.bed")))
     if(nrow(sample.peaks)){
       setnames(sample.peaks, c("chrom", "peakStart", "peakEnd", "status", "mean"))
       sample.peaks[, peakStart1 := peakStart + 1L]
@@ -680,28 +686,31 @@ problem.joint.plot <- function
   joint.peaks.list <- list()
   for(joint.i in 1:nrow(probs.in.chunk)){
     prob <- probs.in.chunk[joint.i,]
-    peakInfo <- readRDS(file.path(
-      prob.dir, "jointProblems", prob$problem.name, "peakInfo.rds"))
-    joint.peaks.list[[prob$problem.name]] <- peakInfo[, {
-      is.peak <- as.logical(sample.peaks.vec[[1]])
-      if(any(is.peak)){
-        mean.vec <- peak.mean.vec[[1]]
-        sample.path <- rownames(mean.vec)[is.peak]
-        data.table(
-          chrom, peakStart, peakEnd,
-          sample.path,
-          mean=mean.vec[is.peak],
-          sample.id=sub(".*/", "", sample.path),
-          sample.group=sub("/.*", "", sample.path))
-      }
-    }]
+    peakInfo.rds <- file.path(
+      prob.dir, "jointProblems", prob$problem.name, "peakInfo.rds")
+    if(file.exists(peakInfo.rds)){
+      peakInfo <- readRDS(peakInfo.rds)
+      joint.peaks.list[[prob$problem.name]] <- peakInfo[, {
+        is.peak <- as.logical(sample.peaks.vec[[1]])
+        if(any(is.peak)){
+          mean.vec <- peak.mean.vec[[1]]
+          sample.path <- rownames(mean.vec)[is.peak]
+          data.table(
+            chrom, peakStart, peakEnd,
+            sample.path,
+            mean=mean.vec[is.peak],
+            sample.id=sub(".*/", "", sample.path),
+            sample.group=sub("/.*", "", sample.path))
+        }
+      }]
+    }
   }
   joint.peaks <- do.call(rbind, joint.peaks.list)
   cat(
     "Read joint peak predictions:",
     nrow(joint.peaks), "peaks in",
-    length(joint.peaks.list), "genomic regions,",
-    nrow(probs.in.chunk), "peakInfo.RData files.\n"
+    length(joint.peaks.list), "peakInfo.RData files,",
+    nrow(probs.in.chunk), "problems.\n"
   )
   ann.colors <-
     c(noPeaks="#f6f4bf",

@@ -1,12 +1,3 @@
-### Run fread but do not stop for an error on an empty file.
-fread.or.null <- function(...){
-  tryCatch({
-    fread(...)
-  }, error=function(e){
-    NULL
-  })
-}
-
 readBigWig <- function
 ### Read part of a bigWig file into R as a data.table (assumes
 ### bigWigToBedGraph is present on your PATH).
@@ -31,12 +22,12 @@ readBigWig <- function
   stopifnot(0 <= start)
   stopifnot(start < end)
   stopifnot(end < Inf)
-  cmd <-
-    sprintf("bigWigToBedGraph -chrom=%s -start=%d -end=%d %s /dev/stdout",
-            chrom, start, end,
-            bigwig.file)
-  bg <- fread.or.null(cmd, drop=1)
-  if(is.null(bg)){
+  cmd <- sprintf(
+    "bigWigToBedGraph -chrom=%s -start=%d -end=%d %s /dev/stdout",
+    chrom, start, end,
+    bigwig.file)
+  bg <- fread(cmd=cmd, drop=1)
+  if(nrow(bg)==0){
     data.table(chromStart=integer(),
                chromEnd=integer(),
                count=integer())
@@ -63,7 +54,7 @@ bigWigInfo <- function
   stopifnot(is.character(bigwig.file))
   stopifnot(length(bigwig.file) == 1)
   cmd <- paste("bigWigInfo", bigwig.file, "-chroms | grep '^\\s'")
-  chroms <- fread(cmd, header=FALSE, sep=" ")
+  chroms <- fread(cmd=cmd, header=FALSE, sep=" ")
   setnames(chroms, c("chrom", "chrom.int", "chromEnd"))
   chroms$chrom <- sub("\\s*", "", chroms$chrom)
   chroms

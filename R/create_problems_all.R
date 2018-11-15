@@ -51,14 +51,8 @@ create_problems_all <- function
     problems.dir <- file.path(sample.dir, "problems")
     coverage.bedGraph <- file.path(sample.dir, "coverage.bedGraph")
     labels.bed <- file.path(sample.dir, "labels.bed")
-    labels <- tryCatch({
-      labels <- fread(labels.bed)
-      setnames(labels, c("chrom", "chromStart", "chromEnd", "annotation"))
-      labels
-    }, error=function(e){
-      cat("No labels in", labels.bed, "\n")
-      data.table()
-    })
+    labels <- fread(labels.bed, col.names=c(
+      "chrom", "chromStart", "chromEnd", "annotation"))
     labels.by.problem <- if(length(labels)){
       just.to.check <- PeakError(Peaks(), labels)
       labels[, chromStart1 := chromStart + 1L]

@@ -71,7 +71,7 @@ R -e 'source("https://raw.githubusercontent.com/tdhock/PeakSegPipeline/master/te
 #+END_SRC
 
 This is the TEST_SUITE=pipeline-input test that is run by [[https://travis-ci.org/tdhock/PeakSegPipeline][Travis-CI]]
-after every push to this repo -- it should take 30-60 minutes to run,
+after every push to this repo -- it should take about 20 minutes to run,
 depending on the speed of your computer ([[https://github.com/tdhock/PeakSegPipeline/wiki/test-pipeline-input][for debugging on your
 computer, it may be useful to look at the expected terminal
 output]]). The test script will first download some bigWigs and labels
@@ -245,186 +245,52 @@ the gap file contains one line for every gap in the reference (unknown
 / NNN sequence). If there are no gaps in your genome, then you can use
 =yourGenome_chromInfo.txt= as a =problems.bed= file.
 
-** Running steps of the pipeline in parallel
 
-The PeakSegPipeline consists of seven steps. Below we give the command
-lines for the [[file:tests/testthat/test-pipeline-demo.R]] project
-directory, =~/PeakSegPipeline-test/demo=.
+** Running PeakSegPipeline on a SLURM cluster via batchtools
 
-*** Step 1: convert labels, create problem directories, and shell scripts
+Since the human genome is so large, we recommend to do model training
+and peak prediction in parallel. PeakSegPipeline uses [[https://mllg.github.io/batchtools/articles/batchtools.html][batchtools]] to
+launch jobs on the [[https://slurm.schedmd.com/][SLURM]] cluster system. [[file:inst/templates/slurm-afterok.tmpl][The PeakSegPipeline SLURM
+template]] which adds support for dependencies between jobs must be
+used, by specifying the following batchtools configuration (I put it
+in =~/.batchtools.conf.R=):
 
-Convert labels from =~/PeakSegPipeline-test/demo/labels/*.txt= files
-to =~/PeakSegPipeline-test/demo/samples/*/*/labels.bed= files using
-the following R command:
+#+BEGIN_SRC R
+  cluster.functions = makeClusterFunctionsSlurm(system.file(
+    file.path("templates", "slurm-afterok.tmpl"),
+    package="PeakSegPipeline",
+    mustWork=TRUE))
+#+END_SRC
+
+Before running the pipeline, make sure to convert labels from
+=~/PeakSegPipeline-test/demo/labels/*.txt= files to
+=~/PeakSegPipeline-test/demo/samples/*/*/labels.bed= files using the
+following R command:
 
 #+BEGIN_SRC R
 PeakSegPipeline::convert_labels("~/PeakSegPipeline-test/demo")
 #+END_SRC
 
-Since the human genome is so large, we recommend to do model training
-and peak prediction in parallel. To use a PBS cluster/batch job
-system, specify your configuration/script headers via the
-[[file:create_problems_all.R][PeakSegPipeline::create_problems_all]]
-with a =PBS.header= argument.  For example I use the following header
-on Compute Canada's
-[[http://www.hpc.mcgill.ca/index.php/guillimin-status][guillimin]]. NOTE:
-PeakSegPipeline does not directly support other cluster/batch job
-systems yet (e.g. SLURM), but if you are interested in helping
-implement/test that, please get in touch!
-(toby.hocking@mail.mcgill.ca) The plan is to use
-[[https://bitbucket.org/mugqic/mugqic_pipelines][MUGQIC pipelines]].
-
-#+BEGIN_SRC shell-script
-cat << EOF > ~/TDH-PBS.txt
-#!/bin/bash
-#PBS -l nodes=1:ppn=4
-#PBS -l walltime=24:00:00
-#PBS -A bws-221-ae
-#PBS -m ae
-#PBS -M tdhock5@gmail.com
-#PBS -V
-EOF
-R -e 'PeakSegPipeline::create_problems_all("~/PeakSegPipeline-test/demo", PBS.header=paste(readLines("~/TDH-PBS.txt"), collapse="\n"))'
-#+END_SRC
-
-=PeakSegPipeline::create_problems_all= creates sub-directories and
-shell scripts that can be used to launch the following steps of the
-PeakSegPipeline.
-
-*** Step 2: target interval computation for each labeled sample and problem
-
-Begin model training by computing
-=~/PeakSegPipeline-test/demo/samples/*/*/problems/*/target.tsv=
-files. The target is the largest interval of log(penalty) values for which
-PeakSegFPOP returns peak models that have the minimum number of
-incorrect labels. The R code to do this for one sample and problem is, for
-example:
+Details of the jobs/steps are explained on [[https://github.com/tdhock/PeakSegPipeline/wiki/Running-steps-of-the-pipeline-in-parallel][the wiki]].
+To run the pipeline using batchtools/SLURM, use
 
 #+BEGIN_SRC R
-PeakSegPipeline::problem.target("~/PeakSegPipeline-test/demo/samples/kidney/MS002201/problems/chr10:18024675-38818835")
+jobs <- PeakSegPipeline::jobs_create("~/PeakSegPipeline-test/demo")
+PeakSegPipeline::jobs_submit_batchtools(jobs)
 #+END_SRC
 
-To do it in parallel for all labeled problems, submit the shell scripts via the
-following shell command:
-
-#+BEGIN_SRC shell-script
-for lbed in ~/PeakSegPipeline-test/demo/samples/*/*/problems/*/labels.bed;do qsub $(echo $lbed|sed 's/labels.bed/target.tsv.sh/');done
-#+END_SRC
-
-*** Step 3: train a model that predicts a penalty for each sample and genomic segmentation problem
-
-The =target.tsv= files computed in Step 2 are used in this step to
-train a machine learning model that can predict optimal penalty
-values, even for un-labeled samples and genome subsets. To train a
-model, use the R code:
-
-#+BEGIN_SRC R
-PeakSegPipeline::problem.train("~/PeakSegPipeline-test/demo")
-#+END_SRC
-
-Or the shell command below: (note that this step typically takes less than 10
-minutes, so there is no need to run it on the qsub/batch system, so I
-use bash to run it interactively)
-
-#+BEGIN_SRC shell-script
-bash ~/PeakSegPipeline-test/demo/model.RData.sh
-#+END_SRC
-
-A model is trained using
-=~/PeakSegPipeline-test/demo/samples/*/*/problems/*/target.tsv= files,
-and saved to =~/PeakSegPipeline-test/demo/model.RData=. 
-
-*** Step 4: peak predictions for each sample independently, joint problem creation via peak clustering
-
-The next step is to compute peak predictions independently for each
-sample and genomic segmentation problem, and then cluster the peaks
-into joint segmentation problems. This step is parallelized on genomic
-segmentation problems. Each job computes peak predictions for every
-sample in one genomic segmentation problem
-(PeakSegPipeline::problem.predict.allSamples), then clusters the
-predicted peaks to obtain joint segmentation problems
-(PeakSegPipeline::create_problems_joint), then computes joint target
-intervals (PeakSegPipeline::problem.joint.targets). To run one of
-these jobs on a single genomic segmentation problem, use an
-R command as below:
-
-#+BEGIN_SRC R
-PeakSegPipeline::problem.pred.cluster.targets("~/PeakSegPipeline-test/demo/problems/chr10:18024675-38818835")
-#+END_SRC
-
-To do that in parallel for all genomic segmentation problems, use the
-following shell command:
-
-#+BEGIN_SRC shell-script
-for sh in ~/PeakSegPipeline-test/demo/problems/*/jointProblems.bed.sh;do qsub $sh;done
-#+END_SRC
-
-The outputs of this step are:
-- Joint segmentation problems files, e.g. ~/PeakSegPipeline-test/demo/problems/chr10:18024675-38818835/jointProblems.bed 
-- Joint target interval files, e.g. ~/PeakSegPipeline-test/demo/problems/chr10:18024675-38818835/jointProblems/chr10:35182819-35261002/target.tsv
-
-*** Step 5: train a model that predicts a penalty for each joint segmentation problem
-
-In this step we use the joint target interval files computed in Step 4
-to train a joint model, which will be used to predict joint penalty
-for each joint segmentation problem. The R command is:
-
-#+BEGIN_SRC R
-PeakSegPipeline::problem.joint.train("~/PeakSegPipeline-test/demo")
-#+END_SRC
-
-The shell command is below: (again note here I use bash rather than
-qsub since this is a short step, <10 minutes)
-
-#+BEGIN_SRC shell-script
-bash ~/PeakSegPipeline-test/demo/joint.model.RData.sh
-#+END_SRC
-
-This step computes:
-- a joint model, =~/PeakSegPipeline-test/demo/joint.model.RData=
-- a list of joint segmentation problems for each job in the next step,
-  =~/PeakSegPipeline-test/demo/jobs/*/jobProblems.bed= 
-
-*** Step 6: joint peak predictions
-
-To make joint peak predictions for one job, which consists of several
-joint segmentation problems, use the R code below:
-
-#+BEGIN_SRC R
-PeakSegPipeline::problem.joint.predict.job("~/PeakSegPipeline-test/demo/jobs/1")
-#+END_SRC
-
-To do that in parallel for all jobs use the shell command below:
-
-#+BEGIN_SRC shell-script
-for sh in ~/PeakSegPipeline-test/demo/jobs/*/jobPeaks.sh;do qsub $sh;done
-#+END_SRC
-
-The outputs of this step are the
-~/PeakSegPipeline-test/demo/jobs/*/jobPeaks.RData files, which contain
-joint peak predictions.
-
-*** Step 7: gather and summarize results
-
-To gather all the peak predictions in the summary web page
-=~/PeakSegPipeline-test/demo/index.html=, run the R code:
-
-#+BEGIN_SRC R
-PeakSegPipeline::plot_all("~/PeakSegPipeline-test/demo")
-#+END_SRC
-
-#+BEGIN_SRC shell-script
-qsub ~/PeakSegPipeline-test/demo/peaks_matrix.tsv.sh
-#+END_SRC
-
-This last step includes creation of
-=~/PeakSegPipeline-test/demo/hub.txt= which can be used as a track hub
-on the UCSC genome browser, with
+The last step includes creation of the summary web page
+=~/PeakSegPipeline-test/demo/index.html= which has links to peak
+prediction files, plots, and a track hub
+=~/PeakSegPipeline-test/demo/hub.txt= which can be used on the UCSC
+genome browser. It shows
 =~/PeakSegPipeline-test/demo/samples/*/*/coverage.bigWig= and
 =~/PeakSegPipeline-test/demo/samples/*/*/joint_peaks.bigWig= files
-that will be shown together on the track hub in a multiWig container
-(for each sample, a colored coverage profile with superimposed peak
-calls as horizontal black line segments).
+together in multiWig containers (for each sample, a colored coverage
+profile with superimposed peak calls as horizontal black line
+segments). To use the track hub, make sure the
+=~/PeakSegPipeline-test/demo/= directory is publicly accessible on the
+web.
 
 ** Output Files
 
@@ -449,20 +315,17 @@ The [[file:plot_all.R][PeakSegPipeline::plot_all]] function creates
 
 ** Related work
 
-- [[https://github.com/tdhock/PeakSegOptimal][PeakSegOptimal::PeakSegFPOP]] provides a O(n log n) memory (and no
-  disk usage) implementation of the PeakSegFPOP algorithm for
-  separately calling peaks for every sample and genomic problem. In
-  contrast [[file:R/PeakSegFPOP.R][PeakSegPipeline::PeakSegFPOP_disk]] implements the same
-  algorithm using O(log n) memory and O(n log n) disk space (which is
-  highly unlikely to memory swap, but a bit slower on large data
-  sets). The [[https://github.com/tdhock/PeakSegFPOP][PeakSegFPOP]] command line program is another on-disk
-  implementation which can be used outside of R.
-- The [[https://github.com/tdhock/PeakSegJoint][PeakSegJoint]] package is used by PeakSegPipeline, for its
-  algorithms for joint peak calling across any number of samples and
-  cell types.
-- The [[https://github.com/tdhock/penaltyLearning][penaltyLearning]] package is used by PeakSegPipeline, for its
-  supervised learning algorithms (interval regression) which are used
-  to predict model complexity (log penalty = number of peaks).
-- The [[https://github.com/tdhock/PeakError][PeakError]] package is used by PeakSegPipeline, to compute the
-  number of incorrect labels for each peak model.
+PeakSegPipeline uses
 
+- [[https://github.com/tdhock/PeakSegDisk][PeakSegDisk]] for predicting multiple peaks per
+  contig. (for each sample independently)
+- [[https://github.com/tdhock/PeakError][PeakError]] to compute the number of incorrect labels for each peak
+  model.
+- [[https://github.com/tdhock/penaltyLearning][penaltyLearning]] for supervised penalty learning algorithms (interval
+  regression) which are used to predict model complexity (log penalty
+  = number of peaks).
+- [[https://github.com/tdhock/PeakSegJoint][PeakSegJoint]] for defining joint peak boundaries across any number of
+  samples and cell types. (independently for each genomic region with
+  a peak predicted by PeakSegFPOP)
+
+  

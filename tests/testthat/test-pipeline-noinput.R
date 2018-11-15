@@ -3,8 +3,11 @@ library(PeakSegPipeline)
 library(data.table)
 context("noinput")
 options(
-  mc.cores=parallel::detectCores(),
-  PeakSegPipeline.problem.target.minutes=5)
+  mc.cores=parallel::detectCores())
+test.data.dir <- file.path(Sys.getenv("HOME"), "PeakSegPipeline-test")
+non.integer.dir <- file.path(test.data.dir, "non-integer")
+demo.dir <- file.path(test.data.dir, "noinput")
+index.html <- file.path(demo.dir, "index.html")
 
 download.to <- function
 (u, f, writeFun=if(grepl("bigWig", f))writeBin else writeLines){
@@ -51,10 +54,6 @@ chr10:38,731,066-38,750,574 peakEnd bcell kidney
 chr10:38,750,960-38,790,663 noPeaks
 "
 
-test.data.dir <- file.path(Sys.getenv("HOME"), "PeakSegPipeline-test")
-##test.data.dir <- file.path(tempdir(), "PeakSegPipeline-test")
-non.integer.dir <- file.path(test.data.dir, "non-integer")
-demo.dir <- file.path(test.data.dir, "noinput")
 chrom.sizes.file <- tempfile()
 chrom.sizes <- data.table(chrom="chr10", bases=128616069)
 fwrite(chrom.sizes, chrom.sizes.file, sep="\t", col.names=FALSE)
@@ -99,7 +98,6 @@ chr10	125919472	128616069
 }
 
 ## Pipeline should raise error for non-integer data.
-system(paste("bigWigToBedGraph", bigWig.file, "/dev/stdout|head"))
 test_that("error for non-integer data in bigWigs", {
   expect_error({
     pipeline(non.integer.dir)
@@ -107,12 +105,54 @@ test_that("error for non-integer data in bigWigs", {
 })
 unlink(non.integer.dir, recursive=TRUE, force=TRUE)
 
+## Set time limit.
+(sample.dir.vec <- Sys.glob(file.path(
+  demo.dir, "samples", "*", "*")))
+prob.dir.vec <- file.path(
+  sample.dir.vec, "problems", "chr10:18024675-38818835")
+limit.dt <- data.table(minutes=2)
+for(prob.dir in prob.dir.vec){
+  dir.create(prob.dir, showWarnings=FALSE, recursive=TRUE)
+  limit.file <- file.path(prob.dir, "target.minutes")
+  fwrite(limit.dt, limit.file, col.names=FALSE)
+}
+
 ## Pipeline should run to completion for integer count data.
-system(paste("bigWigToBedGraph", demo.bigWig, "/dev/stdout|head"))
-index.html <- file.path(demo.dir, "index.html")
+print(getwd())
 unlink(index.html)
-pipeline(demo.dir)
-test_that("index.html is created", {
+test_that("index.html is created via pipeline fun", {
+  pipeline(demo.dir, verbose=1)
+  expect_true(file.exists(index.html))
+})
+
+## Remove one sampleID/problems dir to simulate what happens when
+## running jobs_create (which does not create problems dirs) then
+## jobs_submit.
+one.problems.dir <- dirname(prob.dir)
+unlink(one.problems.dir, recursive=TRUE)
+test_that("problem.coverage makes a directory", {
+  prob <- problem.coverage(prob.dir)
+  expect_true(file.exists(file.path(prob.dir, "coverage.bedGraph")))
+})
+limit.file <- file.path(prob.dir, "target.minutes")
+fwrite(limit.dt, limit.file, col.names=FALSE)
+       
+## Pipeline should run to completion using SLURM.
+unlink(index.html)
+test_that("index.html is created via batchtools", {
+  jobs <- jobs_create(demo.dir)
+  res.list <- list(
+    walltime = 3600, #in minutes
+    ncpus=1,
+    ntasks=1,
+    chunks.as.arrayjobs=TRUE)
+  jobs_submit_batchtools(jobs, res.list)
+  reg.dir <- file.path(demo.dir, "registry", "6")
+  reg <- batchtools::loadRegistry(reg.dir)
+  result <- batchtools::waitForJobs(reg=reg, sleep=function(i){
+    system("squeue")
+    10
+  })
   expect_true(file.exists(index.html))
 })
 

@@ -1,4 +1,6 @@
+slurm.conf
 build.sh
 .travis.yml
 README.org
 bin
+batchtools.conf.R
