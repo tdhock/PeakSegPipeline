@@ -82,7 +82,7 @@ for(bigWig.part in bigWig.part.vec){
 }
 
 sample.dir <- dirname(demo.bigWig)
-problem.dir <- Sys.glob(file.path(sample.dir, "problems", "*"))[1]
+problem.dir <- file.path(sample.dir, "problems", "chr10:18024675-38818835")
 coverage.bedGraph <- file.path(problem.dir, "coverage.bedGraph")
 unlink(coverage.bedGraph)
 test_that("computing coverage is silent by default", {
