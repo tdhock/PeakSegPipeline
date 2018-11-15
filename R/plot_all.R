@@ -122,17 +122,19 @@ plot_all <- function
       out.mat.list$log10.norm.height <- log10(peak.mean.mat/mean.background.vec)
       for(out.col in names(conn.list)){
         out.mat <- t(out.mat.list[[out.col]])
+        if(is.logical(out.mat))out.mat[out.mat==TRUE] <- 1L
         out.df <- data.frame(
           peak.name=rownames(out.mat),
           as.matrix(out.mat),
           check.names=FALSE)
+        con <- conn.list[[out.col]]
         write.table(
           out.df,
-          conn.list[[out.col]],
+          con,
           quote=FALSE,
           sep=",",
           row.names=FALSE,
-          col.names=job.i==1)
+          col.names=seek(con)==0)
       }
       isDown <- function(is.up){
         (!is.up) & names(is.up)!="Input"
@@ -198,7 +200,6 @@ plot_all <- function
   problems[, problem.name := sprintf(
     "%s:%d-%d", chrom, problemStart, problemEnd)]
   problems[, problem.name := factor(problem.name, problem.name)]
-  ## Save samples/groupID/sampleID/joint_peaks.bedGraph files.
   zcat <- function(suffix, ...){
     base.tsv.gz <- paste0(
       "peaks_matrix_", suffix, ".tsv.gz")
@@ -206,19 +207,12 @@ plot_all <- function
     cmd <- paste("zcat", path.tsv.gz)
     fread(cmd=cmd, ...)
   }
-  header.dt <- zcat("sample", nrows=1)
+  ## Read first row and column of samples matrix to get names.
+  header.dt <- zcat("sample", nrows=0)
   col.name.vec <- names(header.dt)
   peak.name.dt <- zcat("sample", select=1)
-  pos.pattern <- paste0(
-    "(?<chrom>[^:]+)",
-    ":",
-    "(?<peakStart>[0-9]+)",
-    "-",
-    "(?<peakEnd>[0-9]+)")
-  pos.dt <- data.table(namedCapture::str_match_named(
-    peak.name.dt$peak.name, pos.pattern, list(
-      peakStart=as.integer,
-      peakEnd=as.integer)))
+  pos.dt <- problem.table(peak.name.dt$peak.name)
+  setnames(pos.dt, c("chrom", "peakStart", "peakEnd"))
   ord.vec <- pos.dt[, orderChrom(chrom, peakStart, peakEnd)]
   pos.ord.dt <- pos.dt[ord.vec]
   for(sample.i in 2:length(col.name.vec)){
