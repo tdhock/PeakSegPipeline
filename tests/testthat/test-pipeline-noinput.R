@@ -138,13 +138,14 @@ test_that("index.html is created via batchtools", {
     ncpus=1,
     ntasks=1,
     chunks.as.arrayjobs=TRUE)
-  jobs_submit_batchtools(jobs, res.list)
-  reg.dir <- file.path(demo.dir, "registry", "6")
-  reg <- batchtools::loadRegistry(reg.dir)
+  reg.list <- jobs_submit_batchtools(jobs, res.list)
+  reg <- reg.list[[length(reg.list)]]
   result <- batchtools::waitForJobs(reg=reg, sleep=function(i){
     system("squeue")
     10
   })
   expect_true(file.exists(index.html))
+  log.glob <- file.path(demo.dir, "registry", "*", "logs", "*")
+  system(paste("head -10000", log.glob))
 })
 
