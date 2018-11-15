@@ -146,6 +146,6 @@ test_that("index.html is created via batchtools", {
   })
   expect_true(file.exists(index.html))
   log.glob <- file.path(demo.dir, "registry", "*", "logs", "*")
-  system(paste("head -10000", log.glob))
+  system(paste("tail -n 10000", log.glob))
 })
 
