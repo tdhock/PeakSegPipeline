@@ -328,10 +328,12 @@ problem.joint <- function
       coverage.bigWig, chrom, problemStart, problemEnd)]
     sample.dir <- dirname(coverage.bigWig)
     group.dir <- dirname(sample.dir)
-    coverage.list[[coverage.i]] <- data.table(
-      sample.id=basename(sample.dir),
-      sample.group=basename(group.dir),
-      save.coverage)
+    if(nrow(save.coverage)){
+      coverage.list[[coverage.i]] <- data.table(
+        sample.id=basename(sample.dir),
+        sample.group=basename(group.dir),
+        save.coverage)
+    }
   }
   coverage <- do.call(rbind, coverage.list)
   if(FALSE){
