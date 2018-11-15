@@ -143,3 +143,24 @@ test_that("index.html is created", {
   expect_true(file.exists(index.html))
 })
 
+test_that("relatives links for images", {
+  index.vec <- readLines(index.html)
+  pattern <- paste0(
+    '<a href="',
+    '(?<href>[^"]+)',
+    "[^<]+",
+    '<img src="',
+    '(?<src>[^"]+)')
+  index.txt <- paste(index.vec, collapse="\n")
+  match.mat <- namedCapture::str_match_all_named(index.txt, pattern)[[1]]
+  load(file.path(demo.dir, "chunk.limits.RData"))
+  chunk.dt <- data.table(chunk.limits)
+  prefix.vec <- chunk.dt[, paste0(
+    "problems/chr10:18024675-38818835/chunks/",
+    chrom, ":", chromStart, "-", chromEnd,
+    "/")]
+  src.vec <- paste0(prefix.vec, "figure-predictions-thumb.png")
+  expect_identical(match.mat[, "src"], src.vec)
+  href.vec <- paste0(prefix.vec, "figure-predictions.png")
+  expect_identical(match.mat[, "href"], href.vec)
+})

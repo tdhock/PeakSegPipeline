@@ -274,14 +274,13 @@ plot_all <- function
   }
   specific.html.vec <- do.call(c, specific.html.list)
   figure.png.vec <- Sys.glob(file.path(
-    set.dir, "problems", "*", "chunks", "*", "figure-predictions-zoomout.png"))
+    set.dir, "problems", "*", "chunks", "*", "figure-predictions.png"))
   if(0 == length(figure.png.vec)){
     chunk.info <- data.table()
     chunks.html <- ""
   }else{
     relative.vec <- sub("/", "", sub(set.dir, "", figure.png.vec))
-    zoomin.png.vec <- sub("-zoomout", "", relative.vec)
-    chunk.dir.vec <- dirname(zoomin.png.vec)
+    chunk.dir.vec <- dirname(figure.png.vec)
     chunks.dir.vec <- dirname(chunk.dir.vec)
     separate.prob.dir.vec <- dirname(chunks.dir.vec)
     g.pos.pattern <- paste0(
@@ -302,14 +301,13 @@ plot_all <- function
     }
     chunk.info <- data.table(
       separate=pos2df(separate.prob.dir.vec),
-      chunk=pos2df(chunk.dir.vec),
-      zoomin.png=zoomin.png.vec)
+      chunk=pos2df(chunk.dir.vec))
     chunk.info[, problem.name := separate.problem]
     chunk.info[, img := sprintf('
 <a href="%s">
   <img src="%s" />
 </a>
-', zoomin.png.vec, sub(".png$", "-thumb.png", zoomin.png.vec))]
+', relative.vec, sub(".png$", "-thumb.png", relative.vec))]
     chunk.info[, chunk := sprintf({
       '<a href="http://genome.ucsc.edu/cgi-bin/hgTracks?position=%s">%s</a>'
     }, chunk.problem, chunk.problem)]
