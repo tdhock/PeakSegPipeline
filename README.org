@@ -275,11 +275,17 @@ Details of the jobs/steps are explained on [[https://github.com/tdhock/PeakSegPi
 To run the pipeline using batchtools/SLURM, use
 
 #+BEGIN_SRC R
-jobs <- PeakSegPipeline::jobs_create("~/PeakSegPipeline-test/demo")
-PeakSegPipeline::jobs_submit_batchtools(jobs)
+  jobs <- PeakSegPipeline::jobs_create("~/PeakSegPipeline-test/demo")
+  PeakSegPipeline::jobs_submit_batchtools(jobs, resources=list(
+    walltime = 24*60,#minutes
+    memory = 2000,#megabytes per cpu
+    ncpus=2,
+    ntasks=1,
+    chunks.as.arrayjobs=TRUE))
 #+END_SRC
 
-The last step includes creation of the summary web page
+You can edit the time/memory required for each job via the =resources=
+argument. The last step includes creation of the summary web page
 =~/PeakSegPipeline-test/demo/index.html= which has links to peak
 prediction files, plots, and a track hub
 =~/PeakSegPipeline-test/demo/hub.txt= which can be used on the UCSC
