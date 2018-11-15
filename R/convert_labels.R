@@ -1,8 +1,10 @@
 convert_labels <- function
 ### Convert label text files in proj.dir/labels/*.txt to
 ### proj.dir/samples/*/*/labels.bed files.
-(proj.dir
+(proj.dir,
 ### project directory.
+  verbose=0
+### Print messages?
 ){
   chromStart <- chromEnd <- . <- NULL
   ## above to avoid "no visible binding for global variable" NOTEs in
@@ -50,12 +52,12 @@ convert_labels <- function
   bed.list <- list()
   positive.regions.list <- list()
   for(labels.file in labels.file.vec){
-    cat("Reading ", labels.file, "\n", sep="")
+    if(verbose)cat("Reading ", labels.file, "\n", sep="")
     labels.lines <- readLines(labels.file)
     is.blank <- labels.lines == ""
     chunk.id <- cumsum(is.blank)+1L
     label.df <- data.frame(chunk.id, line=labels.lines)[!is.blank, ]
-    cat(length(unique(label.df$chunk.id)), " chunks, ",
+    if(verbose)cat(length(unique(label.df$chunk.id)), " chunks, ",
         nrow(label.df), " label lines\n", sep="")
 
     ## Error checking.
@@ -127,7 +129,7 @@ convert_labels <- function
                  itemRgb=label.colors[paste(match.df$annotation)])
     names(sample.group.list) <- rownames(match.df)
     sample.group.vec <- unique(unlist(sample.group.list))
-    cat("labeled sample groups: ",
+    if(verbose)cat("labeled sample groups: ",
         paste(sample.group.vec, collapse=", "),
         "\n",
         sep="")
@@ -251,7 +253,7 @@ convert_labels <- function
       row.names=FALSE,
       col.names=FALSE,
       sep="\t")
-    cat("Wrote ", nrow(sample.labels),
+    if(verbose)cat("Wrote ", nrow(sample.labels),
         " labels to ", labels.bed,
         "\n", sep="")
   }

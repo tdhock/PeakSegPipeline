@@ -24,7 +24,7 @@ download.to <- function
 ## Download bigWig files from github.
 bigWig.part.vec <- c(
   "Input/MS010302",
-  ## "bcell/MS010302",
+  "bcell/MS010302",
   ## "Input/MS002202",
   ## "kidney/MS002202",
   ## "Input/MS026601",

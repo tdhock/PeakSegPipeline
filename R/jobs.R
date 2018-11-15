@@ -66,12 +66,19 @@ jobs_create <- function
   unlinkProblems(file.path(sample.dir.glob, "problems", "*"))
   unlinkProblems(file.path(data.dir, "problems", "*"))
   sample.dir.vec <- Sys.glob(sample.dir.glob)
+  labels.bed.vec <- file.path(sample.dir.vec, "labels.bed")
+  if(any(file.exists(labels.bed.vec))){
+    if(verbose)cat(
+      "Some labels.bed files exist, so not running convert_labels\n")
+  }else{
+    convert_labels(data.dir, verbose=verbose)
+  }
   all.job.list <- list()
   for(sample.i in seq_along(sample.dir.vec)){
     sample.dir <- sample.dir.vec[[sample.i]]
     problems.dir <- file.path(sample.dir, "problems")
     labels.bed <- file.path(sample.dir, "labels.bed")
-    labels <- fread(labels.bed, col.names=c(
+    labels <- if(file.exists(labels.bed))fread(labels.bed, col.names=c(
       "chrom", "chromStart", "chromEnd", "annotation"))
     labels.by.problem <- if(length(labels)){
       just.to.check <- PeakError(Peaks(), labels)
@@ -88,31 +95,22 @@ jobs_create <- function
       }
       split(data.frame(over.dt), over.dt$problem.name)
     }
-    if(verbose)cat(sprintf(
-      "Writing %4d / %4d samples %d labels %d labeled problems %s\n",
-      sample.i, length(sample.dir.vec),
-      nrow(labels), length(labels.by.problem),
-      problems.dir))
-    all.job.list[[paste("Step1 sample", sample.i)]] <- data.table(
-      step=1,
-      fun="problem.target",
-      arg=file.path(problems.dir, names(labels.by.problem)))
+    if(length(labels.by.problem)){
+      if(verbose)cat(sprintf(
+        "Step1 %4d / %4d samples %d labels %d labeled problems %s\n",
+        sample.i, length(sample.dir.vec),
+        nrow(labels), length(labels.by.problem),
+        problems.dir))
+      all.job.list[[paste("Step1 sample", sample.i)]] <- data.table(
+        step=1,
+        fun="problem.target",
+        arg=file.path(problems.dir, names(labels.by.problem)))
+    }
     ## all.job.list[[paste("Step3 predict", sample.i)]] <- data.table(
     ##   step=3,
     ##   fun="problem.predict",
     ##   arg=file.path(problems.dir, problems$problem.name))
   }#for(sample.i
-  chunk.limits.RData <- file.path(data.dir, "chunk.limits.RData")
-  if(file.exists(chunk.limits.RData)){
-    objs <- load(chunk.limits.RData)
-    chunks <- data.table(chunk.limits)
-    chunks[, chunk.name := sprintf("%s:%d-%d", chrom, chromStart, chromEnd)]
-    chunks[, chromStart1 := chromStart+1L]
-    setkey(chunks, chrom, chromStart1, chromEnd)
-    chunks.with.problems <- foverlaps(problems, chunks, nomatch=0L)
-    setkey(chunks.with.problems, problem.name)
-  }
-  ## Now write data_dir/problems/*/jointProblems.bed.sh
   all.job.list[["Step2 train"]] <- data.table(
     step=2,
     fun="problem.train",
@@ -121,42 +119,6 @@ jobs_create <- function
     step=3,
     fun="problem.pred.cluster.targets",
     arg=file.path(data.dir, "problems", problems$problem.name))
-  for(problem.i in 1:nrow(problems)){
-    problem <- problems[problem.i,]
-    prob.dir <- file.path(data.dir, "problems", problem$problem.name)
-    dir.create(prob.dir, showWarnings=FALSE, recursive=TRUE)
-    if(file.exists(chunk.limits.RData) &&
-       problem$problem.name %in% chunks.with.problems$problem.name){
-      ## write a directory for every chunk.
-      problem.chunks <- chunks.with.problems[problem$problem.name]
-      if(verbose)cat("Writing ", nrow(problem.chunks),
-          " chunks in ", prob.dir,
-          "\n", sep="")
-      for(chunk.i in seq_along(problem.chunks$chunk.name)){
-        chunk <- problem.chunks[chunk.i,]
-        chunk.dir <- file.path(prob.dir, "chunks", chunk$chunk.name)
-        dir.create(chunk.dir, showWarnings=FALSE, recursive=TRUE)
-        chunk.bed <- file.path(chunk.dir, "chunk.bed")
-        fwrite(
-          chunk[, .(chrom, chromStart, chromEnd)],
-          chunk.bed,
-          sep="\t",
-          col.names=FALSE,
-          quote=FALSE)
-        chunk.labels <- regions.by.chunk.file[[paste(chunk$file.and.chunk)]]
-        labels.tsv <- file.path(chunk.dir, "labels.tsv")
-        fwrite(
-          chunk.labels,
-          labels.tsv,
-          sep="\t",
-          col.names=TRUE,
-          quote=FALSE)
-      }
-    }
-    ## joint prediction jobs script.
-    job.dir <- file.path(data.dir, "jobs", problem.i)
-    dir.create(job.dir, showWarnings=FALSE, recursive=TRUE)
-  }#for(problem.i
   all.job.list[["Step4 train joint"]] <- data.table(
     step=4,
     fun="problem.joint.targets.train",

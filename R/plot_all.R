@@ -164,14 +164,27 @@ plot_all <- function
   sapply(conn.list, close)
   summary.dt <- do.call(rbind, summary.dt.list)
   ## Plot each labeled chunk.
-  chunk.dir.vec <- Sys.glob(file.path(
-    set.dir, "problems", "*", "chunks", "*"))
+  chunk.limits.RData <- file.path(set.dir, "chunk.limits.RData")
+  unsorted.problems <- fread(file.path(set.dir, "problems.bed"))
+  setnames(unsorted.problems, c("chrom", "problemStart", "problemEnd"))
+  unsorted.problems[, problemStart1 := problemStart +1L]
+  unsorted.problems[, problem.name := sprintf(
+    "%s:%d-%d", chrom, problemStart, problemEnd)]
+  setkey(unsorted.problems, chrom, problemStart1, problemEnd)
+  chunk.dir.vec <- if(file.exists(chunk.limits.RData)){
+    objs <- load(chunk.limits.RData)
+    chunks <- data.table(chunk.limits)
+    chunks[, chunk.name := sprintf("%s:%d-%d", chrom, chromStart, chromEnd)]
+    chunks[, chromStart1 := chromStart+1L]
+    setkey(chunks, chrom, chromStart1, chromEnd)
+    chunks.with.problems <- foverlaps(unsorted.problems, chunks, nomatch=0L)
+    chunks.with.problems[, file.path(
+      set.dir, "problems", problem.name, "chunks", chunk.name)]    
+  }
   LAPPLY <- if(interactive())lapply else mclapply.or.stop
   LAPPLY(chunk.dir.vec, function(chunk.dir){
     PeakSegPipeline::problem.joint.plot(chunk.dir)
   })
-  unsorted.problems <- fread(file.path(set.dir, "problems.bed"))
-  setnames(unsorted.problems, c("chrom", "problemStart", "problemEnd"))
   chr.pattern <- paste0(
     "chr",
     "(?<before>[^_]+)",

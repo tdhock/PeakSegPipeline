@@ -19,9 +19,12 @@ require data.table >= 1.11.6 to fread empty file as null instead of error.
 
 jobs_* functions to support SLURM via batchtools.
 
-Testing pipeline-noinput on Travis with SLURM.
+Testing pipeline-noinput on Travis with SLURM. (without running
+create_problems_all)
 
 verbose flag added to several functions.
+
+never save problem.bed files any more.
 
 2018.10.3
 

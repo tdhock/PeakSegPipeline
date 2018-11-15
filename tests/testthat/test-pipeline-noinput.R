@@ -23,7 +23,7 @@ download.to <- function
 
 ## Download bigWig files from github.
 bigWig.part.vec <- c(
-  ##"Input/MS010302",
+  "Input/MS010302",
   "bcell/MS010302",
   ## "Input/MS002202",
   ## "kidney/MS002202",
@@ -117,14 +117,6 @@ for(prob.dir in prob.dir.vec){
   fwrite(limit.dt, limit.file, col.names=FALSE)
 }
 
-## Pipeline should run to completion for integer count data.
-print(getwd())
-unlink(index.html)
-test_that("index.html is created via pipeline fun", {
-  pipeline(demo.dir, verbose=1)
-  expect_true(file.exists(index.html))
-})
-
 ## Remove one sampleID/problems dir to simulate what happens when
 ## running jobs_create (which does not create problems dirs) then
 ## jobs_submit.
@@ -140,7 +132,7 @@ fwrite(limit.dt, limit.file, col.names=FALSE)
 ## Pipeline should run to completion using SLURM.
 unlink(index.html)
 test_that("index.html is created via batchtools", {
-  jobs <- jobs_create(demo.dir)
+  jobs <- jobs_create(demo.dir, verbose=1)
   res.list <- list(
     walltime = 3600, #in minutes
     ncpus=1,
