@@ -149,7 +149,10 @@ test_that("index.html is created via batchtools", {
   jobs_submit_batchtools(jobs, res.list)
   reg.dir <- file.path(demo.dir, "registry", "6")
   reg <- batchtools::loadRegistry(reg.dir)
-  result <- batchtools::waitForJobs(reg=reg)
+  result <- batchtools::waitForJobs(reg=reg, sleep=function(i){
+    system("squeue")
+    10
+  })
   expect_true(file.exists(index.html))
 })
 
