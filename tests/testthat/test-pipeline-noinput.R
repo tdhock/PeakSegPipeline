@@ -19,6 +19,11 @@ download.to <- function
     writeFun(content(request), f)
   }
 }
+res.list <- list(
+  walltime = 3600, #in minutes
+  ncpus=1,
+  ntasks=1,
+  chunks.as.arrayjobs=TRUE)
 ## Download bigWig files from github.
 bigWig.part.vec <- c(
   "Input/MS010302",
@@ -127,16 +132,16 @@ test_that("problem.coverage makes a directory", {
 })
 limit.file <- file.path(prob.dir, "target.minutes")
 fwrite(limit.dt, limit.file, col.names=FALSE)
+
+jobs <- jobs_create(demo.dir, verbose=1)
+test_that("jobs_create returns dt", {
+  expect_identical(names(jobs), c("step", "fun", "arg"))
+  expect_is(jobs, "data.table")
+})
        
 ## Pipeline should run to completion using SLURM.
 unlink(index.html)
 test_that("index.html is created via batchtools", {
-  jobs <- jobs_create(demo.dir, verbose=1)
-  res.list <- list(
-    walltime = 3600, #in minutes
-    ncpus=1,
-    ntasks=1,
-    chunks.as.arrayjobs=TRUE)
   reg.list <- jobs_submit_batchtools(jobs, res.list)
   reg <- reg.list[[length(reg.list)]]
   result <- batchtools::waitForJobs(reg=reg, sleep=function(i){
@@ -156,4 +161,20 @@ test_that("entries of peaks matrix are 0/1", {
   expect_identical(class.vec, expected.class.vec)
   binary.mat <- as.matrix(peak.dt[, -1, with=FALSE])
   expect_true(all(binary.mat %in% c(0,1)))
+})
+
+some.jobs <- jobs[step >= 5]
+unlink(index.html)
+test_that("run only steps 5-6 creates index.html", {
+  reg.list <- jobs_submit_batchtools(some.jobs, res.list)
+  reg <- reg.list[[length(reg.list)]]
+  result <- batchtools::waitForJobs(reg=reg, sleep=function(i){
+    system("squeue")
+    10
+  })
+  expect_true(file.exists(index.html))
+  for(step.i in names(reg.list)){
+    log.glob <- file.path(demo.dir, "registry", step.i, "logs", "*")
+    system(paste("tail -n 10000", log.glob))
+  }
 })

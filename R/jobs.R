@@ -164,7 +164,23 @@ jobs_submit_batchtools <- structure(function
   step <- arg <- fun <- NULL
   ## Above to avoid CRAN NOTE.
   requireNamespace("batchtools")
-  data.dir <- jobs[step==2, arg]
+  if(!(
+    is.data.table(jobs) &&
+    0 < nrow(jobs) &&
+    all(c("step", "fun", "arg") %in% names(jobs))
+  )){
+    stop("jobs must be a data.table with at least one row",
+         " and columns step, fun, arg")
+  }
+  one.job <- jobs[1]
+  delete.pattern <- paste0(
+    paste(
+      "/samples/[^/]+/[^/]+/problems/[^/]+",
+      "/problems/[^/]+",
+      "/jobs/[^/]+",
+      sep="|"),
+    "$")
+  data.dir <- sub(delete.pattern, "", one.job$arg)
   registry.dir <- file.path(data.dir, "registry")
   dir.create(registry.dir, showWarnings=FALSE)
   steps <- jobs[, list(
@@ -172,10 +188,11 @@ jobs_submit_batchtools <- structure(function
   ), by=list(step)][order(step)]
   afterok <- NULL
   reg.list <- list()
-  for(step.i in 1:nrow(steps)){
+  for(step.row in 1:nrow(steps)){
+    step.i <- steps[step.row, step]
     step.dir <- file.path(registry.dir, step.i)
     unlink(step.dir, recursive=TRUE)
-    reg <- reg.list[[step.i]] <- batchtools::makeRegistry(step.dir)
+    reg <- reg.list[[paste(step.i)]] <- batchtools::makeRegistry(step.dir)
     step.jobs <- jobs[step==step.i]#[1:min(2, .N)]#for testing
     batchtools::batchMap(function(task.i, job.dt){
       library(PeakSegPipeline)
@@ -185,11 +202,12 @@ jobs_submit_batchtools <- structure(function
     }, 1:nrow(step.jobs), reg=reg, more.args=list(job.dt=step.jobs))
     job.table <- batchtools::getJobTable(reg=reg)
     chunks <- data.table(job.table, chunk=1)
-    batchtools::setJobNames(job.table$job.id, step.jobs[, paste0(
+    job.name.vec <- step.jobs[, paste0(
       sub("problem.", "", fun),
       "_",
       basename(arg)
-    )])
+    )]
+    batchtools::setJobNames(job.table$job.id, job.name.vec)
     resources[["afterok"]] <- afterok
     batchtools::submitJobs(chunks, resources=resources, reg=reg)
     ##system("squeue -u th798")
@@ -230,5 +248,4 @@ jobs_submit_mclapply <- structure(function
     jobs_submit_mclapply(jobs)
   }
 })
-
 

@@ -13,18 +13,24 @@ counting function, which should be much faster than using an
 intermediate bedGraph
 file. http://www.cs.uleth.ca/~holzmann/C/system/shell_commands.html
 
-2018.11.15
+2018.11.16 PR#12
+
+Test pipeline-noinput jobs_ funs without running create_problems_all
+before.
+
+verbose flag added to several functions.
+
+never save problem.bed files any more.
+
+jobs_submit_batchtools works with job subsets, test step >= 5.
+
+2018.11.15 PR#11
 
 require data.table >= 1.11.6 to fread empty file as null instead of error.
 
 jobs_* functions to support SLURM via batchtools.
 
-Testing pipeline-noinput on Travis with SLURM. (without running
-create_problems_all)
-
-verbose flag added to several functions.
-
-never save problem.bed files any more.
+Testing pipeline-noinput on Travis with SLURM.
 
 2018.10.3
 
