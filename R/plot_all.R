@@ -1,5 +1,9 @@
 plot_all <- function
-### Plot results of peak calling, generate summary web page.
+### Gather and plot results of peak calling, generate summary web page
+### set.dir.arg/index.html. If set.dir.arg/hub.sh exists it is called
+### at the end of this function in order to generate a track hub based
+### on the peak model files -- it should contain something like
+### Rscript -e 'PeakSegPipeline::create_track_hub(...)'
 (set.dir.arg,
 ### Path/to/data/dir.
   zoom.out.times=10
@@ -442,6 +446,10 @@ specific.html.vec
     peaks.bed,
     sep="\t",
     col.names=FALSE)
-  ## finally, create track hub.
-  system(paste("bash", file.path(set.dir, "hub.sh")))
+  ## finally, create track hub if hub.sh exists.
+  hub.sh <- file.path(set.dir, "hub.sh")
+  if(file.exists(hub.sh)){
+    system.or.stop(paste("bash", hub.sh))
+  }
+### Nothing.
 }
