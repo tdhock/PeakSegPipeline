@@ -85,7 +85,7 @@ for(bigWig.part in bigWig.part.vec){
   }
 }
 
-for(set.dir in c(non.integer.dir, demo.dir)){
+for(set.dir in c(demo.dir)){
   labels.file <- file.path(set.dir, "labels", "some_labels.txt")
   dir.create(dirname(labels.file), showWarnings=FALSE, recursive=TRUE)
   writeLines(label.txt, labels.file)
@@ -104,15 +104,6 @@ chr10	51448845	125869472
 chr10	125919472	128616069
 ", file=problems.bed)
 }
-
-## Pipeline should raise error for non-integer data.
-system(paste("bigWigToBedGraph", bigWig.file, "/dev/stdout|head"))
-test_that("error for non-integer data in bigWigs", {
-  expect_error({
-    pipeline(non.integer.dir)
-  }, "non-integer data in")
-})
-unlink(non.integer.dir, recursive=TRUE, force=TRUE)
 
 ## Pipeline should run to completion for integer count data.
 system(paste("bigWigToBedGraph", demo.bigWig, "/dev/stdout|head"))

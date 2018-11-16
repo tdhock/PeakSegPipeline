@@ -8,7 +8,17 @@ test.data.dir <- file.path(Sys.getenv("HOME"), "PeakSegPipeline-test")
 non.integer.dir <- file.path(test.data.dir, "non-integer")
 demo.dir <- file.path(test.data.dir, "input")
 index.html <- file.path(demo.dir, "index.html")
-
+## Download bigWig files from github.
+bigWig.part.vec <- c(
+  "Input/MS010302",
+  "bcell/MS010302",
+  ## "Input/MS002202",
+  ## "kidney/MS002202",
+  ## "Input/MS026601",
+  ## "bcell/MS026601",
+  ## "Input/MS002201",
+  "kidney/MS002201"
+    )
 download.to <- function
 (u, f, writeFun=if(grepl("bigWig", f))writeBin else writeLines){
   if(!file.exists(f)){
@@ -21,17 +31,6 @@ download.to <- function
   }
 }
 
-## Download bigWig files from github.
-bigWig.part.vec <- c(
-  "Input/MS010302",
-  ## "bcell/MS010302",
-  ## "Input/MS002202",
-  ## "kidney/MS002202",
-  ## "Input/MS026601",
-  ## "bcell/MS026601",
-  ## "Input/MS002201",
-  "kidney/MS002201"
-    )
 label.txt <- "
 chr10:33,061,897-33,162,814 noPeaks
 chr10:33,456,000-33,484,755 peakStart kidney
@@ -143,3 +142,45 @@ test_that("index.html is created", {
   expect_true(file.exists(index.html))
 })
 
+test_that("relatives links for images", {
+  index.vec <- readLines(index.html)
+  pattern <- paste0(
+    '<a href="',
+    '(?<href>[^"]+)',
+    "[^<]+",
+    '<img src="',
+    '(?<src>[^"]+)')
+  index.txt <- paste(index.vec, collapse="\n")
+  match.mat <- namedCapture::str_match_all_named(index.txt, pattern)[[1]]
+  load(file.path(demo.dir, "chunk.limits.RData"))
+  chunk.dt <- data.table(chunk.limits)
+  prefix.vec <- chunk.dt[, paste0(
+    "problems/chr10:18024675-38818835/chunks/",
+    chrom, ":", chromStart, "-", chromEnd,
+    "/")]
+  src.vec <- paste0(prefix.vec, "figure-predictions-thumb.png")
+  expect_identical(match.mat[, "src"], src.vec)
+  href.vec <- paste0(prefix.vec, "figure-predictions.png")
+  expect_identical(match.mat[, "href"], href.vec)
+})
+
+test_that("joint_peaks.bigWig files have the right number of peaks", {
+  jobPeaks.RData.vec <- Sys.glob(file.path(
+    demo.dir, "jobs", "*", "jobPeaks.RData"))
+  peak.mat.list <- list()
+  for(jobPeaks.RData in jobPeaks.RData.vec){
+    load(jobPeaks.RData)
+    peak.mat.list[[jobPeaks.RData]] <- do.call(cbind, jobPeaks$sample.peaks.vec)
+  }
+  peak.mat <- do.call(cbind, peak.mat.list)
+  library(Matrix)#for rowSums::Matrix
+  expected.peaks <- rowSums(peak.mat)
+  observed.peaks <- expected.peaks
+  for(sample.path in names(expected.peaks)){
+    peaks.bigWig <- file.path(
+      demo.dir, "samples", sample.path, "joint_peaks.bigWig")
+    peaks.dt <- readBigWig(peaks.bigWig, "chr10", 0, 135534747)
+    observed.peaks[[sample.path]] <- nrow(peaks.dt)
+  }
+  expect_equal(observed.peaks, expected.peaks)
+})

@@ -32,14 +32,7 @@ create_problems_joint <- function
   data.dir <- dirname(probs.dir)
   samples.dir <- file.path(data.dir, "samples")
   problem.name <- basename(prob.dir)
-  problem.bed.glob <- file.path(
-    samples.dir, "*", "*", "problems", problem.name, "problem.bed")
-  problem.bed.vec <- Sys.glob(problem.bed.glob)
-  if(length(problem.bed.vec)==0){
-    stop("no ", problem.bed.glob, " files")
-  }
-  separate.problem <- fread(problem.bed.vec[1])
-  setnames(separate.problem, c("chrom", "chromStart", "chromEnd"))
+  separate.problem <- problem.table(prob.dir)
   if(is.null(peaks)){
     peaks.glob <- file.path(
       samples.dir, "*", "*", "problems", problem.name, "peaks.bed")
@@ -92,13 +85,11 @@ create_problems_joint <- function
   }
   setkey(clusters, clusterStart1, clusterEnd)#for join with labels later.
   labels.bed.vec <- Sys.glob(file.path(
-    samples.dir, "*", "*", "problems", problem.name, "labels.bed"))
+    samples.dir, "*", "*", "labels.bed"))
   labels.list <- list()
   for(sample.i in seq_along(labels.bed.vec)){
     labels.bed <- labels.bed.vec[[sample.i]]
-    problem.dir <- dirname(labels.bed)
-    problems.dir <- dirname(problem.dir)
-    sample.dir <- dirname(problems.dir)
+    sample.dir <- dirname(labels.bed)
     sample.id <- basename(sample.dir)
     group.dir <- dirname(sample.dir)
     sample.group <- basename(group.dir)
@@ -106,8 +97,15 @@ create_problems_joint <- function
     setnames(
       sample.labels,
       c("chrom", "labelStart", "labelEnd", "annotation"))
-    labels.list[[labels.bed]] <- 
-      data.table(sample.id, sample.group, sample.labels)
+    setkey(separate.problem, chrom, problemStart, problemEnd)
+    setkey(sample.labels, chrom, labelStart, labelEnd)
+    separate.prob.labels <- foverlaps(
+      sample.labels, separate.problem, nomatch=0L)
+    if(nrow(separate.prob.labels)){
+      labels.list[[labels.bed]] <- data.table(
+        sample.id, sample.group, separate.prob.labels[, list(
+          labelStart, labelEnd, annotation)])
+    }
   }
   labels <- do.call(rbind, labels.list)
   if(is.null(labels)){
@@ -150,11 +148,11 @@ create_problems_joint <- function
     problems[problemStart < mid.before, problemStart := mid.before]
     problems[mid.after < problemEnd, problemEnd := mid.after]
     problems[
-      problemStart < separate.problem$chromStart,
-      problemStart := separate.problem$chromStart]
+      problemStart < separate.problem$problemStart,
+      problemStart := separate.problem$problemStart]
     problems[
-      separate.problem$chromEnd < problemEnd,
-      problemEnd := separate.problem$chromEnd]
+      separate.problem$problemEnd < problemEnd,
+      problemEnd := separate.problem$problemEnd]
     chrom <- sub(":.*", "", problem.name)
     problem.info <- problems[, data.table(
       problemStart,
@@ -176,17 +174,6 @@ create_problems_joint <- function
       pname <- problem$problem.name
       jprob.dir <- file.path(jointProblems, pname)
       dir.create(jprob.dir, showWarnings=FALSE, recursive=TRUE)
-      pout <- data.table(
-        chrom,
-        problem[, .(problemStart, problemEnd)],
-        problem.name)
-      write.table(
-        pout,
-        file.path(jprob.dir, "problem.bed"),
-        quote=FALSE,
-        sep="\t",
-        row.names=FALSE,
-        col.names=FALSE)
       if(!is.null(labels) && pname %in% problems.with.labels$problem.name){
         problem.labels <- problems.with.labels[pname]
         write.table(
@@ -226,14 +213,15 @@ create_problems_joint <- function
     }
     ## Sanity checks -- make sure no joint problems overlap each other,
     ## or are outside the separate problem.
-    stopifnot(separate.problem$chromStart <= problem.info$problemStart)
-    stopifnot(problem.info$problemEnd <= separate.problem$chromEnd)
+    stopifnot(separate.problem$problemStart <= problem.info$problemStart)
+    stopifnot(problem.info$problemEnd <= separate.problem$problemEnd)
     problem.info[, stopifnot(problemEnd[-.N] <= problemStart[-1])]
     cat(
       "Creating ", nrow(problem.info),
       " joint segmentation problems for ", problem.name,
       "\n", sep="")
-    nothing <- mclapply.or.stop(1:nrow(problem.info), makeProblem)
+    LAPPLY <- if(interactive())lapply else mclapply.or.stop
+    nothing <- LAPPLY(1:nrow(problem.info), makeProblem)
     write.table(
       problem.info[, .(chrom, problemStart, problemEnd)],
       jointProblems.bed,

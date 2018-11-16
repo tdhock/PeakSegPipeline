@@ -51,7 +51,7 @@ create_problems_all <- function
     problems.dir <- file.path(sample.dir, "problems")
     coverage.bedGraph <- file.path(sample.dir, "coverage.bedGraph")
     labels.bed <- file.path(sample.dir, "labels.bed")
-    labels <- fread(labels.bed, col.names=c(
+    labels <- if(file.exists(labels.bed))fread(labels.bed, col.names=c(
       "chrom", "chromStart", "chromEnd", "annotation"))
     labels.by.problem <- if(length(labels)){
       just.to.check <- PeakError(Peaks(), labels)
@@ -75,14 +75,6 @@ create_problems_all <- function
       ##   "%4d / %4d %s\n",
       ##   problem.i, nrow(problems), problem.dir))
       dir.create(problem.dir, showWarnings=FALSE, recursive=TRUE)
-      problem.bed <- file.path(problem.dir, "problem.bed")
-      prob.text <- with(problem, data.frame(
-        chrom,
-        chromStart=sprintf("%d", problemStart),
-        chromEnd=sprintf("%d", problemEnd)))
-      write.table(
-        prob.text, problem.bed,
-        quote=FALSE, sep="\t", row.names=FALSE, col.names=FALSE)
       if(problem$problem.name %in% names(labels.by.problem)){
         problem.labels <- labels.by.problem[[problem$problem.name]]
         prob.lab.bed <- file.path(problem.dir, "labels.bed")
@@ -262,9 +254,9 @@ create_problems_all <- function
   hub.cmd <- Rscript(
     'PeakSegPipeline::create_track_hub("%s", "%s", "%s", "%s")',
     data.dir,
-    "http://hubs.hpc.mcgill.ca/~thocking/PeakSegFPOP-",
+    "http://members.cbio.mines-paristech.fr/~thocking/hubs/test/input",
     "hg19",
-    "email@domain.com")
+    "toby.hocking@r-project.org")
   script.txt <- paste0(
     PBS.header, "
 #PBS -o ", hub, ".out

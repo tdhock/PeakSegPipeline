@@ -71,9 +71,17 @@ problem.joint.predict.job <- function
     jprob.name <- sample.loss.diff <- group.loss.diff <- NULL
   ## above to avoid "no visible binding for global variable" NOTEs in
   ## CRAN check.
-  jobProblems <- fread(file.path(job.dir, "jobProblems.bed"))
+  jobProblems.bed <- file.path(job.dir, "jobProblems.bed")
   jobs.dir <- dirname(job.dir)
   data.dir <- dirname(jobs.dir)
+  if(!file.exists(jobProblems.bed)){
+    stop(jobProblems.bed, " does not exist ",
+         "but is required in order to determine ",
+         "on which joint problems to predict; ",
+         "create it via PeakSegPipeline::problem.joint.train('",
+         data.dir, "')")
+  }
+  jobProblems <- fread(jobProblems.bed)
   problems.dir <- file.path(data.dir, "problems")
   setnames(jobProblems, c("chrom", "problemStart", "problemEnd", "problem.name"))
   jobProblems[, jprob.name := sprintf(
@@ -153,9 +161,12 @@ problem.joint.targets <- function
     })
   targets.features <- do.call(rbind, targets.features.list)
   jointTargets.list <- lapply(targets.features, function(L)do.call(rbind, L))
-  jointTargets.rds <- file.path(problem.dir, "jointTargets.rds")
-  saveRDS(jointTargets.list, jointTargets.rds)
-  jointTargets.list
+  if(length(jointTargets.list)){
+    dir.create(problem.dir, showWarnings=FALSE, recursive=TRUE)
+    jointTargets.rds <- file.path(problem.dir, "jointTargets.rds")
+    saveRDS(jointTargets.list, jointTargets.rds)
+    jointTargets.list
+  }
 ### Named list of two matrices: targets and features.
 }
 
@@ -206,13 +217,18 @@ problem.joint.train <- function
   ## above to avoid "no visible binding for global variable" NOTEs in
   ## CRAN check.
   joint.model.RData <- file.path(data.dir, "joint.model.RData")
-  jointTargets.rds.vec <- Sys.glob(file.path(
-    data.dir, "problems", "*", "jointTargets.rds"))
+  jointTargets.rds.glob <- file.path(
+    data.dir, "problems", "*", "jointTargets.rds")
+  jointTargets.rds.vec <- Sys.glob(jointTargets.rds.glob)
   ## Below we read the features and targets into a data.table with
   ## list columns.
+  if(length(jointTargets.rds.vec)==0){
+    stop("need some ", jointTargets.rds.glob, " files for model training; ",
+         "create them via PeakSegPipeline::problem.joint.target")
+  }
   jointDT <- data.table(jointTargets.rds=jointTargets.rds.vec)[, {
-      L <- readRDS(jointTargets.rds)
-      lapply(L, list)
+    L <- readRDS(jointTargets.rds)
+    lapply(L, list)
   }, by=list(jointTargets.rds)]
   mat.list <- lapply(jointDT[,-1,with=FALSE], function(L)do.call(rbind, L))
   model.list <- list()
@@ -262,10 +278,12 @@ problem.joint.train <- function
   setnames(jprobs, c(
     "jprobs.bed", "chrom", "problemStart", "problemEnd"))
   jobs.dir <- file.path(data.dir, "jobs")
-  job.id.vec <- dir(jobs.dir)
+  problems <- fread(file.path(data.dir, "problems.bed"))
+  job.id.vec <- 1:nrow(problems)
   jprobs[, job := rep(job.id.vec, l=.N) ]
   jprobs[, {
-    job.dir <- normalizePath(file.path(jobs.dir, job), mustWork=TRUE)
+    job.dir <- file.path(jobs.dir, job)
+    dir.create(job.dir, showWarnings=FALSE, recursive=TRUE)
     fwrite(
       .SD[,.(chrom, problemStart, problemEnd, basename(dirname(jprobs.bed)))],
       file.path(job.dir, "jobProblems.bed"),
@@ -285,31 +303,37 @@ problem.joint <- function
 (jointProblem.dir
 ### path/to/jointProblem
 ){
-  problemStart1 <- problemStart <- problemEnd <- NULL
+  problemStart1 <- problemStart <- problemEnd <- chrom <- NULL
   ## above to avoid "no visible binding for global variable" NOTEs in
   ## CRAN check.
   segmentations.RData <- file.path(jointProblem.dir, "segmentations.RData")
-  problem.bed <- file.path(jointProblem.dir, "problem.bed")
-  problem <- fread(problem.bed)
-  setnames(problem, c("chrom",  "problemStart", "problemEnd", "problem.name"))
-  problem[, problemStart1 := problemStart + 1L]
-  setkey(problem, problemStart1, problemEnd)
+  jprob.name <- basename(jointProblem.dir)
+  jointProblem.row <- problem.table(jprob.name)
   jointProblems <- dirname(jointProblem.dir)
   prob.dir <- dirname(jointProblems)
+  prob.name <- basename(prob.dir)
   probs.dir <- dirname(prob.dir)
   data.dir <- dirname(probs.dir)
   samples.dir <- file.path(data.dir, "samples")
-  coverage.bedGraph.vec <- Sys.glob(file.path(
-    samples.dir, "*", "*", "problems",
-    problem$problem.name, "coverage.bedGraph"))
-  cat("Found", length(coverage.bedGraph.vec), "samples to jointly segment.\n")
+  coverage.bigWig.vec <- Sys.glob(file.path(
+    samples.dir, "*", "*", "coverage.bigWig"))
+  cat(
+    "Found ", length(coverage.bigWig.vec),
+    " bigWig files to jointly segment in ",
+    jprob.name, ".\n", sep="")
   coverage.list <- list()
-  for(coverage.i in seq_along(coverage.bedGraph.vec)){
-    coverage.bedGraph <- coverage.bedGraph.vec[[coverage.i]]
-    problem.dir <- dirname(coverage.bedGraph)
-    save.coverage <- problem[, readCoverage(
-      problem.dir, problemStart, problemEnd)]
-    coverage.list[[problem.dir]] <- save.coverage
+  for(coverage.i in seq_along(coverage.bigWig.vec)){
+    coverage.bigWig <- coverage.bigWig.vec[[coverage.i]]
+    save.coverage <- jointProblem.row[, readBigWig(
+      coverage.bigWig, chrom, problemStart, problemEnd)]
+    sample.dir <- dirname(coverage.bigWig)
+    group.dir <- dirname(sample.dir)
+    if(nrow(save.coverage)){
+      coverage.list[[coverage.i]] <- data.table(
+        sample.id=basename(sample.dir),
+        sample.group=basename(group.dir),
+        save.coverage)
+    }
   }
   coverage <- do.call(rbind, coverage.list)
   if(FALSE){
@@ -330,44 +354,6 @@ problem.joint <- function
   segmentations$coverage <- coverage
   segmentations
 ### Model from PeakSegJointFaster.
-}
-
-readCoverage <- function
-### Read sample coverage for one problem from either
-### sampleID/coverage.bigWig if it exists, or
-### sampleID/problems/problemID/coverage.bedGraph
-(problem.dir,
-### project/samples/groupID/sampleID/problems/problemID
-  start,
-### start of coverage to read.
-  end
-### end of coverage to read.
-){
-  problemStart <- problemEnd <- chromStart1 <- chromStart <-
-    chromEnd <- problemStart1 <- NULL
-  ## above to avoid "no visible binding for global variable" NOTEs in
-  ## CRAN check.
-  chrom <- sub(":.*", "", basename(problem.dir))
-  jprob <- data.table(chrom, problemStart=start, problemEnd=end)
-  problems.dir <- dirname(problem.dir)
-  sample.dir <- dirname(problems.dir)
-  coverage.bigWig <- file.path(sample.dir, "coverage.bigWig")
-  save.coverage <- jprob[, readBigWig(
-    coverage.bigWig, chrom, problemStart, problemEnd)]
-  ## If we don't have the if() below, we get Error in
-  ## data.table(sample.id, sample.group,
-  ## problem.coverage[chromStart < : Item 3 has no length.
-  if(nrow(save.coverage)==0){
-    save.coverage <- data.table(chromStart=start, chromEnd=end, count=0L)
-  }
-  sample.id <- basename(sample.dir)
-  group.path <- dirname(sample.dir)
-  sample.group <- basename(group.path)
-  data.table(sample.id, sample.group, save.coverage)
-### The data.table of coverage, which can be 1 row with 0 coverage if
-### no coverage data exists. (this is necessary for standard output of
-### the right number of samples for each joint problem, even those
-### with no coverage in some samples)
 }
 
 problem.joint.predict <- function
@@ -483,8 +469,7 @@ problem.joint.target <- function
   setnames(labels, c(
     "chrom", "chromStart", "chromEnd", "annotation",
     "sample.id", "sample.group"))
-  jprob <- fread(file.path(jointProblem.dir, "problem.bed"))
-  setnames(jprob, c("chrom", "problemStart", "problemEnd", "problem.name"))
+  jprob <- problem.table(basename(jointProblem.dir))
   ##   [peakStart]   [peakEnd]   labels
   ## ______   ___________  ______ joint problems
   ## ____________________________
@@ -629,14 +614,10 @@ problem.joint.plot <- function
   proj.dir <- dirname(probs.dir)
   problem.dir.vec <- Sys.glob(file.path(
     proj.dir, "samples", "*", "*", "problems", prob.name))
-  chunk <- fread(file.path(chunk.dir, "chunk.bed"))
+  chunk <- problem.table(basename(chunk.dir))
   setnames(chunk, c("chrom", "chunkStart", "chunkEnd"))
   chunk[, chunkStart1 := chunkStart + 1L]
   setkey(chunk, chunkStart1, chunkEnd)
-  labels <- fread(file.path(chunk.dir, "labels.tsv"))
-  cat("Read",
-      nrow(labels),
-      "labels.\n")
   jointProblems <- fread(file.path(prob.dir, "jointProblems.bed"))
   setnames(jointProblems, c("chrom", "problemStart", "problemEnd"))
   jointProblems[, problemStart1 := problemStart + 1L]
@@ -651,8 +632,10 @@ problem.joint.plot <- function
       "joint problems, plotting",
       nrow(probs.in.chunk),
       "in chunk.\n")
+  dir.create(chunk.dir, showWarnings=FALSE, recursive=TRUE)
   coverage.list <- list()
   separate.peaks.list <- list()
+  labels.list <- list()
   for(sample.i in seq_along(problem.dir.vec)){
     problem.dir <- problem.dir.vec[[sample.i]]
     problems.dir <- dirname(problem.dir)
@@ -660,8 +643,18 @@ problem.joint.plot <- function
     sample.id <- basename(sample.dir)
     group.dir <- dirname(sample.dir)
     sample.group <- basename(group.dir)
-    chunk.cov <- chunk[, readCoverage(problem.dir, chunkStart, chunkEnd)]
-    coverage.list[[problem.dir]] <- chunk.cov
+    labels.bed <- file.path(sample.dir, "labels.bed")
+    if(file.exists(labels.bed)){
+      sample.labels <- fread(labels.bed, col.names=c(
+        "chrom", "chromStart", "chromEnd", "annotation"))
+      labels.list[[problem.dir]] <- data.table(
+        sample.id, sample.group, sample.labels)
+    }
+    coverage.bigWig <- file.path(sample.dir, "coverage.bigWig")
+    chunk.cov <- chunk[, readBigWig(
+      coverage.bigWig, chrom, chunkStart, chunkEnd)]
+    coverage.list[[problem.dir]] <- data.table(
+      sample.id, sample.group, chunk.cov)
     ## Also store peaks in this chunk, if there are any. (if not there
     ## will be a warning which is suppressed)
     sample.peaks <- suppressWarnings(fread(file.path(problem.dir, "peaks.bed")))
@@ -677,6 +670,10 @@ problem.joint.plot <- function
     }
   }
   coverage <- do.call(rbind, coverage.list)
+  labels <- do.call(rbind, labels.list)
+  cat("Read",
+      nrow(labels),
+      "labels.\n")
   cat("Read",
       length(coverage.list),
       "samples of coverage.\n")

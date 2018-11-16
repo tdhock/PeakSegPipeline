@@ -10,7 +10,7 @@
 }
 }
 
-
+\value{A list of registry objects.}
 
 \author{Toby Dylan Hocking}
 

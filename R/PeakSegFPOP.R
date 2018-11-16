@@ -156,8 +156,10 @@ problem.predict.allSamples <- function
   probs.dir <- dirname(prob.dir)
   set.dir <- dirname(probs.dir)
   problem.name <- basename(prob.dir)
-  problem.vec <- Sys.glob(file.path(
-    set.dir, "samples", "*", "*", "problems", problem.name))
+  sample.dir.vec <- Sys.glob(file.path(
+    set.dir, "samples", "*", "*"))
+  prob.name <- basename(prob.dir)
+  problem.vec <- file.path(sample.dir.vec, "problems", prob.name)
   peaks.list <- mclapply.or.stop(problem.vec, problem.predict)
   do.call(rbind, peaks.list)
 ### data.table of predicted peaks.
@@ -174,9 +176,17 @@ problem.table <- function
     "(?<problemStart>[0-9]+)",
     "-",
     "(?<problemEnd>[0-9]+)")
-  data.table(str_match_named(problem.dir, pattern, list(
+  dt <- data.table(str_match_named(problem.dir, pattern, list(
     problemStart=as.integer,
     problemEnd=as.integer)))
+  bad <- is.na(dt$chrom)
+  if(any(bad)){
+    print(problem.dir[bad])
+    stop(
+      "directory should contain a genome position string e.g. ",
+      "chr10:18024675-38818835")
+  }
+  dt
 ### data.table with columns chrom, problemStart, problemEnd.
 }
 
@@ -636,7 +646,15 @@ problem.predict <- function
   stopifnot(nrow(features)==1)
   feature.mat <- as.matrix(features)
   model.RData <- file.path(data.dir, "model.RData")
-  load(model.RData)
+  if(file.exists(model.RData)){
+    load(model.RData)
+  }else{
+    stop(
+      "Model file ", model.RData,
+      " needed for prediction but does not exist; ",
+      "run PeakSegPipeline::problem.train('",
+      data.dir, "') to create it")
+  }
   if(length(feature.mat)==length(model$train.mean.vec)){
     is.bad <- !is.finite(feature.mat)
     feature.mat[is.bad] <- model$train.mean.vec[is.bad]

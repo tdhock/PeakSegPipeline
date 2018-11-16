@@ -7,7 +7,7 @@ jobs_create <- function
 ){
   bases <- problemEnd <- problemStart <- problem.name <- chrom <- row.i <-
     problemStart1 <- chromStart1 <- chromStart <- chromEnd <- chunk.limits <-
-      chunk.name <- . <- regions.by.chunk.file <- NULL
+      chunk.name <- . <- regions.by.chunk.file <- chunk <- NULL
   ## above to avoid CRAN NOTE.
   if(FALSE){
     data.dir.arg <- "~/genomic-ml/PeakSegFPOP/labels/ATAC_JV_adipose/"
@@ -66,12 +66,19 @@ jobs_create <- function
   unlinkProblems(file.path(sample.dir.glob, "problems", "*"))
   unlinkProblems(file.path(data.dir, "problems", "*"))
   sample.dir.vec <- Sys.glob(sample.dir.glob)
+  labels.bed.vec <- file.path(sample.dir.vec, "labels.bed")
+  if(any(file.exists(labels.bed.vec))){
+    if(verbose)cat(
+      "Some labels.bed files exist, so not running convert_labels\n")
+  }else{
+    convert_labels(data.dir, verbose=verbose)
+  }
   all.job.list <- list()
   for(sample.i in seq_along(sample.dir.vec)){
     sample.dir <- sample.dir.vec[[sample.i]]
     problems.dir <- file.path(sample.dir, "problems")
     labels.bed <- file.path(sample.dir, "labels.bed")
-    labels <- fread(labels.bed, col.names=c(
+    labels <- if(file.exists(labels.bed))fread(labels.bed, col.names=c(
       "chrom", "chromStart", "chromEnd", "annotation"))
     labels.by.problem <- if(length(labels)){
       just.to.check <- PeakError(Peaks(), labels)
@@ -88,31 +95,22 @@ jobs_create <- function
       }
       split(data.frame(over.dt), over.dt$problem.name)
     }
-    if(verbose)cat(sprintf(
-      "Writing %4d / %4d samples %d labels %d labeled problems %s\n",
-      sample.i, length(sample.dir.vec),
-      nrow(labels), length(labels.by.problem),
-      problems.dir))
-    all.job.list[[paste("Step1 sample", sample.i)]] <- data.table(
-      step=1,
-      fun="problem.target",
-      arg=file.path(problems.dir, names(labels.by.problem)))
+    if(length(labels.by.problem)){
+      if(verbose)cat(sprintf(
+        "Step1 %4d / %4d samples %d labels %d labeled problems %s\n",
+        sample.i, length(sample.dir.vec),
+        nrow(labels), length(labels.by.problem),
+        problems.dir))
+      all.job.list[[paste("Step1 sample", sample.i)]] <- data.table(
+        step=1,
+        fun="problem.target",
+        arg=file.path(problems.dir, names(labels.by.problem)))
+    }
     ## all.job.list[[paste("Step3 predict", sample.i)]] <- data.table(
     ##   step=3,
     ##   fun="problem.predict",
     ##   arg=file.path(problems.dir, problems$problem.name))
   }#for(sample.i
-  chunk.limits.RData <- file.path(data.dir, "chunk.limits.RData")
-  if(file.exists(chunk.limits.RData)){
-    objs <- load(chunk.limits.RData)
-    chunks <- data.table(chunk.limits)
-    chunks[, chunk.name := sprintf("%s:%d-%d", chrom, chromStart, chromEnd)]
-    chunks[, chromStart1 := chromStart+1L]
-    setkey(chunks, chrom, chromStart1, chromEnd)
-    chunks.with.problems <- foverlaps(problems, chunks, nomatch=0L)
-    setkey(chunks.with.problems, problem.name)
-  }
-  ## Now write data_dir/problems/*/jointProblems.bed.sh
   all.job.list[["Step2 train"]] <- data.table(
     step=2,
     fun="problem.train",
@@ -121,42 +119,6 @@ jobs_create <- function
     step=3,
     fun="problem.pred.cluster.targets",
     arg=file.path(data.dir, "problems", problems$problem.name))
-  for(problem.i in 1:nrow(problems)){
-    problem <- problems[problem.i,]
-    prob.dir <- file.path(data.dir, "problems", problem$problem.name)
-    dir.create(prob.dir, showWarnings=FALSE, recursive=TRUE)
-    if(file.exists(chunk.limits.RData) &&
-       problem$problem.name %in% chunks.with.problems$problem.name){
-      ## write a directory for every chunk.
-      problem.chunks <- chunks.with.problems[problem$problem.name]
-      if(verbose)cat("Writing ", nrow(problem.chunks),
-          " chunks in ", prob.dir,
-          "\n", sep="")
-      for(chunk.i in seq_along(problem.chunks$chunk.name)){
-        chunk <- problem.chunks[chunk.i,]
-        chunk.dir <- file.path(prob.dir, "chunks", chunk$chunk.name)
-        dir.create(chunk.dir, showWarnings=FALSE, recursive=TRUE)
-        chunk.bed <- file.path(chunk.dir, "chunk.bed")
-        fwrite(
-          chunk[, .(chrom, chromStart, chromEnd)],
-          chunk.bed,
-          sep="\t",
-          col.names=FALSE,
-          quote=FALSE)
-        chunk.labels <- regions.by.chunk.file[[paste(chunk$file.and.chunk)]]
-        labels.tsv <- file.path(chunk.dir, "labels.tsv")
-        fwrite(
-          chunk.labels,
-          labels.tsv,
-          sep="\t",
-          col.names=TRUE,
-          quote=FALSE)
-      }
-    }
-    ## joint prediction jobs script.
-    job.dir <- file.path(data.dir, "jobs", problem.i)
-    dir.create(job.dir, showWarnings=FALSE, recursive=TRUE)
-  }#for(problem.i
   all.job.list[["Step4 train joint"]] <- data.table(
     step=4,
     fun="problem.joint.targets.train",
@@ -202,17 +164,35 @@ jobs_submit_batchtools <- structure(function
   step <- arg <- fun <- NULL
   ## Above to avoid CRAN NOTE.
   requireNamespace("batchtools")
-  data.dir <- jobs[step==2, arg]
+  if(!(
+    is.data.table(jobs) &&
+    0 < nrow(jobs) &&
+    all(c("step", "fun", "arg") %in% names(jobs))
+  )){
+    stop("jobs must be a data.table with at least one row",
+         " and columns step, fun, arg")
+  }
+  one.job <- jobs[1]
+  delete.pattern <- paste0(
+    paste(
+      "/samples/[^/]+/[^/]+/problems/[^/]+",
+      "/problems/[^/]+",
+      "/jobs/[^/]+",
+      sep="|"),
+    "$")
+  data.dir <- sub(delete.pattern, "", one.job$arg)
   registry.dir <- file.path(data.dir, "registry")
   dir.create(registry.dir, showWarnings=FALSE)
   steps <- jobs[, list(
     jobs=.N
   ), by=list(step)][order(step)]
   afterok <- NULL
-  for(step.i in 1:nrow(steps)){
+  reg.list <- list()
+  for(step.row in 1:nrow(steps)){
+    step.i <- steps[step.row, step]
     step.dir <- file.path(registry.dir, step.i)
     unlink(step.dir, recursive=TRUE)
-    reg <- batchtools::makeRegistry(step.dir)
+    reg <- reg.list[[paste(step.i)]] <- batchtools::makeRegistry(step.dir)
     step.jobs <- jobs[step==step.i]#[1:min(2, .N)]#for testing
     batchtools::batchMap(function(task.i, job.dt){
       library(PeakSegPipeline)
@@ -222,17 +202,20 @@ jobs_submit_batchtools <- structure(function
     }, 1:nrow(step.jobs), reg=reg, more.args=list(job.dt=step.jobs))
     job.table <- batchtools::getJobTable(reg=reg)
     chunks <- data.table(job.table, chunk=1)
-    batchtools::setJobNames(job.table$job.id, step.jobs[, paste0(
+    job.name.vec <- step.jobs[, paste0(
       sub("problem.", "", fun),
       "_",
       basename(arg)
-    )])
+    )]
+    batchtools::setJobNames(job.table$job.id, job.name.vec)
     resources[["afterok"]] <- afterok
     batchtools::submitJobs(chunks, resources=resources, reg=reg)
     ##system("squeue -u th798")
     (jobs.done <- batchtools::getJobTable(reg=reg))
     afterok <- sub("_.*", "", jobs.done$batch.id)[[1]]
   }
+  reg.list
+### A list of registry objects.
 }, ex=function(){
   if(FALSE){
     jobs <- jobs_create("~/genomic-ml/PeakSegFPOP/labels/ATAC_JV_adipose/")
@@ -265,5 +248,4 @@ jobs_submit_mclapply <- structure(function
     jobs_submit_mclapply(jobs)
   }
 })
-
 

@@ -1,5 +1,9 @@
 plot_all <- function
-### Plot results of peak calling, generate summary web page.
+### Gather and plot results of peak calling, generate summary web page
+### set.dir.arg/index.html. If set.dir.arg/hub.sh exists it is called
+### at the end of this function in order to generate a track hub based
+### on the peak model files -- it should contain something like
+### Rscript -e 'PeakSegPipeline::create_track_hub(...)'
 (set.dir.arg,
 ### Path/to/data/dir.
   zoom.out.times=10
@@ -9,7 +13,8 @@ plot_all <- function
   jobPeaks <- jprob.name <- sample.loss.diff <- group.loss.diff <-
     Input.up <- zoomPos <- n.groups.up <- str.groups.up <-
       n.groups.down <- str.groups.down <- separate.problem <-
-        img <- n.samples.up <- NULL
+        img <- n.samples.up <- chunk.limits <- chunk.name <-
+          chromStart <- chromEnd <- chromStart1 <- NULL
   problemStart <- problem.name <- chrom <- problemEnd <-
     problem.name <- jobPeaks.RData <- peak.name <- peakStart <-
       peakEnd <- means <- peakBases <- samples.prop <- groups <-
@@ -121,18 +126,20 @@ plot_all <- function
       peak.mean.mat <- do.call(cbind, jobPeaks$peak.mean.vec)
       out.mat.list$log10.norm.height <- log10(peak.mean.mat/mean.background.vec)
       for(out.col in names(conn.list)){
-        out.mat <- t(out.mat.list[[out.col]])
+        out.mat <- as.matrix(t(out.mat.list[[out.col]]))
+        if(is.logical(out.mat))out.mat[out.mat==TRUE] <- 1L
         out.df <- data.frame(
           peak.name=rownames(out.mat),
-          as.matrix(out.mat),
+          out.mat,
           check.names=FALSE)
+        con <- conn.list[[out.col]]
         write.table(
           out.df,
-          conn.list[[out.col]],
+          con,
           quote=FALSE,
           sep=",",
           row.names=FALSE,
-          col.names=job.i==1)
+          col.names=seek(con)==0)
       }
       isDown <- function(is.up){
         (!is.up) & names(is.up)!="Input"
@@ -164,14 +171,27 @@ plot_all <- function
   sapply(conn.list, close)
   summary.dt <- do.call(rbind, summary.dt.list)
   ## Plot each labeled chunk.
-  chunk.dir.vec <- Sys.glob(file.path(
-    set.dir, "problems", "*", "chunks", "*"))
+  chunk.limits.RData <- file.path(set.dir, "chunk.limits.RData")
+  unsorted.problems <- fread(file.path(set.dir, "problems.bed"))
+  setnames(unsorted.problems, c("chrom", "problemStart", "problemEnd"))
+  unsorted.problems[, problemStart1 := problemStart +1L]
+  unsorted.problems[, problem.name := sprintf(
+    "%s:%d-%d", chrom, problemStart, problemEnd)]
+  setkey(unsorted.problems, chrom, problemStart1, problemEnd)
+  chunk.dir.vec <- if(file.exists(chunk.limits.RData)){
+    objs <- load(chunk.limits.RData)
+    chunks <- data.table(chunk.limits)
+    chunks[, chunk.name := sprintf("%s:%d-%d", chrom, chromStart, chromEnd)]
+    chunks[, chromStart1 := chromStart+1L]
+    setkey(chunks, chrom, chromStart1, chromEnd)
+    chunks.with.problems <- foverlaps(unsorted.problems, chunks, nomatch=0L)
+    chunks.with.problems[, file.path(
+      set.dir, "problems", problem.name, "chunks", chunk.name)]    
+  }
   LAPPLY <- if(interactive())lapply else mclapply.or.stop
   LAPPLY(chunk.dir.vec, function(chunk.dir){
     PeakSegPipeline::problem.joint.plot(chunk.dir)
   })
-  unsorted.problems <- fread(file.path(set.dir, "problems.bed"))
-  setnames(unsorted.problems, c("chrom", "problemStart", "problemEnd"))
   chr.pattern <- paste0(
     "chr",
     "(?<before>[^_]+)",
@@ -185,7 +205,6 @@ plot_all <- function
   problems[, problem.name := sprintf(
     "%s:%d-%d", chrom, problemStart, problemEnd)]
   problems[, problem.name := factor(problem.name, problem.name)]
-  ## Save samples/groupID/sampleID/joint_peaks.bedGraph files.
   zcat <- function(suffix, ...){
     base.tsv.gz <- paste0(
       "peaks_matrix_", suffix, ".tsv.gz")
@@ -193,24 +212,17 @@ plot_all <- function
     cmd <- paste("zcat", path.tsv.gz)
     fread(cmd=cmd, ...)
   }
-  header.dt <- zcat("sample", nrows=1)
+  ## Read first row and column of samples matrix to get names.
+  header.dt <- zcat("sample", nrows=0)
   col.name.vec <- names(header.dt)
   peak.name.dt <- zcat("sample", select=1)
-  pos.pattern <- paste0(
-    "(?<chrom>[^:]+)",
-    ":",
-    "(?<peakStart>[0-9]+)",
-    "-",
-    "(?<peakEnd>[0-9]+)")
-  pos.dt <- data.table(namedCapture::str_match_named(
-    peak.name.dt$peak.name, pos.pattern, list(
-      peakStart=as.integer,
-      peakEnd=as.integer)))
+  pos.dt <- problem.table(peak.name.dt$peak.name)
+  setnames(pos.dt, c("chrom", "peakStart", "peakEnd"))
   ord.vec <- pos.dt[, orderChrom(chrom, peakStart, peakEnd)]
   pos.ord.dt <- pos.dt[ord.vec]
   for(sample.i in 2:length(col.name.vec)){
     presence.dt <- zcat("sample", select=sample.i)[ord.vec]
-    has.peak <- presence.dt[[1]]
+    has.peak <- which(presence.dt[[1]]==1)
     mean.vec <- zcat("meanCoverage", select=sample.i)[ord.vec][[1]]
     bg.dt <- data.table(
       pos.ord.dt,
@@ -274,14 +286,13 @@ plot_all <- function
   }
   specific.html.vec <- do.call(c, specific.html.list)
   figure.png.vec <- Sys.glob(file.path(
-    set.dir, "problems", "*", "chunks", "*", "figure-predictions-zoomout.png"))
+    set.dir, "problems", "*", "chunks", "*", "figure-predictions.png"))
   if(0 == length(figure.png.vec)){
     chunk.info <- data.table()
     chunks.html <- ""
   }else{
     relative.vec <- sub("/", "", sub(set.dir, "", figure.png.vec))
-    zoomin.png.vec <- sub("-zoomout", "", relative.vec)
-    chunk.dir.vec <- dirname(zoomin.png.vec)
+    chunk.dir.vec <- dirname(figure.png.vec)
     chunks.dir.vec <- dirname(chunk.dir.vec)
     separate.prob.dir.vec <- dirname(chunks.dir.vec)
     g.pos.pattern <- paste0(
@@ -302,14 +313,13 @@ plot_all <- function
     }
     chunk.info <- data.table(
       separate=pos2df(separate.prob.dir.vec),
-      chunk=pos2df(chunk.dir.vec),
-      zoomin.png=zoomin.png.vec)
+      chunk=pos2df(chunk.dir.vec))
     chunk.info[, problem.name := separate.problem]
     chunk.info[, img := sprintf('
 <a href="%s">
   <img src="%s" />
 </a>
-', zoomin.png.vec, sub(".png$", "-thumb.png", zoomin.png.vec))]
+', relative.vec, sub(".png$", "-thumb.png", relative.vec))]
     chunk.info[, chunk := sprintf({
       '<a href="http://genome.ucsc.edu/cgi-bin/hgTracks?position=%s">%s</a>'
     }, chunk.problem, chunk.problem)]
@@ -436,6 +446,10 @@ specific.html.vec
     peaks.bed,
     sep="\t",
     col.names=FALSE)
-  ## finally, create track hub.
-  system(paste("bash", file.path(set.dir, "hub.sh")))
+  ## finally, create track hub if hub.sh exists.
+  hub.sh <- file.path(set.dir, "hub.sh")
+  if(file.exists(hub.sh)){
+    system.or.stop(paste("bash", hub.sh))
+  }
+### Nothing.
 }
