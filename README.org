@@ -302,10 +302,10 @@ web.
 
 The [[file:plot_all.R][PeakSegPipeline::plot_all]] function creates
 - =index.html= a web page which summarizes the results,
-- =peaks_matrix_sample.tsv.gz= a binary matrix (peaks x samples) in which TRUE
-  means peak and FALSE means no peak.
-- =peaks_matrix_group.tsv.gz= a binary matrix (peaks x groups) in which TRUE
-  means peak and FALSE means no peak.
+- =peaks_matrix_sample.tsv.gz= a binary matrix (peaks x samples) in which 1
+  means peak and 0 means no peak.
+- =peaks_matrix_group.tsv.gz= a binary matrix (peaks x groups) in which 1
+  means peak and 0 means no peak.
 - =peaks_matrix_likelihood.tsv.gz= a numeric matrix (peaks x samples)
   of likelihood values, larger means a more likely peak.
 - =peaks_matrix_meanCoverage.tsv.gz= a numeric matrix (peaks x samples)
