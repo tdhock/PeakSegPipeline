@@ -218,7 +218,7 @@ plot_all <- function
   pos.ord.dt <- pos.dt[ord.vec]
   for(sample.i in 2:length(col.name.vec)){
     presence.dt <- zcat("sample", select=sample.i)[ord.vec]
-    has.peak <- presence.dt[[1]]
+    has.peak <- which(presence.dt[[1]]==1)
     mean.vec <- zcat("meanCoverage", select=sample.i)[ord.vec][[1]]
     bg.dt <- data.table(
       pos.ord.dt,

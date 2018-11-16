@@ -8,7 +8,17 @@ test.data.dir <- file.path(Sys.getenv("HOME"), "PeakSegPipeline-test")
 non.integer.dir <- file.path(test.data.dir, "non-integer")
 demo.dir <- file.path(test.data.dir, "input")
 index.html <- file.path(demo.dir, "index.html")
-
+## Download bigWig files from github.
+bigWig.part.vec <- c(
+  "Input/MS010302",
+  "bcell/MS010302",
+  ## "Input/MS002202",
+  ## "kidney/MS002202",
+  ## "Input/MS026601",
+  ## "bcell/MS026601",
+  ## "Input/MS002201",
+  "kidney/MS002201"
+    )
 download.to <- function
 (u, f, writeFun=if(grepl("bigWig", f))writeBin else writeLines){
   if(!file.exists(f)){
@@ -21,17 +31,6 @@ download.to <- function
   }
 }
 
-## Download bigWig files from github.
-bigWig.part.vec <- c(
-  "Input/MS010302",
-  "bcell/MS010302",
-  ## "Input/MS002202",
-  ## "kidney/MS002202",
-  ## "Input/MS026601",
-  ## "bcell/MS026601",
-  ## "Input/MS002201",
-  "kidney/MS002201"
-    )
 label.txt <- "
 chr10:33,061,897-33,162,814 noPeaks
 chr10:33,456,000-33,484,755 peakStart kidney

@@ -254,9 +254,9 @@ create_problems_all <- function
   hub.cmd <- Rscript(
     'PeakSegPipeline::create_track_hub("%s", "%s", "%s", "%s")',
     data.dir,
-    "http://hubs.hpc.mcgill.ca/~thocking/PeakSegFPOP-",
+    "http://members.cbio.mines-paristech.fr/~thocking/hubs/test/input",
     "hg19",
-    "email@domain.com")
+    "toby.hocking@r-project.org")
   script.txt <- paste0(
     PBS.header, "
 #PBS -o ", hub, ".out
