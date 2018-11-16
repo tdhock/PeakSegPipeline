@@ -163,3 +163,21 @@ test_that("relatives links for images", {
   href.vec <- paste0(prefix.vec, "figure-predictions.png")
   expect_identical(match.mat[, "href"], href.vec)
 })
+
+test_that("joint_peaks.bigWig files have the right number of peaks", {
+  jobPeaks.RData.vec <- Sys.glob(file.path(demo.dir, "jobs", "*", "jobPeaks.RData"))
+  peak.mat.list <- list()
+  for(jobPeaks.RData in jobPeaks.RData.vec){
+    load(jobPeaks.RData)
+    peak.mat.list[[jobPeaks.RData]] <- do.call(cbind, jobPeaks$sample.peaks.vec)
+  }
+  peak.mat <- do.call(cbind, peak.mat.list)
+  peaks.bigWig.vec <- file.path(sample.dir.vec, "joint_peaks.bigWig")
+  expected.peaks <- rowSums(peak.mat)
+  peaks.bigWig.dt <- data.table(peaks.bigWig=peaks.bigWig.vec)[, {
+    peaks.dt <- readBigWig(peaks.bigWig, "chr10", 0, 135534747)
+    sample.path <- sub(".*samples/", "", dirname(peaks.bigWig))
+    data.table(sample.path, peaks=nrow(peaks.dt))
+  }, by=list(peaks.bigWig)][names(expected.peaks), on=list(sample.path)]
+  expect_equal(as.integer(peaks.bigWig.dt$peaks), as.integer(expected.peaks))
+})
