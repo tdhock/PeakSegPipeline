@@ -7,7 +7,7 @@ jobs_create <- function
 ){
   bases <- problemEnd <- problemStart <- problem.name <- chrom <- row.i <-
     problemStart1 <- chromStart1 <- chromStart <- chromEnd <- chunk.limits <-
-      chunk.name <- . <- regions.by.chunk.file <- NULL
+      chunk.name <- . <- regions.by.chunk.file <- chunk <- NULL
   ## above to avoid CRAN NOTE.
   if(FALSE){
     data.dir.arg <- "~/genomic-ml/PeakSegFPOP/labels/ATAC_JV_adipose/"
