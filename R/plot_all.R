@@ -9,7 +9,8 @@ plot_all <- function
   jobPeaks <- jprob.name <- sample.loss.diff <- group.loss.diff <-
     Input.up <- zoomPos <- n.groups.up <- str.groups.up <-
       n.groups.down <- str.groups.down <- separate.problem <-
-        img <- n.samples.up <- NULL
+        img <- n.samples.up <- chunk.limits <- chunk.name <-
+          chromStart <- chromEnd <- chromStart1 <- NULL
   problemStart <- problem.name <- chrom <- problemEnd <-
     problem.name <- jobPeaks.RData <- peak.name <- peakStart <-
       peakEnd <- means <- peakBases <- samples.prop <- groups <-
@@ -121,11 +122,11 @@ plot_all <- function
       peak.mean.mat <- do.call(cbind, jobPeaks$peak.mean.vec)
       out.mat.list$log10.norm.height <- log10(peak.mean.mat/mean.background.vec)
       for(out.col in names(conn.list)){
-        out.mat <- t(out.mat.list[[out.col]])
+        out.mat <- as.matrix(t(out.mat.list[[out.col]]))
         if(is.logical(out.mat))out.mat[out.mat==TRUE] <- 1L
         out.df <- data.frame(
           peak.name=rownames(out.mat),
-          as.matrix(out.mat),
+          out.mat,
           check.names=FALSE)
         con <- conn.list[[out.col]]
         write.table(
