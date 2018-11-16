@@ -165,19 +165,22 @@ test_that("relatives links for images", {
 })
 
 test_that("joint_peaks.bigWig files have the right number of peaks", {
-  jobPeaks.RData.vec <- Sys.glob(file.path(demo.dir, "jobs", "*", "jobPeaks.RData"))
+  jobPeaks.RData.vec <- Sys.glob(file.path(
+    demo.dir, "jobs", "*", "jobPeaks.RData"))
   peak.mat.list <- list()
   for(jobPeaks.RData in jobPeaks.RData.vec){
     load(jobPeaks.RData)
     peak.mat.list[[jobPeaks.RData]] <- do.call(cbind, jobPeaks$sample.peaks.vec)
   }
   peak.mat <- do.call(cbind, peak.mat.list)
-  peaks.bigWig.vec <- file.path(sample.dir.vec, "joint_peaks.bigWig")
+  library(Matrix)#for rowSums::Matrix
   expected.peaks <- rowSums(peak.mat)
-  peaks.bigWig.dt <- data.table(peaks.bigWig=peaks.bigWig.vec)[, {
+  observed.peaks <- expected.peaks
+  for(sample.path in names(expected.peaks)){
+    peaks.bigWig <- file.path(
+      demo.dir, "samples", sample.path, "joint_peaks.bigWig")
     peaks.dt <- readBigWig(peaks.bigWig, "chr10", 0, 135534747)
-    sample.path <- sub(".*samples/", "", dirname(peaks.bigWig))
-    data.table(sample.path, peaks=nrow(peaks.dt))
-  }, by=list(peaks.bigWig)][names(expected.peaks), on=list(sample.path)]
-  expect_equal(as.integer(peaks.bigWig.dt$peaks), as.integer(expected.peaks))
+    observed.peaks[[sample.path]] <- nrow(peaks.dt)
+  }
+  expect_equal(observed.peaks, expected.peaks)
 })
