@@ -303,7 +303,7 @@ problem.joint <- function
 (jointProblem.dir
 ### path/to/jointProblem
 ){
-  problemStart1 <- problemStart <- problemEnd <- NULL
+  problemStart1 <- problemStart <- problemEnd <- chrom <- NULL
   ## above to avoid "no visible binding for global variable" NOTEs in
   ## CRAN check.
   segmentations.RData <- file.path(jointProblem.dir, "segmentations.RData")
