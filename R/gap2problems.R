@@ -13,24 +13,23 @@ gap2problems <- function
   ## above to avoid "no visible binding for global variable" NOTEs in
   ## CRAN check.
   stopifnot(is.character(gap.bed), length(gap.bed)==1, file.exists(gap.bed))
-  gap.all <- fread(gap.bed)
-  gap <- gap.all[, 1:3, with=FALSE]
-  setnames(gap, c("chrom", "chromStart", "chromEnd"))
-  setkey(gap, chrom)
+  gap <- fread(gap.bed, select=1:3, col.names=c("chrom", "gapStart", "gapEnd"))
   stopifnot(
     is.character(chromInfo.txt),
     length(chromInfo.txt)==1,
     file.exists(chromInfo.txt))
-  chromInfo <- fread(chromInfo.txt)
-  chromSizes <- chromInfo[, 1:2, with=FALSE]
-  setnames(chromSizes, c("chrom", "bases"))
-  setkey(chromSizes, chrom)
-  problems <- gap[, {
-    bases <- chromSizes[chrom]$bases
-    problemStart <- c(0, chromEnd)
-    problemEnd <- c(chromStart, bases)
-    data.table(problemStart, problemEnd)[problemStart < problemEnd,]
-  }, by=chrom]
+  chromInfo <- fread(chromInfo.txt, select=1:2, col.names=c("chrom", "bases"))
+  join.dt <- gap[chromInfo, on=list(chrom)]
+  problems <- rbind(
+    join.dt[is.na(gapStart), {
+      data.table(chrom, problemStart=0, problemEnd=bases)
+    }],
+    join.dt[!is.na(gapStart), {
+      bases <- bases[1]
+      problemStart <- c(0, gapEnd)
+      problemEnd <- c(gapStart, bases)
+      data.table(problemStart, problemEnd)[problemStart < problemEnd,]
+    }, by=list(chrom)])
   out <- problems[, list(
     chrom,
     sprintf("%d", problemStart),
