@@ -28,7 +28,7 @@ pipeline <- function
     create.cmd <- paste(
       "bash",
       file.path(problem.dir, "jointProblems.bed.sh"))
-    ## This includes mclapply across samples.
+    ## This includes lapply in parallel on samples.
     system.or.stop(create.cmd)
   }
   ## Compute target intervals for multi-sample problems, then learn a

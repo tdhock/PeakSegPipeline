@@ -13,6 +13,10 @@ counting function, which should be much faster than using an
 intermediate bedGraph
 file. http://www.cs.uleth.ca/~holzmann/C/system/shell_commands.html
 
+2019.5.24 PR#13
+
+use future.apply::future_lapply for parallelization.
+
 2018.11.16 PR#12
 
 Test pipeline-noinput jobs_ funs without running create_problems_all

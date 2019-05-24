@@ -220,8 +220,7 @@ create_problems_joint <- function
       "Creating ", nrow(problem.info),
       " joint segmentation problems for ", problem.name,
       "\n", sep="")
-    LAPPLY <- if(interactive())lapply else mclapply.or.stop
-    nothing <- LAPPLY(1:nrow(problem.info), makeProblem)
+    nothing <- future.apply::future_lapply(1:nrow(problem.info), makeProblem)
     write.table(
       problem.info[, .(chrom, problemStart, problemEnd)],
       jointProblems.bed,
