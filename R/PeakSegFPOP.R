@@ -176,7 +176,7 @@ problem.table <- function
     "[-:]",
     problemStart="[0-9]+", as.integer,
     "-",
-    problemEnd="[0-9]+" as.integer))
+    problemEnd="[0-9]+", as.integer))
   bad <- is.na(dt$chrom)
   if(any(bad)){
     print(problem.dir[bad])
