@@ -104,7 +104,7 @@ problem.train <- function
   cat("Train errors:\n")
   print(pred.dt[, list(targets=.N), by=status])
   ## To check if we are extrapolating when predictions are made later,
-  ## we save the range of the data 
+  ## we save the range of the data
   model$train.feature.ranges <- apply(
     features[, model$pred.feature.names, drop=FALSE], 2, range)
   ## Plot the size model and limits.
@@ -170,21 +170,19 @@ problem.table <- function
 (problem.dir
 ### path with a problem string, e.g. chrX:6000-1000000
 ){
-  pattern <- paste0(
-    "(?<chrom>chr[^:]+)",
-    ":",
-    "(?<problemStart>[0-9]+)",
+  dt <- data.table(namedCapture::str_match_variable(
+    problem.dir,
+    chrom="chr[^-:]+",
+    "[-:]",
+    problemStart="[0-9]+", as.integer,
     "-",
-    "(?<problemEnd>[0-9]+)")
-  dt <- data.table(str_match_named(problem.dir, pattern, list(
-    problemStart=as.integer,
-    problemEnd=as.integer)))
+    problemEnd="[0-9]+" as.integer))
   bad <- is.na(dt$chrom)
   if(any(bad)){
     print(problem.dir[bad])
     stop(
       "directory should contain a genome position string e.g. ",
-      "chr10:18024675-38818835")
+      "chr10:18024675-38818835 or chr10-18024675-38818835")
   }
   dt
 ### data.table with columns chrom, problemStart, problemEnd.
@@ -360,7 +358,7 @@ problem.target <- structure(function
 ### problem.dir/target.minutes;
 ### the search will stop at a sub-optimal target interval
 ### if this many minutes has elapsed. Useful for testing environments
-### with build time limits (travis). 
+### with build time limits (travis).
 (problem.dir,
 ### problemID directory in which coverage.bedGraph has already been
 ### computed. If there is a labels.bed file then the number of
@@ -411,7 +409,7 @@ problem.target <- structure(function
       result$loss,
       fn=sum(fn),
       fp=sum(fp)))
-  }  
+  }
   ## Also compute feature vector here so train is faster later.
   problem.features(problem.dir)
   error.list <- list()
@@ -600,7 +598,7 @@ problem.labels <- function
     chrom, chromStart, chromEnd, annotation)]
 ### data.table with one row for each label and columns chrom,
 ### chromStart, chromEnd, annotation.
-}  
+}
 
 problem.predict <- function
 ### Predict peaks for a genomic segmentation problem.
