@@ -160,7 +160,7 @@ problem.predict.allSamples <- function
     set.dir, "samples", "*", "*"))
   prob.name <- basename(prob.dir)
   problem.vec <- file.path(sample.dir.vec, "problems", prob.name)
-  peaks.list <- mclapply.or.stop(problem.vec, problem.predict)
+  peaks.list <- future.apply::future_lapply(problem.vec, problem.predict)
   do.call(rbind, peaks.list)
 ### data.table of predicted peaks.
 }
@@ -352,13 +352,12 @@ problem.target <- structure(function
 ### Compute target interval for a segmentation problem. This function
 ### repeated calls problem.PeakSegFPOP with different penalty values,
 ### until it finds an interval of penalty values with minimal label
-### error. The calls to PeakSegFPOP are parallelized using mclapply if
-### you set options(mc.cores).
-### A time limit in minutes may be specified in a file
-### problem.dir/target.minutes;
-### the search will stop at a sub-optimal target interval
-### if this many minutes has elapsed. Useful for testing environments
-### with build time limits (travis).
+### error. The calls to PeakSegFPOP are parallelized using
+### future.apply::future_lapply.  A time limit in minutes may be
+### specified in a file problem.dir/target.minutes; the search will
+### stop at a sub-optimal target interval if this many minutes has
+### elapsed. Useful for testing environments with build time limits
+### (travis).
 (problem.dir,
 ### problemID directory in which coverage.bedGraph has already been
 ### computed. If there is a labels.bed file then the number of
@@ -420,11 +419,10 @@ problem.target <- structure(function
   while(length(next.pen)){
     if(verbose)cat(
       "Next =", paste(next.pen, collapse=", "),
-      "mc.cores=", getOption("mc.cores"),
       "\n")
     next.str <- paste(next.pen)
     iteration <- iteration+1
-    error.list[next.str] <- mclapply.or.stop(next.str, getError)
+    error.list[next.str] <- future.apply::future_lapply(next.str, getError)
     error.dt <- do.call(rbind, error.list)[order(penalty)]
     if(!is.numeric(error.dt$penalty)){
       stop("penalty column is not numeric -- check loss in _loss.tsv files")
@@ -524,7 +522,7 @@ problem.target <- structure(function
     "Mono1_H3K27ac",
     "S001YW_NCMLS",
     "problems",
-    "chr11:60000-580000")
+    "chr11-60000-580000")
   dir.create(problem.dir, recursive=TRUE, showWarnings=FALSE)
   write.table(
     Mono27ac$labels, file.path(problem.dir, "labels.bed"),

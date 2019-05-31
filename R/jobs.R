@@ -126,7 +126,7 @@ jobs_create <- function
   all.job.list[["Step5 joint predict"]] <- data.table(
     step=5,
     fun="problem.joint.predict.job",
-    arg=file.path(data.dir, "jobs", 1:nrow(problems)))    
+    arg=file.path(data.dir, "jobs", 1:nrow(problems)))
   all.job.list[["Step6 summarize"]] <- data.table(
     step=6,
     fun="plot_all",
@@ -223,29 +223,4 @@ jobs_submit_batchtools <- structure(function
   }
 })
 
-jobs_submit_mclapply <- structure(function
-### Run PeakSegPipeline jobs in this R session,
-### parallelizing the jobs in each step via mclapply.or.stop.
-(jobs
-### data.table from jobs_create.
-){
-  step <- arg <- fun <- NULL
-  ## Above to avoid CRAN NOTE.
-  steps <- jobs[, list(
-    jobs=.N
-  ), by=list(step)][order(step)]
-  for(step.i in 1:nrow(steps)){
-    step.jobs <- jobs[step==step.i]
-    mclapply.or.stop(1:nrow(step.jobs), function(task.i){
-      job <- step.jobs[task.i]
-      fun <- get(job$fun)
-      fun(job$arg)
-    })
-  }
-}, ex=function(){
-  if(FALSE){
-    jobs <- jobs_create("~/genomic-ml/PeakSegFPOP/labels/ATAC_JV_adipose/")
-    jobs_submit_mclapply(jobs)
-  }
-})
 

@@ -41,7 +41,7 @@ problem.joint.predict.many <- function
     jprob.peaks
   }
   ## out of memory errors, so don't run in parallel!
-  peaks.list <- mclapply.or.stop(seq_along(joint.dir.vec), prob.progress)
+  peaks.list <- future.apply::future_lapply(seq_along(joint.dir.vec), prob.progress)
   ##lapply(seq_along(joint.dir.vec), prob.progress)
   peaks <- if(length(peaks.list)==0){
     data.table()
@@ -116,7 +116,7 @@ problem.joint.predict.job <- function
       prob[, data.table(problem.name, jprob.name, pred.row)]
     }
   }
-  jmodel.list <- mclapply.or.stop(1:nrow(jobProblems), prob.progress)
+  jmodel.list <- future.apply::future_lapply(1:nrow(jobProblems), prob.progress)
   jobPeaks <- do.call(rbind, jmodel.list)
   jobPeaks.RData <- file.path(job.dir, "jobPeaks.RData")
   save(jobPeaks, file=jobPeaks.RData)
@@ -134,7 +134,7 @@ problem.joint.targets <- function
   ## above variable defined in RData file.
   labels.tsv.vec <- Sys.glob(file.path(
     problem.dir, "jointProblems", "*", "labels.tsv"))
-  targets.features.list <- mclapply.or.stop(
+  targets.features.list <- future.apply::future_lapply(
     seq_along(labels.tsv.vec), function(labels.i){
       labels.tsv <- labels.tsv.vec[[labels.i]]
       jprob.dir <- dirname(labels.tsv)
@@ -178,7 +178,7 @@ problem.joint.targets.train <- function
 ){
   problem.dir.vec <- Sys.glob(file.path(
     data.dir, "problems", "*"))
-  mclapply.or.stop(seq_along(problem.dir.vec), function(problem.i){
+  future.apply::future_lapply(seq_along(problem.dir.vec), function(problem.i){
     problem.dir <- problem.dir.vec[[problem.i]]
     cat(sprintf(
       "%4d / %4d problems %s\n",
@@ -513,8 +513,8 @@ problem.joint.target <- function
     flat.errors=sum(flat.errors),
     peak.errors=sum(peak.errors)
   ), by=sample.group]
-  errors.selected.groups <-
-    errors.all.groups[names(segmentations$group.loss.diff.vec)]
+  errors.selected.groups <- errors.all.groups[
+    names(segmentations$group.loss.diff.vec), on=list(sample.group)]
   flat.errors.total <- sum(flat.errors.dt$flat.errors)
   sample.errors.vec <- flat.errors.total + errors.selected.samples[, c(
     0, cumsum(peak.errors)-cumsum(flat.errors))]

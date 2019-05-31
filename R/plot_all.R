@@ -60,7 +60,7 @@ plot_all <- function
     rank.vec <- seq_along(value.vec)
     names(rank.vec) <- value.vec[ord.vec]
     order(rank.vec[chrom.vec], ...)
-  } 
+  }
   factorChrom <- function(chrom.vec){
     u.vec <- unique(chrom.vec)
     ord.vec <- u.vec[orderChrom(u.vec)]
@@ -186,10 +186,9 @@ plot_all <- function
     setkey(chunks, chrom, chromStart1, chromEnd)
     chunks.with.problems <- foverlaps(unsorted.problems, chunks, nomatch=0L)
     chunks.with.problems[, file.path(
-      set.dir, "problems", problem.name, "chunks", chunk.name)]    
+      set.dir, "problems", problem.name, "chunks", chunk.name)]
   }
-  LAPPLY <- if(interactive())lapply else mclapply.or.stop
-  LAPPLY(chunk.dir.vec, function(chunk.dir){
+  future.apply::future_lapply(chunk.dir.vec, function(chunk.dir){
     PeakSegPipeline::problem.joint.plot(chunk.dir)
   })
   chr.pattern <- paste0(
@@ -230,7 +229,7 @@ plot_all <- function
     )[has.peak]
     out.path <- col.name.vec[[sample.i]]
     out.file <- file.path(
-      set.dir, "samples", out.path, "joint_peaks.bedGraph")    
+      set.dir, "samples", out.path, "joint_peaks.bedGraph")
     fwrite(
       bg.dt,
       out.file,
@@ -281,7 +280,7 @@ plot_all <- function
           print.results=FALSE,
           sanitize.text.function=identity)
       }else ""
-      specific.html.list[[paste(sg, most.or.least)]] <- c(msg, tab)   
+      specific.html.list[[paste(sg, most.or.least)]] <- c(msg, tab)
     }
   }
   specific.html.vec <- do.call(c, specific.html.list)

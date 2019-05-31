@@ -9,7 +9,7 @@ gap2problems <- function
   problems.bed
 ### will be created
 ){
-  chrom <- chromStart <- chromEnd <- NULL
+  chrom <- chromStart <- chromEnd <- gapStart <- gapEnd <- NULL
   ## above to avoid "no visible binding for global variable" NOTEs in
   ## CRAN check.
   stopifnot(is.character(gap.bed), length(gap.bed)==1, file.exists(gap.bed))
