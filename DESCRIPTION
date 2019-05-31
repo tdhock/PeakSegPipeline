@@ -15,7 +15,7 @@ SystemRequirements: bedGraphToBigWig, bigWigToBedGraph, bedToBigBed
 Depends: R (>= 2.10)
 Imports: data.table (>= 1.11.6), 
  PeakError, PeakSegJoint (>= 2017.12.23),
- penaltyLearning (>= 2017.07.11), namedCapture, xtable,
+ penaltyLearning (>= 2017.07.11), namedCapture (>= 2019.02.25), xtable,
  scales, Matrix, ggplot2, PeakSegDisk, future, future.apply
 Suggests: testthat, httr, batchtools
 Remotes: tdhock/PeakSegDisk
