@@ -419,7 +419,6 @@ problem.target <- structure(function
   while(length(next.pen)){
     if(verbose)cat(
       "Next =", paste(next.pen, collapse=", "),
-      "mc.cores=", getOption("mc.cores"),
       "\n")
     next.str <- paste(next.pen)
     iteration <- iteration+1
@@ -523,7 +522,7 @@ problem.target <- structure(function
     "Mono1_H3K27ac",
     "S001YW_NCMLS",
     "problems",
-    "chr11:60000-580000")
+    "chr11-60000-580000")
   dir.create(problem.dir, recursive=TRUE, showWarnings=FALSE)
   write.table(
     Mono27ac$labels, file.path(problem.dir, "labels.bed"),

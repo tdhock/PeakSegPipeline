@@ -4,13 +4,12 @@
 \description{Compute target interval for a segmentation problem. This function
 repeated calls problem.PeakSegFPOP with different penalty values,
 until it finds an interval of penalty values with minimal label
-error. The calls to PeakSegFPOP are parallelized using mclapply if
-you set options(mc.cores).
-A time limit in minutes may be specified in a file
-problem.dir/target.minutes;
-the search will stop at a sub-optimal target interval
-if this many minutes has elapsed. Useful for testing environments
-with build time limits (travis). }
+error. The calls to PeakSegFPOP are parallelized using
+future.apply::future_lapply.  A time limit in minutes may be
+specified in a file problem.dir/target.minutes; the search will
+stop at a sub-optimal target interval if this many minutes has
+elapsed. Useful for testing environments with build time limits
+(travis).}
 \usage{problem.target(problem.dir, verbose = 0)}
 \arguments{
   \item{problem.dir}{problemID directory in which coverage.bedGraph has already been
@@ -45,7 +44,7 @@ problem.dir <- file.path(
   "Mono1_H3K27ac",
   "S001YW_NCMLS",
   "problems",
-  "chr11:60000-580000")
+  "chr11-60000-580000")
 dir.create(problem.dir, recursive=TRUE, showWarnings=FALSE)
 write.table(
   Mono27ac$labels, file.path(problem.dir, "labels.bed"),
