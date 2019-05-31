@@ -513,8 +513,8 @@ problem.joint.target <- function
     flat.errors=sum(flat.errors),
     peak.errors=sum(peak.errors)
   ), by=sample.group]
-  errors.selected.groups <-
-    errors.all.groups[names(segmentations$group.loss.diff.vec)]
+  errors.selected.groups <- errors.all.groups[
+    names(segmentations$group.loss.diff.vec), on=list(sample.group)]
   flat.errors.total <- sum(flat.errors.dt$flat.errors)
   sample.errors.vec <- flat.errors.total + errors.selected.samples[, c(
     0, cumsum(peak.errors)-cumsum(flat.errors))]
