@@ -1,3 +1,26 @@
+### order chromosomes.
+orderChrom <- function(chrom.vec, ...){
+  stopifnot(is.character(chrom.vec))
+  value.vec <- unique(chrom.vec)
+  chr.mat <- namedCapture::str_match_variable(
+    value.vec,
+    "chr",
+    before="[^_]+",
+    after="_.*", "?")
+  did.not.match <- is.na(chr.mat[, 1])
+  if(any(did.not.match)){
+    print(value.vec[did.not.match])
+    stop("chroms did not match ", chr.pattern)
+  }
+  ord.vec <- order(
+    suppressWarnings(as.numeric(chr.mat[, "before"])),
+    chr.mat[, "before"],
+    chr.mat[, "after"])
+  rank.vec <- seq_along(value.vec)
+  names(rank.vec) <- value.vec[ord.vec]
+  order(rank.vec[chrom.vec], ...)
+}
+
 plot_all <- function
 ### Gather and plot results of peak calling, generate summary web page
 ### set.dir.arg/index.html. If set.dir.arg/hub.sh exists it is called
@@ -40,32 +63,6 @@ plot_all <- function
   ## CRAN check.
   zoom.factor <- (zoom.out.times-1)/2
   set.dir <- normalizePath(set.dir.arg, mustWork=TRUE)
-  orderChrom <- function(chrom.vec, ...){
-    stopifnot(is.character(chrom.vec))
-    chr.pattern <- paste0(
-      "chr",
-      "(?<before>[^_]+)",
-      "(?<after>_.*)?")
-    value.vec <- unique(chrom.vec)
-    chr.mat <- namedCapture::str_match_named(value.vec, chr.pattern)
-    did.not.match <- is.na(chr.mat[, 1])
-    if(any(did.not.match)){
-      print(value.vec[did.not.match])
-      stop("chroms did not match ", chr.pattern)
-    }
-    ord.vec <- order(
-      suppressWarnings(as.numeric(chr.mat[, "before"])),
-      chr.mat[, "before"],
-      chr.mat[, "after"])
-    rank.vec <- seq_along(value.vec)
-    names(rank.vec) <- value.vec[ord.vec]
-    order(rank.vec[chrom.vec], ...)
-  }
-  factorChrom <- function(chrom.vec){
-    u.vec <- unique(chrom.vec)
-    ord.vec <- u.vec[orderChrom(u.vec)]
-    factor(chrom.vec, ord.vec)
-  }
   ##load all jobPeaks files.
   joint.glob <- file.path(
     set.dir, "jobs", "*")
@@ -191,16 +188,7 @@ plot_all <- function
   future.apply::future_lapply(chunk.dir.vec, function(chunk.dir){
     PeakSegPipeline::problem.joint.plot(chunk.dir)
   })
-  chr.pattern <- paste0(
-    "chr",
-    "(?<before>[^_]+)",
-    "(?<after>_.*)?")
-  chr.mat <- namedCapture::str_match_named(unsorted.problems$chrom, chr.pattern)
-  problems <- unsorted.problems[order(
-    suppressWarnings(as.numeric(chr.mat[, "before"])),
-    chr.mat[, "before"],
-    chr.mat[, "after"],
-    problemStart),]
+  problems <- unsorted.problems[orderChrom(chrom, problemStart),]
   problems[, problem.name := sprintf(
     "%s:%d-%d", chrom, problemStart, problemEnd)]
   problems[, problem.name := factor(problem.name, problem.name)]
@@ -302,12 +290,14 @@ plot_all <- function
       "(?<chromEnd>[0-9 ,]+)")
     pos2df <- function(path.vec){
       problem <- basename(path.vec)
-      df <- namedCapture::str_match_named(
+      int.pattern <- list("[0-9]+", as.integer)
+      df <- namedCapture::str_match_variable(
         problem,
-        g.pos.pattern,
-        list(
-          chromStart=as.integer,
-          chromEnd=as.integer))
+        chrom="chr.+?",
+        ":",
+        chromStart=int.pattern,
+        "-",
+        chromEnd=int.pattern)
       data.frame(problem, df)
     }
     chunk.info <- data.table(
