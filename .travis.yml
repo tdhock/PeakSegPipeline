@@ -26,11 +26,10 @@ script:
   - chmod 755 *
   - export PATH=$(pwd):$PATH
   - popd
-  - sudo mkdir /etc/slurm-llnl
   - sudo cp slurm.conf /etc/slurm-llnl
   - cp batchtools.conf.R tests/testthat
-#  - sudo /usr/sbin/create-munge-key #The munge key /etc/munge/munge.key already exists
   - sudo service munge start
+  - sudo /etc/init.d/slurmctld restart
   - R CMD INSTALL .
   - if [ "$TEST_SUITE" == "CRAN" ];then bash build.sh;else Rscript -e "source('tests/testthat.R', chdir = TRUE)";fi
 
