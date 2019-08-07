@@ -1,41 +1,37 @@
-language: c
+language: r
 
 sudo: required
+
+apt_packages:
+  - texlive
+  - ghostscript
+  - texlive-fonts-extra
+  - texinfo  
+  - bedtools
+  - slurm-llnl 
+#slurm-wlm does not exist on ubuntu 14.04
 
 env:
   - TEST_SUITE=pipeline-noinput
   - TEST_SUITE=pipeline-input
   - TEST_SUITE=CRAN
 
-before_install:
+script:
   - mkdir bin
   - pushd bin
   - curl -OL http://hgdownload.cse.ucsc.edu/admin/exe/linux.x86_64/bigWigInfo
   - curl -OL http://hgdownload.cse.ucsc.edu/admin/exe/linux.x86_64/bigWigToBedGraph
   - curl -OL http://hgdownload.cse.ucsc.edu/admin/exe/linux.x86_64/bedToBigBed
   - curl -OL http://hgdownload.cse.ucsc.edu/admin/exe/linux.x86_64/bedGraphToBigWig
-  - curl -OL http://raw.github.com/craigcitro/r-travis/master/scripts/travis-tool.sh
   - chmod 755 *
   - export PATH=$(pwd):$PATH
   - popd
-  - travis-tool.sh bootstrap
   - sudo mkdir /etc/slurm-llnl
   - sudo cp slurm.conf /etc/slurm-llnl
   - cp batchtools.conf.R tests/testthat
-  - sudo apt-get install -y bedtools texlive texlive-fonts-extra texinfo slurm-llnl #slurm-wlm does not exist on ubuntu 14.04
   - sudo /usr/sbin/create-munge-key
   - sudo service munge start
-  - mkdir /tmp/tmp256K
-  - sudo mount -t tmpfs -o size=256K tmpfs /tmp/tmp256K
-  - mkdir /tmp/tmp160000
-  - sudo mount -t tmpfs -o size=160000 tmpfs /tmp/tmp160000
-
-install:
-  - travis-tool.sh r_install devtools RJSONIO hexbin xtable future directlabels
-  - travis-tool.sh install_deps
-  - Rscript -e "devtools::install(dependencies=FALSE)"
-
-script:
+  - R CMD INSTALL .
   - if [ "$TEST_SUITE" == "CRAN" ];then bash build.sh;else Rscript -e "source('tests/testthat.R', chdir = TRUE)";fi
 
 after_failure:
