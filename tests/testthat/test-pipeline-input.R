@@ -144,14 +144,14 @@ test_that("index.html is created", {
 
 test_that("relatives links for images", {
   index.vec <- readLines(index.html)
-  pattern <- paste0(
+  index.txt <- paste(index.vec, collapse="\n")
+  match.mat <- namedCapture::str_match_all_variable(
+    index.txt,
     '<a href="',
-    '(?<href>[^"]+)',
+    href='[^"]+',
     "[^<]+",
     '<img src="',
-    '(?<src>[^"]+)')
-  index.txt <- paste(index.vec, collapse="\n")
-  match.mat <- namedCapture::str_match_all_named(index.txt, pattern)[[1]]
+    src='[^"]+')
   load(file.path(demo.dir, "chunk.limits.RData"))
   chunk.dt <- data.table(chunk.limits)
   prefix.vec <- chunk.dt[, paste0(
