@@ -11,7 +11,7 @@ sharp H3K4me3 data), jointly using multiple samples and cell types.
   where you have observed presence or absence of peaks in specific
   samples). For more details about labeling see [[#label-data][Input Files -> Label Data]] below.
 - *Single-sample peak calling using PeakSegFPOP.* We use the efficient
-  [[https://github.com/tdhock/PeakSegDisk][PeakSegDisk::problem.PeakSegFPOP]] implementation of Generalized
+  [[https://github.com/tdhock/PeakSegDisk][PeakSegDisk]] implementation of Generalized
   Functional Pruning Optimal Partitioning ([[https://arxiv.org/abs/1810.00117][arXiv:1810.00117]]) to
   predict preliminary peaks for each sample independently.
 - *Multiple-sample peak calling using PeakSegJoint.* After
@@ -50,12 +50,7 @@ Install UCSC command line programs, [[https://github.com/tdhock/PeakSegPipeline/
 necessary because the coverage data must be stored in bigWig files for
 efficient indexed access.
 
-Install a C++ compiler and a BerkeleyDB STL development library, [[https://github.com/tdhock/PeakSegPipeline/wiki/FAQ#Installing-BerkeleyDB-STL][as
-explained in our FAQ]]. BerkeleyDB STL is used by
-=PeakSegDisk::PeakSegFPOP_disk= to write a large temporary file to
-disk.
-
-Finally, install the PeakSegPipeline R package.
+Then, install the PeakSegPipeline R package.
 
 #+BEGIN_SRC R
 if(!require(devtools))install.packages("devtools")
