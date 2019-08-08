@@ -9,9 +9,10 @@ jobs_create <- function
     problemStart1 <- chromStart1 <- chromStart <- chromEnd <- chunk.limits <-
       chunk.name <- . <- regions.by.chunk.file <- chunk <- NULL
   ## above to avoid CRAN NOTE.
-  if(FALSE){
+  if(FALSE){#for debugging.
     data.dir.arg <- "~/genomic-ml/PeakSegFPOP/labels/ATAC_JV_adipose/"
   }
+  stop.without.ucsc()
   data.dir <- normalizePath(data.dir.arg, mustWork=TRUE)
   problems.bed <- file.path(data.dir, "problems.bed")
   samples.dir <- file.path(data.dir, "samples")

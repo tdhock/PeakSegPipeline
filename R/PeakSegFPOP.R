@@ -170,21 +170,13 @@ problem.table <- function
 (problem.dir
 ### path with a problem string, e.g. chrX:6000-1000000
 ){
-  dt <- data.table(namedCapture::str_match_variable(
-    problem.dir,
+  data.table(namedCapture::str_match_variable(
+    problem.dir, nomatch.error=TRUE,
     chrom="chr[^-:]+",
     "[-:]",
     problemStart="[0-9]+", as.integer,
     "-",
     problemEnd="[0-9]+", as.integer))
-  bad <- is.na(dt$chrom)
-  if(any(bad)){
-    print(problem.dir[bad])
-    stop(
-      "directory should contain a genome position string e.g. ",
-      "chr10:18024675-38818835 or chr10-18024675-38818835")
-  }
-  dt
 ### data.table with columns chrom, problemStart, problemEnd.
 }
 
@@ -350,7 +342,7 @@ problem.features <- function
 
 problem.target <- structure(function
 ### Compute target interval for a segmentation problem. This function
-### repeated calls problem.PeakSegFPOP with different penalty values,
+### repeatedly calls PeakSegDisk::PeakSegFPOP_dir with different penalty values,
 ### until it finds an interval of penalty values with minimal label
 ### error. The calls to PeakSegFPOP are parallelized using
 ### future.apply::future_lapply.  A time limit in minutes may be
@@ -381,6 +373,7 @@ problem.target <- structure(function
       setnames(minutes.dt, "minutes")
       if(is.numeric(minutes.dt$minutes)){
         minutes.limit <- minutes.dt$minutes
+        verbose <- 1 # this happens on travis.
       }
     }
   }
@@ -396,7 +389,7 @@ problem.target <- structure(function
   getError <- function(penalty.str){
     stopifnot(is.character(penalty.str))
     stopifnot(length(penalty.str) == 1)
-    result <- problem.PeakSegFPOP(problem.dir, penalty.str)
+    result <- PeakSegDisk::PeakSegFPOP_dir(problem.dir, penalty.str)
     penalty.peaks <- result$segments[status=="peak",]
     tryCatch({
       penalty.error <- PeakErrorChrom(penalty.peaks, labels.dt)
@@ -670,8 +663,7 @@ problem.predict <- function
     " based on ", n.features,
     " feature", ifelse(n.features==1, "", "s"),
     ".\n"))
-  pen.str <- paste(pred.penalty)
-  result <- problem.PeakSegFPOP(problem.dir, pen.str)
+  result <- PeakSegDisk::PeakSegFPOP_dir(problem.dir, pred.penalty)
   all.peaks <- result$segments[status=="peak", ]
   bases.vec <- all.peaks[, chromEnd-chromStart]
   in.range <- size.model[, lower.bases < bases.vec & bases.vec < upper.bases]

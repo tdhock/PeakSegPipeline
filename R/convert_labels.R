@@ -16,16 +16,7 @@ convert_labels <- function
       "proj.dir=", project.dir,
       " should be a project directory with proj.dir/labels/*.txt files")
   }
-  g.pos.pattern <-
-    paste0("(?<chrom>chr.+?)",
-           ":",
-           "(?<chromStart>[0-9 ,]+)",
-           "-",
-           "(?<chromEnd>[0-9 ,]+)",
-           " ",
-           "(?<annotation>[a-zA-Z]+)",
-           "(?<sample_groups>.*)")
-  label.colors <- 
+  label.colors <-
     c(noPeaks="246,244,191",
       peakStart="255,175,175",
       peakEnd="255,76,76",
@@ -63,29 +54,30 @@ convert_labels <- function
     ## Error checking.
     raw.vec <- paste(label.df$line)
     line.vec <- gsub(",", "", raw.vec)
-    match.mat <- namedCapture::str_match_named(line.vec, g.pos.pattern)
-    if(any(is.bad.line <- is.na(match.mat[,1]))){
-      print(raw.vec[is.bad.line])
-      stop("label line does not match ", g.pos.pattern)
-    }
-    not.recognized <- ! match.mat[, "annotation"] %in% names(label.colors)
+    keep.digits <- function(x)as.integer(gsub("[^0-9]+", "", x))
+    int.pattern <- list("[0-9 ,]+", keep.digits)
+    match.df <- namedCapture::str_match_variable(
+      line.vec,
+      chrom="chr.+?",
+      ":",
+      chromStart=int.pattern,
+      "-",
+      chromEnd=int.pattern,
+      " ",
+      annotation="[a-zA-Z]+",
+      sample_groups=".*",
+      nomatch.error=TRUE)
+    not.recognized <- ! match.df$annotation %in% names(label.colors)
     if(any(not.recognized)){
       print(raw.vec[not.recognized])
-      print(match.mat[not.recognized, , drop=FALSE])
+      print(match.df[not.recognized, , drop=FALSE])
       stop(
         "unrecognized annotation; valid values: ",
         paste(
           names(label.colors),
           collapse=", "))
     }
-    match.df <-
-      data.frame(chrom=match.mat[, "chrom"],
-                 chromStart=as.integer(match.mat[, "chromStart"]),
-                 chromEnd=as.integer(match.mat[, "chromEnd"]),
-                 annotation=match.mat[, "annotation"],
-                 sample.groups=match.mat[, "sample_groups"],
-                 chunk.id=label.df$chunk.id,
-                 stringsAsFactors=FALSE)
+    match.df$chunk.id <- label.df$chunk.id
     match.by.chrom <- split(match.df, match.df$chrom)
     for(chrom in names(match.by.chrom)){
       chrom.df <- match.by.chrom[[chrom]]
@@ -110,7 +102,7 @@ convert_labels <- function
 
     ## determine total set of sample groups with positive=Peak
     ## annotations.
-    stripped <- gsub(" *$", "", gsub("^ *", "", match.df$sample.groups))
+    stripped <- gsub(" *$", "", gsub("^ *", "", match.df$sample_groups))
     no.groups <- stripped == ""
     bad.positive <- match.df$annotation!="noPeaks" & no.groups
     if(any(bad.positive)){
@@ -119,14 +111,14 @@ convert_labels <- function
     }
     commas <- gsub(" +", ",", stripped)
     sample.group.list <- strsplit(commas, split=",")
-    bed.list[[labels.file]] <- 
-      data.table(match.df[,c("chrom", "chromStart", "chromEnd")],
-                 name=paste0(match.df$annotation, ":", commas),
-                 score=0,
-                 strand=".",
-                 thickStart=match.df$chromStart,
-                 thickEnd=match.df$chromEnd,
-                 itemRgb=label.colors[paste(match.df$annotation)])
+    bed.list[[labels.file]] <- data.table(
+      match.df[,c("chrom", "chromStart", "chromEnd")],
+      name=paste0(match.df$annotation, ":", commas),
+      score=0,
+      strand=".",
+      thickStart=match.df$chromStart,
+      thickEnd=match.df$chromEnd,
+      itemRgb=label.colors[paste(match.df$annotation)])
     names(sample.group.list) <- rownames(match.df)
     sample.group.vec <- unique(unlist(sample.group.list))
     if(verbose)cat("labeled sample groups: ",
@@ -137,7 +129,7 @@ convert_labels <- function
     groups.up.vec <- sapply(sample.group.list, length)
     file.positive.regions <- match.df[0 < groups.up.vec,]
     input.has.peak <- grepl("Input", file.positive.regions$sample.groups)
-    if(any(input.has.peak)){                         
+    if(any(input.has.peak)){
       positive.regions.list[[labels.file]] <-
         with(file.positive.regions, data.frame(
           chrom, regionStart=chromStart, regionEnd=chromEnd,
@@ -172,7 +164,7 @@ convert_labels <- function
             stop("no ", glob.str, " directories (but labels are present)")
           }
           annotation <- to.assign[[sample.group]]
-          regions.list[[paste(ann.i, sample.group)]] <- 
+          regions.list[[paste(ann.i, sample.group)]] <-
             data.table(sample.id=paste(relevant.samples$sample.id),
                        sample.group,
                        chrom=chunk.row$chrom,
@@ -208,7 +200,7 @@ convert_labels <- function
   ## Save labels to bed file for viewing on UCSC.
   all_labels.bed <- file.path(project.dir, "all_labels.bed")
   ## con <- file(all_labels.bed, "w")
-  ## header <- 
+  ## header <-
   ##   paste("track",
   ##         "visibility=pack",
   ##         "name=PeakSegJointLabels",

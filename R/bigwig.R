@@ -79,3 +79,20 @@ readBigWigSamples <- function(problem, bigwig.file.vec){
   counts.by.sample
 }
 
+stop.without.ucsc <- function
+### Stop with an error if UCSC command line programs are not
+### available.
+(prog.vec=c(
+  "bigWigInfo", "bigWigToBedGraph",
+  "bedToBigBed", "bedGraphToBigWig")
+### Vector of command line programs to test via base::Sys.which.
+){
+  path.vec <- Sys.which(prog.vec)
+  if(any(not.found <- path.vec=="")){
+    stop(
+      "UCSC command line programs not found, or not executable: ",
+      paste(prog.vec[not.found], collapse=", "))
+  }
+  path.vec
+### Full paths to programs.
+}

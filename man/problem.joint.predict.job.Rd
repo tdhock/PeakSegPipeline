@@ -9,7 +9,7 @@ in jobProblems.bed}
 }
 
 \value{data.table of predicted peaks, one row for each job, same columns
-as from problem.joint.predict.}
+as from \code{\link{problem.joint.predict}}.}
 
 \author{Toby Dylan Hocking}
 

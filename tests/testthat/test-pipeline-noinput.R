@@ -114,7 +114,7 @@ unlink(non.integer.dir, recursive=TRUE, force=TRUE)
   demo.dir, "samples", "*", "*")))
 prob.dir.vec <- file.path(
   sample.dir.vec, "problems", "chr10:18024675-38818835")
-limit.dt <- data.table(minutes=2)
+limit.dt <- data.table(minutes=5)
 for(prob.dir in prob.dir.vec){
   dir.create(prob.dir, showWarnings=FALSE, recursive=TRUE)
   limit.file <- file.path(prob.dir, "target.minutes")
@@ -133,6 +133,18 @@ test_that("problem.coverage makes a directory", {
 limit.file <- file.path(prob.dir, "target.minutes")
 fwrite(limit.dt, limit.file, col.names=FALSE)
 
+## test for informative error early if ucsc not available.
+path.vec <- stop.without.ucsc()
+prog <- path.vec[["bigWigInfo"]]
+old.mode <- file.info(prog)$mode
+Sys.chmod(prog, "444") #read, not write, not exec.
+test_that("jobs_create fails if UCSC not available", {
+  expect_error({
+    jobs_create(demo.dir, verbose=1)
+  }, "bigWigInfo")
+})
+Sys.chmod(prog, old.mode)
+
 jobs <- jobs_create(demo.dir, verbose=1)
 test_that("jobs_create returns dt", {
   expect_identical(names(jobs), c("step", "fun", "arg"))
@@ -147,6 +159,7 @@ if(FALSE){
   ## https://slurm.schedmd.com/faq.html#return_to_service
   system("sudo scontrol update NodeName=localhost State=RESUME")
 }
+
 unlink(index.html)
 test_that("index.html is created via batchtools", {
   reg.list <- jobs_submit_batchtools(jobs, res.list)

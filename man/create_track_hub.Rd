@@ -11,9 +11,9 @@ bigWig/bigBed files in the trackDb.txt file, e.g. if
 data.dir.url="http://some.domain/~user/demo_project" then your
 trackDb.txt file will contain URLs like
 http://some.domain/~user/demo_project/samples/groupID/sampleID/coverage.bigWig}
-  \item{genome}{genome string as defined at UCSC, e.g. "hg19"}
-  \item{email}{email address for maintainer of track hub.}
-  \item{goldenPath.url}{link to download UCSC genome chromInfo files, necessary for
+  \item{genome}{\code{genome} string as defined at UCSC, e.g. "hg19"}
+  \item{email}{\code{email} address for maintainer of track hub.}
+  \item{goldenPath.url}{link to download UCSC \code{genome} chromInfo files, necessary for
 creating bigWigs.}
 }
 

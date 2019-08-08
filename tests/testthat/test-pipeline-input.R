@@ -135,6 +135,18 @@ for(prob.dir in prob.dir.vec){
   fwrite(limit.dt, limit.file, col.names=FALSE)
 }
 
+## test for informative error early if ucsc not available.
+path.vec <- stop.without.ucsc()
+prog <- path.vec[["bigWigInfo"]]
+old.mode <- file.info(prog)$mode
+Sys.chmod(prog, "444") #read, not write, not exec.
+test_that("pipeline fails early if UCSC not available", {
+  expect_error({
+    pipeline(demo.dir, verbose=1)
+  }, "bigWigInfo")
+})
+Sys.chmod(prog, old.mode)
+
 ## Pipeline should run to completion for integer count data.
 unlink(index.html)
 test_that("index.html is created", {
@@ -144,14 +156,14 @@ test_that("index.html is created", {
 
 test_that("relatives links for images", {
   index.vec <- readLines(index.html)
-  pattern <- paste0(
+  index.txt <- paste(index.vec, collapse="\n")
+  match.mat <- namedCapture::str_match_all_variable(
+    index.txt,
     '<a href="',
-    '(?<href>[^"]+)',
+    href='[^"]+',
     "[^<]+",
     '<img src="',
-    '(?<src>[^"]+)')
-  index.txt <- paste(index.vec, collapse="\n")
-  match.mat <- namedCapture::str_match_all_named(index.txt, pattern)[[1]]
+    src='[^"]+')
   load(file.path(demo.dir, "chunk.limits.RData"))
   chunk.dt <- data.table(chunk.limits)
   prefix.vec <- chunk.dt[, paste0(
