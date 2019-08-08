@@ -30,6 +30,8 @@ script:
   - cp batchtools.conf.R tests/testthat
   - sudo service munge start
   - sudo /etc/init.d/slurmctld restart
+  - sudo /etc/init.d/slurmd restart
+  - sinfo
   - R CMD INSTALL .
   - if [ "$TEST_SUITE" == "CRAN" ];then bash build.sh;else Rscript -e "source('tests/testthat.R', chdir = TRUE)";fi
 
