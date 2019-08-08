@@ -114,7 +114,7 @@ unlink(non.integer.dir, recursive=TRUE, force=TRUE)
   demo.dir, "samples", "*", "*")))
 prob.dir.vec <- file.path(
   sample.dir.vec, "problems", "chr10:18024675-38818835")
-limit.dt <- data.table(minutes=2)
+limit.dt <- data.table(minutes=5)
 for(prob.dir in prob.dir.vec){
   dir.create(prob.dir, showWarnings=FALSE, recursive=TRUE)
   limit.file <- file.path(prob.dir, "target.minutes")
@@ -138,7 +138,7 @@ test_that("jobs_create returns dt", {
   expect_identical(names(jobs), c("step", "fun", "arg"))
   expect_is(jobs, "data.table")
 })
-       
+
 ## Pipeline should run to completion using SLURM.
 unlink(index.html)
 test_that("index.html is created via batchtools", {
