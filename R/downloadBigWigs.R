@@ -31,7 +31,9 @@ downloadBigWigs <- structure(function
 ### Nothing.
 }, ex=function(){
 
-  trackDb.txt <- "https://rcdata.nau.edu/genomic-ml/PeakSegFPOP/labels/H3K36me3_TDH_immune/trackDb.txt"
+  trackDb.txt <- paste0(
+    "https://rcdata.nau.edu",
+    "/genomic-ml/PeakSegFPOP/labels/H3K36me3_TDH_immune/trackDb.txt")
   downloadBigWigs(trackDb.txt, tempfile())
 
 })
