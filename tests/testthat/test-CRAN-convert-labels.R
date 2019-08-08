@@ -71,5 +71,5 @@ writeLines(labels.content, labels.txt)
 test_that("informative error for unrecognized annotation", {
   expect_error({
     convert_labels(proj.dir)
-  }, "label line does not match")
+  }, "did not match regex")
 })
