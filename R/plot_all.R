@@ -3,15 +3,10 @@ orderChrom <- function(chrom.vec, ...){
   stopifnot(is.character(chrom.vec))
   value.vec <- unique(chrom.vec)
   chr.mat <- namedCapture::str_match_variable(
-    value.vec,
+    value.vec, nomatch.error=TRUE,
     "chr",
     before="[^_]+",
     after="_.*", "?")
-  did.not.match <- is.na(chr.mat[, 1])
-  if(any(did.not.match)){
-    print(value.vec[did.not.match])
-    stop("chroms did not match ", chr.pattern)
-  }
   ord.vec <- order(
     suppressWarnings(as.numeric(chr.mat[, "before"])),
     chr.mat[, "before"],

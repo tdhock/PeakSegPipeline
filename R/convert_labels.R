@@ -16,7 +16,7 @@ convert_labels <- function
       "proj.dir=", project.dir,
       " should be a project directory with proj.dir/labels/*.txt files")
   }
-  label.colors <- 
+  label.colors <-
     c(noPeaks="246,244,191",
       peakStart="255,175,175",
       peakEnd="255,76,76",
@@ -56,7 +56,8 @@ convert_labels <- function
     line.vec <- gsub(",", "", raw.vec)
     keep.digits <- function(x)as.integer(gsub("[^0-9]+", "", x))
     int.pattern <- list("[0-9 ,]+", keep.digits)
-    label.line.pattern <- list(
+    match.df <- namedCapture::str_match_variable(
+      line.vec,
       chrom="chr.+?",
       ":",
       chromStart=int.pattern,
@@ -64,14 +65,8 @@ convert_labels <- function
       chromEnd=int.pattern,
       " ",
       annotation="[a-zA-Z]+",
-      sample_groups=".*")
-    match.df <- namedCapture::str_match_variable(
-      line.vec, label.line.pattern)
-    if(any(is.bad.line <- is.na(match.df[,1]))){
-      print(raw.vec[is.bad.line])
-      L <- namedCapture::variable_args_list(NULL, label.line.pattern)
-      stop("label line does not match ", L$pattern)
-    }
+      sample_groups=".*",
+      nomatch.error=TRUE)
     not.recognized <- ! match.df$annotation %in% names(label.colors)
     if(any(not.recognized)){
       print(raw.vec[not.recognized])
@@ -134,7 +129,7 @@ convert_labels <- function
     groups.up.vec <- sapply(sample.group.list, length)
     file.positive.regions <- match.df[0 < groups.up.vec,]
     input.has.peak <- grepl("Input", file.positive.regions$sample.groups)
-    if(any(input.has.peak)){                         
+    if(any(input.has.peak)){
       positive.regions.list[[labels.file]] <-
         with(file.positive.regions, data.frame(
           chrom, regionStart=chromStart, regionEnd=chromEnd,
@@ -169,7 +164,7 @@ convert_labels <- function
             stop("no ", glob.str, " directories (but labels are present)")
           }
           annotation <- to.assign[[sample.group]]
-          regions.list[[paste(ann.i, sample.group)]] <- 
+          regions.list[[paste(ann.i, sample.group)]] <-
             data.table(sample.id=paste(relevant.samples$sample.id),
                        sample.group,
                        chrom=chunk.row$chrom,
@@ -205,7 +200,7 @@ convert_labels <- function
   ## Save labels to bed file for viewing on UCSC.
   all_labels.bed <- file.path(project.dir, "all_labels.bed")
   ## con <- file(all_labels.bed, "w")
-  ## header <- 
+  ## header <-
   ##   paste("track",
   ##         "visibility=pack",
   ##         "name=PeakSegJointLabels",

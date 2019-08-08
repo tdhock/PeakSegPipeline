@@ -170,21 +170,13 @@ problem.table <- function
 (problem.dir
 ### path with a problem string, e.g. chrX:6000-1000000
 ){
-  dt <- data.table(namedCapture::str_match_variable(
-    problem.dir,
+  data.table(namedCapture::str_match_variable(
+    problem.dir, nomatch.error=TRUE,
     chrom="chr[^-:]+",
     "[-:]",
     problemStart="[0-9]+", as.integer,
     "-",
     problemEnd="[0-9]+", as.integer))
-  bad <- is.na(dt$chrom)
-  if(any(bad)){
-    print(problem.dir[bad])
-    stop(
-      "directory should contain a genome position string e.g. ",
-      "chr10:18024675-38818835 or chr10-18024675-38818835")
-  }
-  dt
 ### data.table with columns chrom, problemStart, problemEnd.
 }
 

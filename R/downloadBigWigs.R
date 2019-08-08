@@ -19,7 +19,7 @@ downloadBigWigs <- structure(function
     dest <- file.path(out.dir, track.name, basename(u))
     cat(sprintf(
       "%4s / %4s tracks %s -> %s\n",
-      track.i, nrow(track.df),
+      track.i, nrow(track.mat),
       u, dest))
     dir.create(dirname(dest), showWarnings=FALSE, recursive=TRUE)
     tryCatch({
@@ -33,5 +33,5 @@ downloadBigWigs <- structure(function
 
   trackDb.txt <- "https://rcdata.nau.edu/genomic-ml/PeakSegFPOP/labels/H3K36me3_TDH_immune/trackDb.txt"
   downloadBigWigs(trackDb.txt, tempfile())
-  
+
 })
