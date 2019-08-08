@@ -373,6 +373,7 @@ problem.target <- structure(function
       setnames(minutes.dt, "minutes")
       if(is.numeric(minutes.dt$minutes)){
         minutes.limit <- minutes.dt$minutes
+        verbose <- 1 # this happens on travis.
       }
     }
   }
