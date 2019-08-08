@@ -139,7 +139,14 @@ test_that("jobs_create returns dt", {
   expect_is(jobs, "data.table")
 })
 
-## Pipeline should run to completion using SLURM.
+## Pipeline should run to completion using SLURM. See .travis.yml file
+## for how to configure SLURM for testing on Ubuntu.
+if(FALSE){
+  ## If the jobs are not being scheduled then check sinfo - if node
+  ## State is down, then maybe need to bring node back up
+  ## https://slurm.schedmd.com/faq.html#return_to_service
+  system("sudo scontrol update NodeName=localhost State=RESUME")
+}
 unlink(index.html)
 test_that("index.html is created via batchtools", {
   reg.list <- jobs_submit_batchtools(jobs, res.list)
