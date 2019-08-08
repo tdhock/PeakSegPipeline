@@ -11,7 +11,11 @@ Description: Implementations of supervised machine learning
  PeakSegJoint <arXiv:1506.01286>
  for joint peak calling (for each peak, jointly using all samples).
 License: GPL-3
-SystemRequirements: bedGraphToBigWig, bigWigToBedGraph, bedToBigBed
+SystemRequirements: Command line programs
+ bedGraphToBigWig, bigWigToBedGraph, bedToBigBed, bigWigInfo
+ which can be downloaded from the UCSC Genome Bioinformatics
+ web site; detailed instructions also available on
+ https://github.com/tdhock/PeakSegPipeline/wiki/FAQ
 Depends: R (>= 2.10)
 Imports: data.table (>= 1.11.6), 
  PeakError,
@@ -24,3 +28,5 @@ Imports: data.table (>= 1.11.6),
  future, future.apply
 Suggests: testthat, httr, batchtools
 Remotes: tdhock/namedCapture
+URL: https://github.com/tdhock/PeakSegPipeline
+BugReports: https://github.com/tdhock/PeakSegPipeline/issues
