@@ -135,6 +135,18 @@ for(prob.dir in prob.dir.vec){
   fwrite(limit.dt, limit.file, col.names=FALSE)
 }
 
+## test for informative error early if ucsc not available.
+path.vec <- stop.without.ucsc()
+prog <- path.vec[["bigWigInfo"]]
+old.mode <- file.info(prog)$mode
+Sys.chmod(prog, "444") #read, not write, not exec.
+test_that("pipeline fails early if UCSC not available", {
+  expect_error({
+    pipeline(demo.dir, verbose=1)
+  }, "bigWigInfo")
+})
+Sys.chmod(prog, old.mode)
+
 ## Pipeline should run to completion for integer count data.
 unlink(index.html)
 test_that("index.html is created", {

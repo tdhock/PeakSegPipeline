@@ -5,6 +5,7 @@ pipeline <- function
   verbose=0
 ### print messages?
 ){
+  stop.without.ucsc()
   set.dir <- normalizePath(set.dir.path, mustWork=TRUE)
   ## First convert labels.
   convert_labels(set.dir)
