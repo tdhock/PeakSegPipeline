@@ -8,7 +8,7 @@ cluster peaks across samples, then compute joint target intervals.}
   \item{proj.dir}{project directory.}
 }
 
-\value{List of features and target matrices (same as problem.joint.target).}
+\value{List of features and target matrices (same as \code{\link{problem.joint.target}}).}
 
 \author{Toby Dylan Hocking}
 

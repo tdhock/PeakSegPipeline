@@ -5,7 +5,7 @@
 set.dir.arg/index.html. If set.dir.arg/hub.sh exists it is called
 at the end of this function in order to generate a track hub based
 on the peak model files -- it should contain something like
-Rscript -e 'PeakSegPipeline::create_track_hub(...)'}
+\code{\link{Rscript}} -e 'PeakSegPipeline::create_track_hub(...)'}
 \usage{plot_all(set.dir.arg, zoom.out.times = 10)}
 \arguments{
   \item{set.dir.arg}{Path/to/data/dir.}

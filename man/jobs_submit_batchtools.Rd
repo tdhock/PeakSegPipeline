@@ -1,11 +1,11 @@
 \name{jobs_submit_batchtools}
 \alias{jobs_submit_batchtools}
 \title{jobs submit batchtools}
-\description{Submit PeakSegPipeline jobs via batchtools.}
+\description{Submit PeakSegPipeline \code{jobs} via batchtools.}
 \usage{jobs_submit_batchtools(jobs, resources = list(walltime = 24 * 
     60, memory = 2000, ncpus = 2, ntasks = 1, chunks.as.arrayjobs = TRUE))}
 \arguments{
-  \item{jobs}{data.table from jobs_create.}
+  \item{jobs}{data.table from \code{\link{jobs_create}}.}
   \item{resources}{
 }
 }

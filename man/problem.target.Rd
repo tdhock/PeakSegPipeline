@@ -2,10 +2,10 @@
 \alias{problem.target}
 \title{problem target}
 \description{Compute target interval for a segmentation problem. This function
-repeated calls problem.PeakSegFPOP with different penalty values,
+repeatedly calls \code{\link[PeakSegDisk]{PeakSegFPOP_dir}} with different penalty values,
 until it finds an interval of penalty values with minimal label
 error. The calls to PeakSegFPOP are parallelized using
-future.apply::future_lapply.  A time limit in minutes may be
+\code{\link[future.apply]{future_lapply.}}  A time limit in minutes may be
 specified in a file problem.dir/target.minutes; the search will
 stop at a sub-optimal target interval if this many minutes has
 elapsed. Useful for testing environments with build time limits
