@@ -20,38 +20,3 @@ test_that("bedGraphCoverage says total coverage is 40", {
   expect_equal(bedGraph.dt$total.coverage, 40)
 })
 
-count.bigWig <- file.path(work.dir, "count.bigWig")
-system.or.stop(paste(
-  "bedGraphToBigWig",
-  input.bedGraph,
-  chromInfo.txt,
-  count.bigWig))
-
-bigWig.dt <- bigWigCoverage(count.bigWig)
-
-test_that("bigWigCoverage stats are OK", {
-  expect_equal(bigWig.dt$total.coverage, 40)
-  expect_equal(bigWig.dt$mean.coverage, 0.4)
-  expect_equal(bigWig.dt$total.bases, 100)
-})
-
-test_that("intermediate file is deleted", {
-  count.bedGraph <- file.path(work.dir, "count.bedGraph")
-  expect_true(!file.exists(count.bedGraph))
-})
-
-## bigger genome example, int overflow.
-chromInfo <- data.table(
-  chrom=c("chr1", "chr2"),
-  chromEnd=.Machine$integer.max)
-fwrite(chromInfo, chromInfo.txt, sep="\t", col.names=FALSE)
-system.or.stop(paste(
-  "bedGraphToBigWig",
-  input.bedGraph,
-  chromInfo.txt,
-  count.bigWig))
-bigWig.dt <- bigWigCoverage(count.bigWig)
-test_that("no integer overflow for big chroms", {
-  expect_true(is.finite(bigWig.dt$total.bases))
-  expect_true(is.finite(bigWig.dt$mean.coverage))
-})
