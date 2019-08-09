@@ -1,7 +1,7 @@
 Package: PeakSegPipeline
 Type: Package
 Title: Genome-Wide Peak Calling Using PeakSegFPOP and PeakSegJoint
-Version: 2019.8.7
+Version: 2019.8.9
 Author: Toby Dylan Hocking
 Maintainer: Toby Dylan Hocking <toby.hocking@r-project.org>
 Description: Implementations of supervised machine learning
@@ -25,8 +25,8 @@ Imports: data.table (>= 1.11.6),
  xtable,
  scales, Matrix, ggplot2,
  PeakSegDisk (>= 2019.7.29),
- future, future.apply
-Suggests: testthat, httr, batchtools
+ future.apply
+Suggests: testthat, httr, batchtools, future
 Remotes: tdhock/namedCapture
 URL: https://github.com/tdhock/PeakSegPipeline
 BugReports: https://github.com/tdhock/PeakSegPipeline/issues

@@ -1,5 +1,6 @@
 problem.joint.predict.many <- function
-### Compute all joint peak predictions for one separate problem.
+### Compute all joint peak predictions for one separate problem, in
+### parallel over joint problems using future.apply::future_lapply.
 (prob.dir
 ### project/problems/problemID
 ){
@@ -63,7 +64,8 @@ problem.joint.predict.many <- function
 
 problem.joint.predict.job <- function
 ### Compute all joint peak predictions for the joint problems listed
-### in jobProblems.bed
+### in jobProblems.bed, in parallel over problems using
+### future.apply::future_lapply.
 (job.dir
 ### project/jobs/jobID
 ){
@@ -126,7 +128,9 @@ problem.joint.predict.job <- function
 }
 
 problem.joint.targets <- function
-### Compute targets for a separate problem.
+### Compute joint targets for all joint problems in a separate
+### problem, in parallel over joint problems using
+### future.apply::future_lapply.
 (problem.dir
 ### project/problems/problemID
  ){
@@ -172,7 +176,8 @@ problem.joint.targets <- function
 
 problem.joint.targets.train <- function
 ### Compute all joint target intervals then learn joint penalty
-### functions.
+### functions, in parallel over problems using
+### future.apply::future_lapply.
 (data.dir
 ### project directory.
 ){
@@ -198,12 +203,12 @@ problem.joint.targets.train <- function
 problem.pred.cluster.targets <- function
 ### For a given problem, predict independently for each sample, then
 ### cluster peaks across samples, then compute joint target intervals.
-(proj.dir
-### project directory.
+(prob.dir
+### problem directory.
 ){
-  peaks.dt <- problem.predict.allSamples(proj.dir)
-  create_problems_joint(proj.dir, peaks.dt)
-  problem.joint.targets(proj.dir)
+  peaks.dt <- problem.predict.allSamples(prob.dir)
+  create_problems_joint(prob.dir, peaks.dt)
+  problem.joint.targets(prob.dir)
 ### List of features and target matrices (same as problem.joint.target).
 }
 
@@ -555,7 +560,7 @@ problem.joint.target <- function
         data=show.errors)+
       scale_linetype_manual(
         "error type",
-        limits=c("correct", 
+        limits=c("correct",
                  "false negative",
                  "false positive"),
         values=c(correct=0,
@@ -588,7 +593,7 @@ problem.joint.target <- function
   print(target.dt)
   target.tsv <- file.path(jointProblem.dir, "target.tsv")
   cat(
-    "Writing target intervals to ", 
+    "Writing target intervals to ",
     target.tsv,
     "\n", sep="")
   fwrite(target.dt, target.tsv)
@@ -751,9 +756,9 @@ problem.joint.plot <- function
       color="blue",
       data=probs.in.chunk)+
     geom_tallrect(aes(
-      xmin=chromStart/1e3, 
+      xmin=chromStart/1e3,
       xmax=chromEnd/1e3,
-      fill=annotation), 
+      fill=annotation),
       alpha=0.5,
       data=labels)+
     scale_fill_manual(
@@ -823,4 +828,4 @@ problem.joint.plot <- function
       expand=FALSE)
   mypng("figure-predictions.png", gg.zoom)
 ### Nothing
-}  
+}

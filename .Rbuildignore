@@ -1,3 +1,4 @@
+appveyor.yml
 slurm.conf
 build.sh
 .travis.yml

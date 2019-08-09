@@ -52,6 +52,7 @@ write.table(
 write.table(
   Mono27ac$coverage, file.path(problem.dir, "coverage.bedGraph"),
   col.names=FALSE, row.names=FALSE, quote=FALSE, sep="\t")
+
 ## Creating a target.minutes file stops the optimization after that
 ## number of minutes, resulting in an imprecise target interval, but
 ## saving time (to avoid NOTE on CRAN).
@@ -59,8 +60,13 @@ write.table(
   data.frame(minutes=0.05), file.path(problem.dir, "target.minutes"),
   col.names=FALSE, row.names=FALSE, quote=FALSE)
 
+## declare future plan for parallel computation.
+if(requireNamespace("future") && interactive()){
+  future::plan("multiprocess")
+}
+
 ## Compute target interval.
-target.list <- problem.target(problem.dir)
+target.list <- problem.target(problem.dir, verbose=1)
 
 ## These are all the models computed in order to find the target
 ## interval.

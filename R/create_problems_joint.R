@@ -1,6 +1,7 @@
 create_problems_joint <- function
 ### Create joint problems for one separate problem, after separate
-### peak prediction.
+### peak prediction. Parallelized over joint problems via
+### future.apply::future_lapply.
 (prob.dir,
 ### proj.dir/problems/problemID
   peaks=NULL

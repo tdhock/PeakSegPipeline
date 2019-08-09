@@ -1,7 +1,8 @@
 \name{problem.predict.allSamples}
 \alias{problem.predict.allSamples}
 \title{problem predict allSamples}
-\description{Predict for all samples in parallel.}
+\description{Predict for all samples, parallelized over problems via
+\code{\link[future.apply]{future_lapply}}.}
 \usage{problem.predict.allSamples(prob.dir)}
 \arguments{
   \item{prob.dir}{project/problems/problemID directory.}

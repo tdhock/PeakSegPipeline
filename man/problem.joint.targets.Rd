@@ -1,7 +1,9 @@
 \name{problem.joint.targets}
 \alias{problem.joint.targets}
 \title{problem joint targets}
-\description{Compute targets for a separate problem.}
+\description{Compute joint targets for all joint problems in a separate
+problem, in parallel over joint problems using
+\code{\link[future.apply]{future_lapply}}.}
 \usage{problem.joint.targets(problem.dir)}
 \arguments{
   \item{problem.dir}{project/problems/problemID}

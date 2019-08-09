@@ -149,7 +149,8 @@ problem.train <- function
 }
 
 problem.predict.allSamples <- function
-### Predict for all samples in parallel.
+### Predict for all samples, parallelized over problems via
+### future.apply::future_lapply.
 (prob.dir
 ### project/problems/problemID directory.
  ){
@@ -523,6 +524,7 @@ problem.target <- structure(function
   write.table(
     Mono27ac$coverage, file.path(problem.dir, "coverage.bedGraph"),
     col.names=FALSE, row.names=FALSE, quote=FALSE, sep="\t")
+
   ## Creating a target.minutes file stops the optimization after that
   ## number of minutes, resulting in an imprecise target interval, but
   ## saving time (to avoid NOTE on CRAN).
@@ -530,8 +532,13 @@ problem.target <- structure(function
     data.frame(minutes=0.05), file.path(problem.dir, "target.minutes"),
     col.names=FALSE, row.names=FALSE, quote=FALSE)
 
+  ## declare future plan for parallel computation.
+  if(requireNamespace("future") && interactive()){
+    future::plan("multiprocess")
+  }
+
   ## Compute target interval.
-  target.list <- problem.target(problem.dir)
+  target.list <- problem.target(problem.dir, verbose=1)
 
   ## These are all the models computed in order to find the target
   ## interval.

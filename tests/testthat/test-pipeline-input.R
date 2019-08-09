@@ -2,8 +2,6 @@ library(testthat)
 library(PeakSegPipeline)
 library(data.table)
 context("input")
-options(
-  mc.cores=parallel::detectCores())
 test.data.dir <- file.path(Sys.getenv("HOME"), "PeakSegPipeline-test")
 non.integer.dir <- file.path(test.data.dir, "non-integer")
 demo.dir <- file.path(test.data.dir, "input")
