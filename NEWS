@@ -13,6 +13,13 @@ counting function, which should be much faster than using an
 intermediate bedGraph
 file. http://www.cs.uleth.ca/~holzmann/C/system/shell_commands.html
 
+2019.8.9 PR#16
+
+appveyor CRAN checks -- passing on windows for CRAN submission.
+
+move tests which need ucsc to test-pipeline-* so they are only run on
+travis, where ucsc command line programs are available.
+
 2019.8.7 PR#14
 
 new version of PeakSegDisk::PeakSegFPOP_dir.
