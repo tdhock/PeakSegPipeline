@@ -2,7 +2,8 @@
 \alias{problem.joint.predict.job}
 \title{problem joint predict job}
 \description{Compute all joint peak predictions for the joint problems listed
-in jobProblems.bed}
+in jobProblems.bed, in parallel over problems using
+\code{\link[future.apply]{future_lapply}}.}
 \usage{problem.joint.predict.job(job.dir)}
 \arguments{
   \item{job.dir}{project/jobs/jobID}

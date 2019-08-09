@@ -257,6 +257,13 @@ in =~/.batchtools.conf.R=):
     mustWork=TRUE))
 #+END_SRC
 
+Additionally if you want to run some operations in parallel on each
+node, declare a future plan in your =~/.Rprofile= via e.g.
+
+#+BEGIN_SRC R
+future::plan("multiprocess")
+#+END_SRC
+
 Before running the pipeline, make sure to convert labels from
 =~/PeakSegPipeline-test/demo/labels/*.txt= files to
 =~/PeakSegPipeline-test/demo/samples/*/*/labels.bed= files using the

@@ -3,9 +3,9 @@
 \title{problem pred cluster targets}
 \description{For a given problem, predict independently for each sample, then
 cluster peaks across samples, then compute joint target intervals.}
-\usage{problem.pred.cluster.targets(proj.dir)}
+\usage{problem.pred.cluster.targets(prob.dir)}
 \arguments{
-  \item{proj.dir}{project directory.}
+  \item{prob.dir}{problem directory.}
 }
 
 \value{List of features and target matrices (same as \code{\link{problem.joint.target}}).}

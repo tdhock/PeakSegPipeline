@@ -25,8 +25,8 @@ Imports: data.table (>= 1.11.6),
  xtable,
  scales, Matrix, ggplot2,
  PeakSegDisk (>= 2019.7.29),
- future, future.apply
-Suggests: testthat, httr, batchtools
+ future.apply
+Suggests: testthat, httr, batchtools, future
 Remotes: tdhock/namedCapture
 URL: https://github.com/tdhock/PeakSegPipeline
 BugReports: https://github.com/tdhock/PeakSegPipeline/issues
