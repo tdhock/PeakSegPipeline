@@ -34,9 +34,11 @@ convert_labels <- function
   sample.id <- basename(sample.dir.vec)
   sample.group.dir <- dirname(sample.dir.vec)
   sample.group <- basename(sample.group.dir)
-  sample.dt <- data.table(sample.id, sample.group)
+  sample.df <- data.frame(sample.id, sample.group)
+  samples.by.group <- split(sample.df, sample.df$sample.group)
 
   regions.by.file <- list()
+  regions.by.chunk.file <- list()
   chunk.limits.list <- list()
   bed.list <- list()
   positive.regions.list <- list()
@@ -48,12 +50,13 @@ convert_labels <- function
     label.df <- data.frame(chunk.id, line=labels.lines)[!is.blank, ]
     if(verbose)cat(length(unique(label.df$chunk.id)), " chunks, ",
         nrow(label.df), " label lines\n", sep="")
+
     ## Error checking.
     raw.vec <- paste(label.df$line)
     line.vec <- gsub(",", "", raw.vec)
     keep.digits <- function(x)as.integer(gsub("[^0-9]+", "", x))
     int.pattern <- list("[0-9 ,]+", keep.digits)
-    match.dt <- nc::capture_first_vec(
+    match.df <- namedCapture::str_match_variable(
       line.vec,
       chrom="chr.+?",
       ":",
@@ -62,134 +65,164 @@ convert_labels <- function
       chromEnd=int.pattern,
       " ",
       annotation="[a-zA-Z]+",
-      sample_groups=".*")
-    not.recognized <- ! match.dt$annotation %in% names(label.colors)
+      sample_groups=".*",
+      nomatch.error=TRUE)
+    not.recognized <- ! match.df$annotation %in% names(label.colors)
     if(any(not.recognized)){
       print(raw.vec[not.recognized])
-      print(match.dt[not.recognized])
+      print(match.df[not.recognized, , drop=FALSE])
       stop(
         "unrecognized annotation; valid values: ",
         paste(
           names(label.colors),
           collapse=", "))
     }
-    ## error checking messages should include chunk.id
-    match.dt[, chunk.id := label.df$chunk.id ]
-    setkey(match.dt, chrom, chromStart, chromEnd)
-    match.dt[, {
-      same.as.next <- diff(chromStart) <= 0
+    match.df$chunk.id <- label.df$chunk.id
+    match.by.chrom <- split(match.df, match.df$chrom)
+    for(chrom in names(match.by.chrom)){
+      chrom.df <- match.by.chrom[[chrom]]
+      sorted <- chrom.df[with(chrom.df, order(chromStart, chromEnd)), ]
+      same.as.next <- diff(sorted$chromStart) <= 0
       if(any(same.as.next)){
         bad.i <- which(same.as.next)
-        print(.SD[c(bad.i, bad.i+1), ])
+        print(sorted[c(bad.i, bad.i+1), ])
         stop("chromStart not increasing")
       }
-      if(any(is.bad <- chromStart >= chromEnd)){
-        print(.SD[is.bad])
+      if(any(with(sorted, chromStart >= chromEnd))){
+        print(sorted)
         stop("chromStart >= chromEnd")
       }
-      overlaps.next <- chromStart[-1] < chromEnd[-length(chromEnd)]
+      overlaps.next <-
+        with(sorted, chromStart[-1] < chromEnd[-length(chromEnd)])
       if(any(overlaps.next)){
-        print(data.table(.SD, overlaps.next=c(overlaps.next, FALSE)))
+        print(data.frame(sorted, overlaps.next=c(overlaps.next, FALSE)))
         stop("overlapping regions")
       }
-    }, by=chrom]
+    }
+
     ## determine total set of sample groups with positive=Peak
     ## annotations.
-    stripped <- gsub(" *$", "", gsub("^ *", "", match.dt$sample_groups))
+    stripped <- gsub(" *$", "", gsub("^ *", "", match.df$sample_groups))
     no.groups <- stripped == ""
-    bad.positive <- match.dt$annotation!="noPeaks" & no.groups
+    bad.positive <- match.df$annotation!="noPeaks" & no.groups
     if(any(bad.positive)){
-      print(match.dt[bad.positive])
+      print(match.df[bad.positive,])
       stop("need at least one sample group up for each positive label")
     }
     commas <- gsub(" +", ",", stripped)
-    match.dt[, group.list := strsplit(commas, split=",") ]
-    bed.list[[labels.file]] <- match.dt[, data.table(
-      chrom,
-      chromStart,
-      chromEnd,
-      name=paste0(annotation, ":", commas),
+    sample.group.list <- strsplit(commas, split=",")
+    bed.list[[labels.file]] <- data.table(
+      match.df[,c("chrom", "chromStart", "chromEnd")],
+      name=paste0(match.df$annotation, ":", commas),
       score=0,
       strand=".",
-      thickStart=chromStart,
-      thickEnd=chromEnd,
-      itemRgb=label.colors[paste(annotation)])]
-    sample.group.vec <- unique(unlist(match.dt$group.list))
+      thickStart=match.df$chromStart,
+      thickEnd=match.df$chromEnd,
+      itemRgb=label.colors[paste(match.df$annotation)])
+    names(sample.group.list) <- rownames(match.df)
+    sample.group.vec <- unique(unlist(sample.group.list))
     if(verbose)cat("labeled sample groups: ",
         paste(sample.group.vec, collapse=", "),
         "\n",
         sep="")
-    labeled.samples <- sample.dt[sample.group.vec, on=.(sample.group)]
-    na.samples <- labeled.samples[is.na(sample.id)]
-    if(nrow(na.samples)){
-      glob.vec <- file.path(na.samples$sample.group, "*")
-      glob.str <- paste(glob.vec, collapse=" ")
-      stop("no ", glob.str, " directories (but labels are present)")
-    }
     ## Create some labeled regions for specific/nonspecific peaks.
-    file.positive.regions <- match.dt[0 < sapply(group.list, length)]
-    input.has.peak <- grepl("Input", file.positive.regions$sample_groups)
+    groups.up.vec <- sapply(sample.group.list, length)
+    file.positive.regions <- match.df[0 < groups.up.vec,]
+    input.has.peak <- grepl("Input", file.positive.regions$sample.groups)
     if(any(input.has.peak)){
       positive.regions.list[[labels.file]] <-
-        file.positive.regions[, data.table(
+        with(file.positive.regions, data.frame(
           chrom, regionStart=chromStart, regionEnd=chromEnd,
           annotation, input.has.peak
-        )]
+        ))
     }
-    chunkChrom <- paste(match.dt$chrom[1])
-    match.dt[, {
+
+    match.by.chunk <- split(match.df, match.df$chunk.id)
+    for(chunk.id in names(match.by.chunk)){
       ## Check that all regions are on the same chrom.
-      if(any(chrom != chunkChrom)){
-        print(.SD)
+      chunk.df <- match.by.chunk[[chunk.id]]
+      chunkChrom <- paste(chunk.df$chrom[1])
+      if(any(chunk.df$chrom != chunkChrom)){
+        print(chunk.df)
         stop("each chunk must span only 1 chrom")
       }
-    }, by=.(chunk.id)]
-    chunk.limits.list[[labels.file]] <- match.dt[, data.table(
-      chrom=chunkChrom,
-      chromStart=min(chromStart),
-      chromEnd=max(chromEnd)
-    ), by=.(chunk.id)]
-    match.dt[, ann.i := 1:.N]
-    regions.by.file[[labels.file]] <- match.dt[, {
-      one.chunk <- .SD[, {
-        is.observed <- sample.group.vec %in% group.list[[1]]
-        chunk.labels <- rbind(
-          if(any(is.observed))data.table(
-            sample.group=sample.group.vec[is.observed],
-            annotation),
-          if(any(!is.observed))data.table(
-            sample.group=sample.group.vec[!is.observed],
-            annotation="noPeaks"))[sample.dt, on=.(sample.group)]
-        chunk.labels[, data.table(
-          sample.id,
-          sample.group,
-          chrom=chunkChrom,
-          chromStart,
-          chromEnd,
-          annotation)]
-      }]
-    }, by=ann.i]
+      regions.list <- list()
+      for(ann.i in 1:nrow(chunk.df)){
+        chunk.row <- chunk.df[ann.i, ]
+        groups.up.vec <- sample.group.list[[rownames(chunk.row)]]
+        is.observed <- sample.group.vec %in% groups.up.vec
+        observed <- sample.group.vec[is.observed]
+        not.observed <- sample.group.vec[!is.observed]
+        to.assign <- list()
+        ann <- chunk.row$annotation
+        to.assign[observed] <- ann
+        to.assign[not.observed] <- "noPeaks"
+        for(sample.group in names(to.assign)){
+          relevant.samples <- samples.by.group[[sample.group]]
+          if(length(relevant.samples) == 0){
+            glob.str <- file.path(sample.group, "*")
+            stop("no ", glob.str, " directories (but labels are present)")
+          }
+          annotation <- to.assign[[sample.group]]
+          regions.list[[paste(ann.i, sample.group)]] <-
+            data.table(sample.id=paste(relevant.samples$sample.id),
+                       sample.group,
+                       chrom=chunk.row$chrom,
+                       chromStart=chunk.row$chromStart,
+                       chromEnd=chunk.row$chromEnd,
+                       annotation)
+        }
+      }
+      one.chunk <- do.call(rbind, regions.list)
+      setkey(one.chunk, chromStart, chromEnd)
+      file.and.chunk <- paste0(basename(labels.file), "-chunk", chunk.id)
+      regions.by.chunk.file[[file.and.chunk]] <- one.chunk
+      regions.by.file[[labels.file]][[chunk.id]] <- one.chunk
+      chunk.limits.list[[file.and.chunk]] <- with(one.chunk, {
+        data.frame(file.and.chunk,
+                   chrom=chrom[1],
+                   chromStart=min(chromStart),
+                   chromEnd=max(chromEnd))
+      })
+    }
   }
-  all.regions <- do.call(rbind, regions.by.file)
+  bed <- do.call(rbind, bed.list)[order(chrom, chromStart, chromEnd),]
+  chunk.limits <- do.call(rbind, chunk.limits.list)
+  positive.regions <- do.call(rbind, positive.regions.list)
+  rownames(chunk.limits) <- NULL
+  rownames(bed) <- NULL
+  rownames(positive.regions) <- NULL
 
   ## Save positive regions for filtering final peaks.
-  positive.regions <- do.call(rbind, positive.regions.list)
   ## positive.regions.RData <- file.path(data.dir, "positive.regions.RData")
   ## save(positive.regions, file=positive.regions.RData)
 
   ## Save labels to bed file for viewing on UCSC.
-  bed <- do.call(rbind, bed.list)[order(chrom, chromStart, chromEnd)]
   all_labels.bed <- file.path(project.dir, "all_labels.bed")
-  fwrite(
-    bed, all_labels.bed,
-    row.names=FALSE,
-    col.names=FALSE,
-    quote=FALSE)
+  ## con <- file(all_labels.bed, "w")
+  ## header <-
+  ##   paste("track",
+  ##         "visibility=pack",
+  ##         "name=PeakSegJointLabels",
+  ##         'description="Visually defined labels',
+  ##         'in regions with and without peaks"',
+  ##         "itemRgb=on")
+  ## writeLines(header, con)
+  ## write.table(bed, con,
+  ##             row.names=FALSE,
+  ##             col.names=FALSE,
+  ##             quote=FALSE)
+  ## close(con)
+  write.table(bed, all_labels.bed,
+              row.names=FALSE,
+              col.names=FALSE,
+              quote=FALSE)
 
-  ## Write chunk info.
-  chunk.limits <- do.call(rbind, chunk.limits.list)
-  chunk.limits[, {
-    clustered <- clusterPeaks(.SD)
+  limits.by.chrom <- split(chunk.limits, chunk.limits$chrom)
+  for(chrom in names(limits.by.chrom)){
+    chrom.limits <- limits.by.chrom[[chrom]]
+    ## Find overlapping chunks, and join them:
+    clustered <- clusterPeaks(chrom.limits)
     limits.by.cluster <- split(clustered, clustered$cluster)
     chunks.per.cluster <- sapply(limits.by.cluster, nrow)
     not.ok <- 1 < chunks.per.cluster
@@ -197,23 +230,27 @@ convert_labels <- function
       print(limits.by.cluster[not.ok])
       stop("chunks in different label files should not overlap")
     }
-  }, by=.(chrom)]
-  chunk.limits.RData <- file.path(project.dir, "chunk.limits.RData")
-  save(chunk.limits, all.regions, file=chunk.limits.RData)
+  }
 
   ## Write labels to each sample.
-  all.regions[, {
-    labels.bed <- file.path(
-      project.dir, "samples", sample.group, sample.id, "labels.bed")
-    fwrite(
-      data.table(chrom, chromStart, chromEnd, annotation),
+  all.regions <- do.call(rbind, regions.by.chunk.file)
+  regions.by.sample <- split(all.regions, all.regions[, paste0(sample.group, "/", sample.id)])
+  for(sample.path in names(regions.by.sample)){
+    sample.labels <- regions.by.sample[[sample.path]]
+    labels.bed <- file.path(project.dir, "samples", sample.path, "labels.bed")
+    write.table(
+      sample.labels[, .(chrom, chromStart, chromEnd, annotation)],
       labels.bed,
       quote=FALSE,
+      row.names=FALSE,
       col.names=FALSE,
       sep="\t")
-    if(verbose)cat("Wrote ", .N,
+    if(verbose)cat("Wrote ", nrow(sample.labels),
         " labels to ", labels.bed,
         "\n", sep="")
-  }, by=.(sample.group, sample.id)]
+  }
 
+  ## Write chunk info.
+  chunk.limits.RData <- file.path(project.dir, "chunk.limits.RData")
+  save(chunk.limits, regions.by.chunk.file, file=chunk.limits.RData)
 }

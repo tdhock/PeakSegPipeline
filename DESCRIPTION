@@ -21,12 +21,12 @@ Imports: data.table (>= 1.11.6),
  PeakError,
  PeakSegJoint (>= 2017.12.23),
  penaltyLearning (>= 2017.07.11),
- nc,
+ namedCapture (>= 2019.8.7),
  xtable,
  scales, Matrix, ggplot2,
  PeakSegDisk (>= 2019.7.29),
  future.apply
 Suggests: testthat, httr, batchtools, future
-Remotes: tdhock/nc
+Remotes: tdhock/namedCapture
 URL: https://github.com/tdhock/PeakSegPipeline
 BugReports: https://github.com/tdhock/PeakSegPipeline/issues

@@ -2,28 +2,24 @@ downloadBigWigs <- structure(function
 ### Download bigWig files from a trackDb file.
 (trackDb.txt,
 ### trackDb text file.
-  out.dir,
+  out.dir
 ### Output directory.
-  verbose=0
-### Print messages?
 ){
   trackDb.vec <- readLines(trackDb.txt)
-  f <- function(variable){
-    nc::field(variable, " ", ".+")
-  }
-  track.dt <- nc::capture_all_str(
+  track.mat <- namedCapture::str_match_all_variable(
     trackDb.vec,
-    f("track"),
-    "(?:\n.+)*", #any number of lines
-    "\\s+",
-    f("bigDataUrl"))
-  for(track.i in seq_along(track.dt$bigDataUrl)){
-    track.name <- track.dt$track[track.i]
-    u <- track.dt$bigDataUrl[track.i]
+    "track ",
+    name="[^\n]+",
+    "(?:\n[^\n]+)*",
+    "\\s+bigDataUrl ",
+    bigDataUrl="[^\n]+")
+  for(track.i in seq_along(track.mat[, "bigDataUrl"])){
+    track.name <- rownames(track.mat)[[track.i]]
+    u <- track.mat[track.i, "bigDataUrl"]
     dest <- file.path(out.dir, track.name, basename(u))
-    if(verbose)cat(sprintf(
+    cat(sprintf(
       "%4s / %4s tracks %s -> %s\n",
-      track.i, nrow(track.dt),
+      track.i, nrow(track.mat),
       u, dest))
     dir.create(dirname(dest), showWarnings=FALSE, recursive=TRUE)
     tryCatch({
@@ -54,7 +50,7 @@ downloadBigWigs <- structure(function
 
   ## Download the bigWig files mentioned in trackDb.txt
   if(interactive()){
-    downloadBigWigs(trackDb.txt, track.dir, verbose=1)
+    downloadBigWigs(trackDb.txt, track.dir)
   }
 
 })
