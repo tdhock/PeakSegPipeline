@@ -2,15 +2,15 @@
 orderChrom <- function(chrom.vec, ...){
   stopifnot(is.character(chrom.vec))
   value.vec <- unique(chrom.vec)
-  chr.mat <- namedCapture::str_match_variable(
-    value.vec, nomatch.error=TRUE,
+  chr.dt <- nc::capture_first_vec(
+    value.vec,
     "chr",
     before="[^_]+",
     after="_.*", "?")
-  ord.vec <- order(
-    suppressWarnings(as.numeric(chr.mat[, "before"])),
-    chr.mat[, "before"],
-    chr.mat[, "after"])
+  ord.vec <- chr.dt[, order(
+    suppressWarnings(as.numeric(before)),
+    before,
+    after)]
   rank.vec <- seq_along(value.vec)
   names(rank.vec) <- value.vec[ord.vec]
   order(rank.vec[chrom.vec], ...)
@@ -288,14 +288,14 @@ plot_all <- function
     pos2df <- function(path.vec){
       problem <- basename(path.vec)
       int.pattern <- list("[0-9]+", as.integer)
-      df <- namedCapture::str_match_variable(
+      dt <- nc::capture_first_vec(
         problem,
         chrom="chr.+?",
         ":",
         chromStart=int.pattern,
         "-",
         chromEnd=int.pattern)
-      data.frame(problem, df)
+      data.frame(problem, dt)
     }
     chunk.info <- data.table(
       separate=pos2df(separate.prob.dir.vec),
