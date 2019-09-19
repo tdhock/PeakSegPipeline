@@ -161,7 +161,7 @@ test_that("relatives links for images", {
     '<a ',
     f("href"),
     "[^<]+",
-    '<img '
+    '<img ',
     f("src"))
   chunk.dt <- fread("chunk.limits.csv")
   prefix.vec <- chunk.dt[, paste0(
