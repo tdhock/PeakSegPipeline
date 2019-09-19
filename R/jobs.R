@@ -134,7 +134,7 @@ jobs_create <- function
     code <- sprintf(
       'PeakSegPipeline::create_track_hub("%s", "%s", "%s", "%s")',
       data.dir,
-      paste("http://CHANGE.THIS/~URL/", basename(data.dir)),
+      paste0("http://CHANGE.THIS/~URL/", basename(data.dir)),
       "hg19",
       "toby.hocking@r-project.org")
     script <- sprintf(
