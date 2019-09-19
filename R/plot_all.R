@@ -165,16 +165,15 @@ plot_all <- function
   sapply(conn.list, close)
   summary.dt <- do.call(rbind, summary.dt.list)
   ## Plot each labeled chunk.
-  chunk.limits.RData <- file.path(set.dir, "chunk.limits.RData")
+  chunk.limits.csv <- file.path(set.dir, "chunk.limits.csv")
   unsorted.problems <- fread(file.path(set.dir, "problems.bed"))
   setnames(unsorted.problems, c("chrom", "problemStart", "problemEnd"))
   unsorted.problems[, problemStart1 := problemStart +1L]
   unsorted.problems[, problem.name := sprintf(
     "%s:%d-%d", chrom, problemStart, problemEnd)]
   setkey(unsorted.problems, chrom, problemStart1, problemEnd)
-  chunk.dir.vec <- if(file.exists(chunk.limits.RData)){
-    objs <- load(chunk.limits.RData)
-    chunks <- data.table(chunk.limits)
+  chunk.dir.vec <- if(file.exists(chunk.limits.csv)){
+    chunks <- fread(chunk.limits.csv)
     chunks[, chunk.name := sprintf("%s:%d-%d", chrom, chromStart, chromEnd)]
     chunks[, chromStart1 := chromStart+1L]
     setkey(chunks, chrom, chromStart1, chromEnd)

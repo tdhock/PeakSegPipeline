@@ -153,20 +153,21 @@ convert_labels <- function
     regions.by.file[[labels.file]] <- match.dt[, {
       one.chunk <- .SD[, {
         is.observed <- sample.group.vec %in% group.list[[1]]
-        chunk.labels <- rbind(
+        group.labels <- rbind(
           if(any(is.observed))data.table(
             sample.group=sample.group.vec[is.observed],
             annotation),
           if(any(!is.observed))data.table(
             sample.group=sample.group.vec[!is.observed],
-            annotation="noPeaks"))[sample.dt, on=.(sample.group)]
-        chunk.labels[, data.table(
+            annotation="noPeaks"))
+        sample.dt[group.labels, data.table(
           sample.id,
           sample.group,
           chrom=chunkChrom,
           chromStart,
           chromEnd,
-          annotation)]
+          annotation),
+          on=.(sample.group)]
       }]
     }, by=ann.i]
   }
@@ -198,8 +199,8 @@ convert_labels <- function
       stop("chunks in different label files should not overlap")
     }
   }, by=.(chrom)]
-  chunk.limits.RData <- file.path(project.dir, "chunk.limits.RData")
-  save(chunk.limits, all.regions, file=chunk.limits.RData)
+  chunk.limits.csv <- file.path(project.dir, "chunk.limits.csv")
+  fwrite(chunk.limits, chunk.limits.csv)
 
   ## Write labels to each sample.
   all.regions[, {
@@ -216,4 +217,5 @@ convert_labels <- function
         "\n", sep="")
   }, by=.(sample.group, sample.id)]
 
+  all.regions
 }
