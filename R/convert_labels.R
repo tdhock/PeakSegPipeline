@@ -184,8 +184,8 @@ convert_labels <- function
   all_labels.bed <- file.path(project.dir, "all_labels.bed")
   fwrite(
     bed, all_labels.bed,
-    row.names=FALSE,
     col.names=FALSE,
+    sep="\t",
     quote=FALSE)
 
   ## Write chunk info.

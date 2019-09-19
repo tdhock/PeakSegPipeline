@@ -116,7 +116,7 @@ for(set.dir in c(non.integer.dir, demo.dir)){
 ## Pipeline should raise error for non-integer data.
 test_that("error for non-integer data in bigWigs", {
   expect_error({
-    pipeline(non.integer.dir)
+    jobs_create_run(non.integer.dir)
   }, "non-integer data in")
 })
 unlink(non.integer.dir, recursive=TRUE, force=TRUE)
@@ -140,7 +140,7 @@ old.mode <- file.info(prog)$mode
 Sys.chmod(prog, "444") #read, not write, not exec.
 test_that("pipeline fails early if UCSC not available", {
   expect_error({
-    pipeline(demo.dir, verbose=1)
+    jobs_create_run(demo.dir)
   }, "bigWigInfo")
 })
 Sys.chmod(prog, old.mode)
@@ -148,7 +148,7 @@ Sys.chmod(prog, old.mode)
 ## Pipeline should run to completion for integer count data.
 unlink(index.html)
 test_that("index.html is created", {
-  pipeline(demo.dir, verbose=1)
+  jobs_create_run(demo.dir)
   expect_true(file.exists(index.html))
 })
 
@@ -156,22 +156,23 @@ test_that("relatives links for images", {
   index.vec <- readLines(index.html)
   index.txt <- paste(index.vec, collapse="\n")
   f <- function(x)nc::field(x, '="', '[^"]+')
-  match.mat <- nc::capture_all_str(
+  match.dt <- nc::capture_all_str(
     index.txt,
     '<a ',
     f("href"),
     "[^<]+",
     '<img ',
     f("src"))
-  chunk.dt <- fread("chunk.limits.csv")
+  chunk.limits.csv <- file.path(demo.dir, "chunk.limits.csv")
+  chunk.dt <- fread(chunk.limits.csv)
   prefix.vec <- chunk.dt[, paste0(
     "problems/chr10:18024675-38818835/chunks/",
     chrom, ":", chromStart, "-", chromEnd,
     "/")]
   src.vec <- paste0(prefix.vec, "figure-predictions-thumb.png")
-  expect_identical(match.mat[, "src"], src.vec)
+  expect_identical(match.dt$src, src.vec)
   href.vec <- paste0(prefix.vec, "figure-predictions.png")
-  expect_identical(match.mat[, "href"], href.vec)
+  expect_identical(match.dt$href, href.vec)
 })
 
 test_that("joint_peaks.bigWig files have the right number of peaks", {
@@ -183,7 +184,7 @@ test_that("joint_peaks.bigWig files have the right number of peaks", {
     peak.mat.list[[jobPeaks.RData]] <- do.call(cbind, jobPeaks$sample.peaks.vec)
   }
   peak.mat <- do.call(cbind, peak.mat.list)
-  library(Matrix)#for rowSums::Matrix
+  library(Matrix)#for rowSums.Matrix
   expected.peaks <- rowSums(peak.mat)
   observed.peaks <- expected.peaks
   for(sample.path in names(expected.peaks)){

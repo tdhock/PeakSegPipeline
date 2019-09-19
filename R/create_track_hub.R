@@ -20,7 +20,11 @@ create_track_hub <- function
     name <- chrom <- chromStart <- strand <- NULL
   ## above to avoid "no visible binding for global variable" NOTEs in
   ## CRAN check.
-  chromInfo.txt <- paste0(genome, "_chromInfo.txt")
+  chromInfo.dir <- file.path(data.dir.path, "chromInfo")
+  dir.create(chromInfo.dir, showWarnings=FALSE)
+  chromInfo.txt <- file.path(
+    chromInfo.dir,
+    paste0(genome, "_chromInfo.txt"))
   ## First make sure we have the chromInfo file for this genome.
   if(!file.exists(chromInfo.txt)){
     chromInfo.url <- paste0(goldenPath.url, genome, "/database/chromInfo.txt.gz")
@@ -34,8 +38,7 @@ create_track_hub <- function
   for(bedGraph.file in bedGraph.file.vec){
     bigWig <- sub("bedGraph$", "bigWig", bedGraph.file)
     if(!file.exists(bigWig)){
-      cmd <- paste("bedGraphToBigWig", bedGraph.file, chromInfo.txt, bigWig)
-      system.or.stop(cmd)
+      bedGraphToBigWig(bedGraph.file, chromInfo.txt, bigWig)
     }
   }
   bigWig.glob <- file.path(data.dir.path, "samples", "*", "*", "coverage.bigWig")
@@ -69,13 +72,9 @@ create_track_hub <- function
   joint.bigWig.list <- list()
   for(joint_peaks.bedGraph in joint_peaks.bedGraph.vec){
     joint_peaks.bigWig <- sub("bedGraph$", "bigWig", joint_peaks.bedGraph)
-    if(file.exists(joint_peaks.bedGraph)){
-      cmd <- paste(
-        "bedGraphToBigWig", joint_peaks.bedGraph,
-        chromInfo.txt, joint_peaks.bigWig)
-      system.or.stop(cmd)
-    }
-    if(file.exists(joint_peaks.bigWig)){
+    created <- bedGraphToBigWig(
+      joint_peaks.bedGraph, chromInfo.txt, joint_peaks.bigWig)
+    if(created){
       joint.bigWig.list[[joint_peaks.bedGraph]] <- joint_peaks.bigWig
     }
   }

@@ -107,10 +107,6 @@ jobs_create <- function
         fun="problem.target",
         arg=file.path(problems.dir, names(labels.by.problem)))
     }
-    ## all.job.list[[paste("Step3 predict", sample.i)]] <- data.table(
-    ##   step=3,
-    ##   fun="problem.predict",
-    ##   arg=file.path(problems.dir, problems$problem.name))
   }#for(sample.i
   all.job.list[["Step2 train"]] <- data.table(
     step=2,
@@ -223,5 +219,26 @@ jobs_submit_batchtools <- structure(function
     jobs_submit_batchtools(jobs)
   }
 })
+
+jobs_create_run <- function
+### Run entire PeakSegFPOP + PeakSegJoint pipeline.
+(set.dir.path,
+### data set directory.
+  verbose=TRUE
+### print messages?
+){
+  unlink(file.path(
+    set.dir.path, 
+    "samples",
+    "*",
+    "*",
+    "labels.bed"))
+  jobs <- jobs_create(set.dir.path, verbose=verbose)
+  for(job.i in 1:nrow(jobs)){
+    job <- jobs[job.i]
+    fun <- get(job$fun)
+    fun(job$arg)
+  }
+}
 
 
