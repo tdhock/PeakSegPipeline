@@ -6,7 +6,8 @@ convert_labels <- function
   verbose=0
 ### Print messages?
 ){
-  chromStart <- chromEnd <- . <- NULL
+  chromStart <- chromEnd <- . <- chrom <- group.list <- annotation <-
+    ann.i <- NULL
   ## above to avoid "no visible binding for global variable" NOTEs in
   ## CRAN check.
   project.dir <- normalizePath(proj.dir, mustWork=TRUE)

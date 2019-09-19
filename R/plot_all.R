@@ -1,5 +1,7 @@
 ### order chromosomes.
 orderChrom <- function(chrom.vec, ...){
+  before <- after <- NULL
+  ## Above to avoid CRAN check NOTE.
   stopifnot(is.character(chrom.vec))
   value.vec <- unique(chrom.vec)
   chr.dt <- nc::capture_first_vec(
