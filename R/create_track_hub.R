@@ -56,7 +56,7 @@ create_track_hub <- function
   maybe.short <- c(
     "#8DD3C7",
     ##"#FFFFB3",#yellow
-    "#BEBADA", "#FB8072", "#80B1D3", "#FDB462", 
+    "#BEBADA", "#FB8072", "#80B1D3", "#FDB462",
     "#B3DE69", "#FCCDE5",
     "#D9D9D9",#grey
     "#BC80BD", "#CCEBC5", "#FFED6F"
@@ -112,7 +112,7 @@ email ", email), file.path(data.dir.path, "hub.txt"))
   }else{
     unlink(jointProblems.bed)
   }
-  bedToBigBed <- function(bed, opt=""){
+  bedToBigBed <- function(bed){
     bed.long <- fread(bed)
     names(bed.long)[1:3] <- c("chrom", "chromStart", "chromEnd")
     if(4 <= ncol(bed.long)){
@@ -130,7 +130,6 @@ email ", email), file.path(data.dir.path, "hub.txt"))
     bigBed <- sub("bed$", "bigBed", bed)
     cmd <- paste(
       "bedToBigBed",
-      opt,
       short, chromInfo.txt,
       bigBed)
     system.or.stop(cmd)
