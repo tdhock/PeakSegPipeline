@@ -129,16 +129,18 @@ jobs_create <- function
     fun="plot_all",
     arg=data.dir)
   all.job <- do.call(rbind, all.job.list)
-  if(FALSE){
-    all.job[, basename := basename(arg)]
-    all.job[, problem.name := ifelse(
-      grepl(":", basename),
-      basename,
-      NA_character_)]
-    prob.chunk <- prob.ord[, list(chunk, problem.name)]
-    job.chunks <- prob.chunk[all.job, on=list(problem.name)]
-    job.chunks[is.na(chunk), chunk := 1:.N, by=list(step)]
-    job.chunks[, list(jobs=.N, chunks=length(unique(chunk))), by=list(step)]
+  hub.sh <- file.path(data.dir, "hub.sh")
+  if(!file.exists(hub.sh)){
+    code <- sprintf(
+      'PeakSegPipeline::create_track_hub("%s", "%s", "%s", "%s")',
+      data.dir,
+      paste("http://CHANGE.THIS/~URL/", basename(data.dir)),
+      "hg19",
+      "toby.hocking@r-project.org")
+    script <- sprintf(
+      "#!/bin/bash\nRscript -e '%s'",
+      code)
+    cat(script, file=hub.sh)
   }
   all.job
 ### data.table with one row for each job and three columns: fun, arg,
