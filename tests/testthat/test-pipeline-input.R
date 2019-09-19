@@ -155,15 +155,15 @@ test_that("index.html is created", {
 test_that("relatives links for images", {
   index.vec <- readLines(index.html)
   index.txt <- paste(index.vec, collapse="\n")
-  match.mat <- namedCapture::str_match_all_variable(
+  f <- function(x)nc::field(x, '="', '[^"]+')
+  match.mat <- nc::capture_all_str(
     index.txt,
-    '<a href="',
-    href='[^"]+',
+    '<a ',
+    f("href"),
     "[^<]+",
-    '<img src="',
-    src='[^"]+')
-  load(file.path(demo.dir, "chunk.limits.RData"))
-  chunk.dt <- data.table(chunk.limits)
+    '<img '
+    f("src"))
+  chunk.dt <- fread("chunk.limits.csv")
   prefix.vec <- chunk.dt[, paste0(
     "problems/chr10:18024675-38818835/chunks/",
     chrom, ":", chromStart, "-", chromEnd,
