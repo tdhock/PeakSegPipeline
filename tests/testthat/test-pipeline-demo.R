@@ -109,7 +109,7 @@ chr10	125919472	128616069
 system(paste("bigWigToBedGraph", demo.bigWig, "/dev/stdout|head"))
 index.html <- file.path(demo.dir, "index.html")
 unlink(index.html)
-pipeline(demo.dir)
+jobs_create_run(demo.dir)
 test_that("index.html is created", {
   expect_true(file.exists(index.html))
 })

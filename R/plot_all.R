@@ -1,16 +1,18 @@
 ### order chromosomes.
 orderChrom <- function(chrom.vec, ...){
+  before <- after <- NULL
+  ## Above to avoid CRAN check NOTE.
   stopifnot(is.character(chrom.vec))
   value.vec <- unique(chrom.vec)
-  chr.mat <- namedCapture::str_match_variable(
-    value.vec, nomatch.error=TRUE,
+  chr.dt <- nc::capture_first_vec(
+    value.vec,
     "chr",
     before="[^_]+",
     after="_.*", "?")
-  ord.vec <- order(
-    suppressWarnings(as.numeric(chr.mat[, "before"])),
-    chr.mat[, "before"],
-    chr.mat[, "after"])
+  ord.vec <- chr.dt[, order(
+    suppressWarnings(as.numeric(before)),
+    before,
+    after)]
   rank.vec <- seq_along(value.vec)
   names(rank.vec) <- value.vec[ord.vec]
   order(rank.vec[chrom.vec], ...)
@@ -165,16 +167,15 @@ plot_all <- function
   sapply(conn.list, close)
   summary.dt <- do.call(rbind, summary.dt.list)
   ## Plot each labeled chunk.
-  chunk.limits.RData <- file.path(set.dir, "chunk.limits.RData")
+  chunk.limits.csv <- file.path(set.dir, "chunk.limits.csv")
   unsorted.problems <- fread(file.path(set.dir, "problems.bed"))
   setnames(unsorted.problems, c("chrom", "problemStart", "problemEnd"))
   unsorted.problems[, problemStart1 := problemStart +1L]
   unsorted.problems[, problem.name := sprintf(
     "%s:%d-%d", chrom, problemStart, problemEnd)]
   setkey(unsorted.problems, chrom, problemStart1, problemEnd)
-  chunk.dir.vec <- if(file.exists(chunk.limits.RData)){
-    objs <- load(chunk.limits.RData)
-    chunks <- data.table(chunk.limits)
+  chunk.dir.vec <- if(file.exists(chunk.limits.csv)){
+    chunks <- fread(chunk.limits.csv)
     chunks[, chunk.name := sprintf("%s:%d-%d", chrom, chromStart, chromEnd)]
     chunks[, chromStart1 := chromStart+1L]
     setkey(chunks, chrom, chromStart1, chromEnd)
@@ -288,14 +289,14 @@ plot_all <- function
     pos2df <- function(path.vec){
       problem <- basename(path.vec)
       int.pattern <- list("[0-9]+", as.integer)
-      df <- namedCapture::str_match_variable(
+      dt <- nc::capture_first_vec(
         problem,
         chrom="chr.+?",
         ":",
         chromStart=int.pattern,
         "-",
         chromEnd=int.pattern)
-      data.frame(problem, df)
+      data.frame(problem, dt)
     }
     chunk.info <- data.table(
       separate=pos2df(separate.prob.dir.vec),

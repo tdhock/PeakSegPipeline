@@ -171,13 +171,13 @@ problem.table <- function
 (problem.dir
 ### path with a problem string, e.g. chrX:6000-1000000
 ){
-  data.table(namedCapture::str_match_variable(
-    problem.dir, nomatch.error=TRUE,
+  nc::capture_first_vec(
+    problem.dir,
     chrom="chr[^-:]+",
     "[-:]",
     problemStart="[0-9]+", as.integer,
     "-",
-    problemEnd="[0-9]+", as.integer))
+    problemEnd="[0-9]+", as.integer)
 ### data.table with columns chrom, problemStart, problemEnd.
 }
 

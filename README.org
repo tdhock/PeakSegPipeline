@@ -141,19 +141,19 @@ visual inspection as in the [[http://cbio.mines-paristech.fr/~thocking/chip-seq-
 webserver. For example if your project directory is in your
 =~/public_html= directory, your directory structure should be
 =~/public_html/project_dir/samples/groupID/sampleID/coverage.bigWig=.
-To create a track hub, set the working directory to =~/public_html=
-and then use [[file:R/create_track_hub.R][PeakSegPipeline::create_track_hub]]:
+To create a track hub, put the following in
+=~/public_html/project_dir/hub.sh=: 
 
-#+BEGIN_SRC R
-setwd("~/public_html")
-PeakSegPipeline::create_track_hub("project_dir", "http://your.server.com/~user/", "hg19", "email@domain.com")
+#+BEGIN_SRC shell.script
+#!/bin/bash
+Rscript -e 'PeakSegPipeline::create_track_hub("/home/tdhock/PeakSegPipeline-test/input", "http://members.cbio.mines-paristech.fr/~thocking/hubs/test/input", "hg19", "toby.hocking@r-project.org")'
 #+END_SRC
 
 The arguments of the =create_track_hub= function are as follows:
-- The first argument =project_dir= is the data directory. 
-- The second argument =http://your.server.com/~user/= is the URL
-  prefix (appended before the first argument to obtain URLs for the
-  trackDb.txt file).
+- The first argument =path/to/project_dir= is an absolute path to your
+  data/project directory.
+- The second argument =http://your.server.com/~user/project_dir= is the URL
+  where that directory will be made available on the web..
 - The third argument =hg19= is the UCSC genome ID for the genomes.txt file. 
 - The fourth argument =email@domain.com= is your email address,
   which will be written to the hub.txt file.
@@ -241,14 +241,14 @@ the gap file contains one line for every gap in the reference (unknown
 =yourGenome_chromInfo.txt= as a =problems.bed= file.
 
 
-** Running PeakSegPipeline on a SLURM cluster via batchtools
+** Running PeakSegPipeline on a cluster via batchtools
 
 Since the human genome is so large, we recommend to do model training
-and peak prediction in parallel. PeakSegPipeline uses [[https://mllg.github.io/batchtools/articles/batchtools.html][batchtools]] to
-launch jobs on the [[https://slurm.schedmd.com/][SLURM]] cluster system. [[file:inst/templates/slurm-afterok.tmpl][The PeakSegPipeline SLURM
-template]] which adds support for dependencies between jobs must be
-used, by specifying the following batchtools configuration (I put it
-in =~/.batchtools.conf.R=):
+and peak prediction in parallel using [[https://mllg.github.io/batchtools/articles/batchtools.html][batchtools]]. We [[file:tests/testthat/test-pipeline-noinput.R][test]] to make sure
+that PeakSegPipeline runs to completion using the [[https://slurm.schedmd.com/][SLURM]] cluster
+system. [[file:inst/templates/slurm-afterok.tmpl][The PeakSegPipeline SLURM template]] which adds support for
+dependencies between jobs must be used, by specifying the following
+batchtools configuration (I put it in =~/.batchtools.conf.R=):
 
 #+BEGIN_SRC R
   cluster.functions = makeClusterFunctionsSlurm(system.file(
@@ -264,17 +264,8 @@ node, declare a future plan in your =~/.Rprofile= via e.g.
 future::plan("multiprocess")
 #+END_SRC
 
-Before running the pipeline, make sure to convert labels from
-=~/PeakSegPipeline-test/demo/labels/*.txt= files to
-=~/PeakSegPipeline-test/demo/samples/*/*/labels.bed= files using the
-following R command:
-
-#+BEGIN_SRC R
-PeakSegPipeline::convert_labels("~/PeakSegPipeline-test/demo")
-#+END_SRC
-
-Details of the jobs/steps are explained on [[https://github.com/tdhock/PeakSegPipeline/wiki/Running-steps-of-the-pipeline-in-parallel][the wiki]].
-To run the pipeline using batchtools/SLURM, use
+To run the pipeline using batchtools (via SLURM or whatever other
+cluster functions you have registered), use
 
 #+BEGIN_SRC R
   jobs <- PeakSegPipeline::jobs_create("~/PeakSegPipeline-test/demo")
@@ -287,7 +278,10 @@ To run the pipeline using batchtools/SLURM, use
 #+END_SRC
 
 You can edit the time/memory required for each job via the =resources=
-argument. The last step includes creation of the summary web page
+argument (these resources are used for each job/step). 
+Details of the jobs/steps are explained on [[https://github.com/tdhock/PeakSegPipeline/wiki/Running-steps-of-the-pipeline-in-parallel][the wiki]].  
+
+The last step includes creation of the summary web page
 =~/PeakSegPipeline-test/demo/index.html= which has links to peak
 prediction files, plots, and a track hub
 =~/PeakSegPipeline-test/demo/hub.txt= which can be used on the UCSC
@@ -334,6 +328,6 @@ PeakSegPipeline uses
   = number of peaks).
 - [[https://github.com/tdhock/PeakSegJoint][PeakSegJoint]] for defining joint peak boundaries across any number of
   samples and cell types. (independently for each genomic region with
-  a peak predicted by PeakSegFPOP)
+  a peak predicted by PeakSegDisk)
 
   

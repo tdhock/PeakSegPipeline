@@ -1,3 +1,25 @@
+bedGraphToBigWig <- function
+### Attempt to create bigWig file.
+(bedGraph,
+### bedGraph file (input), four tab-separated columns: chrom,
+### chromStart, chromEnd, numeric data.
+  chromInfo,
+### chromInfo file (input), two tab-separated columns: chrom, size in
+### bases.
+  bigWig
+### bigWig file (output).
+){
+  unlink(bigWig)
+  if(file.exists(bedGraph) && 0 < file.size(bedGraph)){
+    cmd <- paste(
+      "bedGraphToBigWig", bedGraph,
+      chromInfo, bigWig)
+    system.or.stop(cmd)
+  }
+  file.exists(bigWig)
+### TRUE if bigWig was created.
+}
+
 readBigWig <- function
 ### Read part of a bigWig file into R as a data.table (assumes
 ### bigWigToBedGraph is present on your PATH).

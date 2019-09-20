@@ -48,10 +48,10 @@ problem.dir <- file.path(
 dir.create(problem.dir, recursive=TRUE, showWarnings=FALSE)
 write.table(
   Mono27ac$labels, file.path(problem.dir, "labels.bed"),
-  col.names=FALSE, row.names=FALSE, quote=FALSE, sep="\t")
+  col.names=FALSE, row.names=FALSE, quote=FALSE, sep="\\t")
 write.table(
   Mono27ac$coverage, file.path(problem.dir, "coverage.bedGraph"),
-  col.names=FALSE, row.names=FALSE, quote=FALSE, sep="\t")
+  col.names=FALSE, row.names=FALSE, quote=FALSE, sep="\\t")
 
 ## Creating a target.minutes file stops the optimization after that
 ## number of minutes, resulting in an imprecise target interval, but

@@ -20,7 +20,11 @@ create_track_hub <- function
     name <- chrom <- chromStart <- strand <- NULL
   ## above to avoid "no visible binding for global variable" NOTEs in
   ## CRAN check.
-  chromInfo.txt <- paste0(genome, "_chromInfo.txt")
+  chromInfo.dir <- file.path(data.dir.path, "chromInfo")
+  dir.create(chromInfo.dir, showWarnings=FALSE)
+  chromInfo.txt <- file.path(
+    chromInfo.dir,
+    paste0(genome, "_chromInfo.txt"))
   ## First make sure we have the chromInfo file for this genome.
   if(!file.exists(chromInfo.txt)){
     chromInfo.url <- paste0(goldenPath.url, genome, "/database/chromInfo.txt.gz")
@@ -34,8 +38,7 @@ create_track_hub <- function
   for(bedGraph.file in bedGraph.file.vec){
     bigWig <- sub("bedGraph$", "bigWig", bedGraph.file)
     if(!file.exists(bigWig)){
-      cmd <- paste("bedGraphToBigWig", bedGraph.file, chromInfo.txt, bigWig)
-      system.or.stop(cmd)
+      bedGraphToBigWig(bedGraph.file, chromInfo.txt, bigWig)
     }
   }
   bigWig.glob <- file.path(data.dir.path, "samples", "*", "*", "coverage.bigWig")
@@ -56,7 +59,7 @@ create_track_hub <- function
   maybe.short <- c(
     "#8DD3C7",
     ##"#FFFFB3",#yellow
-    "#BEBADA", "#FB8072", "#80B1D3", "#FDB462", 
+    "#BEBADA", "#FB8072", "#80B1D3", "#FDB462",
     "#B3DE69", "#FCCDE5",
     "#D9D9D9",#grey
     "#BC80BD", "#CCEBC5", "#FFED6F"
@@ -69,13 +72,9 @@ create_track_hub <- function
   joint.bigWig.list <- list()
   for(joint_peaks.bedGraph in joint_peaks.bedGraph.vec){
     joint_peaks.bigWig <- sub("bedGraph$", "bigWig", joint_peaks.bedGraph)
-    if(file.exists(joint_peaks.bedGraph)){
-      cmd <- paste(
-        "bedGraphToBigWig", joint_peaks.bedGraph,
-        chromInfo.txt, joint_peaks.bigWig)
-      system.or.stop(cmd)
-    }
-    if(file.exists(joint_peaks.bigWig)){
+    created <- bedGraphToBigWig(
+      joint_peaks.bedGraph, chromInfo.txt, joint_peaks.bigWig)
+    if(created){
       joint.bigWig.list[[joint_peaks.bedGraph]] <- joint_peaks.bigWig
     }
   }
@@ -112,7 +111,7 @@ email ", email), file.path(data.dir.path, "hub.txt"))
   }else{
     unlink(jointProblems.bed)
   }
-  bedToBigBed <- function(bed, opt=""){
+  bedToBigBed <- function(bed){
     bed.long <- fread(bed)
     names(bed.long)[1:3] <- c("chrom", "chromStart", "chromEnd")
     if(4 <= ncol(bed.long)){
@@ -130,7 +129,6 @@ email ", email), file.path(data.dir.path, "hub.txt"))
     bigBed <- sub("bed$", "bigBed", bed)
     cmd <- paste(
       "bedToBigBed",
-      opt,
       short, chromInfo.txt,
       bigBed)
     system.or.stop(cmd)

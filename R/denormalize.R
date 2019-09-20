@@ -55,12 +55,10 @@ denormalizeBigWig <- function
   output.chromInfo <- sub("bedGraph$", "chromInfo", output.bedGraph)
   chromSizes <- chromInfo[, list(chrom, chromEnd)]
   fwrite(chromSizes, output.chromInfo, sep="\t", col.names=FALSE)
-  cmd <- paste(
-    "bedGraphToBigWig",
+  bedGraphToBigWig(
     output.bedGraph,
     output.chromInfo,
     output.bigWig)
-  system.or.stop(cmd)
   unlink(input.bedGraph)
   unlink(output.bedGraph)
 }

@@ -13,6 +13,14 @@ counting function, which should be much faster than using an
 intermediate bedGraph
 file. http://www.cs.uleth.ca/~holzmann/C/system/shell_commands.html
 
+2019.9.18 PR#17
+
+remove pipeline, use jobs_create_run instead.
+
+remove create_problems_all.
+
+use nc instead of namedCapture.
+
 2019.8.9 PR#16
 
 appveyor CRAN checks -- passing on windows for CRAN submission.

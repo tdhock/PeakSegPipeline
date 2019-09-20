@@ -107,10 +107,6 @@ jobs_create <- function
         fun="problem.target",
         arg=file.path(problems.dir, names(labels.by.problem)))
     }
-    ## all.job.list[[paste("Step3 predict", sample.i)]] <- data.table(
-    ##   step=3,
-    ##   fun="problem.predict",
-    ##   arg=file.path(problems.dir, problems$problem.name))
   }#for(sample.i
   all.job.list[["Step2 train"]] <- data.table(
     step=2,
@@ -133,16 +129,18 @@ jobs_create <- function
     fun="plot_all",
     arg=data.dir)
   all.job <- do.call(rbind, all.job.list)
-  if(FALSE){
-    all.job[, basename := basename(arg)]
-    all.job[, problem.name := ifelse(
-      grepl(":", basename),
-      basename,
-      NA_character_)]
-    prob.chunk <- prob.ord[, list(chunk, problem.name)]
-    job.chunks <- prob.chunk[all.job, on=list(problem.name)]
-    job.chunks[is.na(chunk), chunk := 1:.N, by=list(step)]
-    job.chunks[, list(jobs=.N, chunks=length(unique(chunk))), by=list(step)]
+  hub.sh <- file.path(data.dir, "hub.sh")
+  if(!file.exists(hub.sh)){
+    code <- sprintf(
+      'PeakSegPipeline::create_track_hub("%s", "%s", "%s", "%s")',
+      data.dir,
+      paste0("http://CHANGE.THIS/~URL/", basename(data.dir)),
+      "hg19",
+      "toby.hocking@r-project.org")
+    script <- sprintf(
+      "#!/bin/bash\nRscript -e '%s'",
+      code)
+    cat(script, file=hub.sh)
   }
   all.job
 ### data.table with one row for each job and three columns: fun, arg,
@@ -223,5 +221,26 @@ jobs_submit_batchtools <- structure(function
     jobs_submit_batchtools(jobs)
   }
 })
+
+jobs_create_run <- function
+### Run entire PeakSegFPOP + PeakSegJoint pipeline.
+(set.dir.path,
+### data set directory.
+  verbose=TRUE
+### print messages?
+){
+  unlink(file.path(
+    set.dir.path, 
+    "samples",
+    "*",
+    "*",
+    "labels.bed"))
+  jobs <- jobs_create(set.dir.path, verbose=verbose)
+  for(job.i in 1:nrow(jobs)){
+    job <- jobs[job.i]
+    fun <- get(job$fun)
+    fun(job$arg)
+  }
+}
 
 

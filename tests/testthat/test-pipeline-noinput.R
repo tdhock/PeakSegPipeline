@@ -224,7 +224,7 @@ chr10	125919472	128616069
 ## Pipeline should raise error for non-integer data.
 test_that("error for non-integer data in bigWigs", {
   expect_error({
-    pipeline(non.integer.dir)
+    jobs_create_run(non.integer.dir)
   }, "non-integer data in")
 })
 unlink(non.integer.dir, recursive=TRUE, force=TRUE)
