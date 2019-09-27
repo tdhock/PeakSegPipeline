@@ -31,18 +31,9 @@ environment:
   #- R_VERSION: devel
 
 build_script:
-  - cp -r tests/testthat testcopy
-  - echo $SHELL
-  - echo %SHELL%
-  - echo $HOME
-  - echo %HOME%
-  - ls tests/testthat
-  - ls testcopy
-  - rm tests/testthat/*
-  - ls tests/testthat
-  - ls testcopy
-  - cp testcopy/testthat/test-CRAN-*.R tests/testthat
-  - rm -rf testcopy
+  - Copy-Item -Path tests\testthat -Destination $env:TEMP -Recurse
+  - Remove-Item tests\testthat\*
+  - Copy-Item -Path $env:TEMP\testthat\test-CRAN-*.R -Destination tests\testthat
   - set _R_CHECK_FORCE_SUGGESTS_=false
   - travis-tool.sh install_deps
 
