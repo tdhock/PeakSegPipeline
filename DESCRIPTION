@@ -24,7 +24,7 @@ Imports: data.table (>= 1.11.6),
  nc,
  xtable,
  scales, Matrix, ggplot2,
- PeakSegDisk (>= 2019.7.29),
+ PeakSegDisk (>= 2019.9.27),
  future.apply
 Suggests: testthat, httr, batchtools, future
 Remotes: tdhock/nc, tdhock/PeakSegDisk@temp-db
