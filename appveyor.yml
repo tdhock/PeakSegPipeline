@@ -32,14 +32,14 @@ environment:
 
 build_script:
   - ls tests/testthat
-  - ls /tmp
-  - cp -r tests/testthat /tmp
+  - ls $HOME
+  - cp -r tests/testthat $HOME
   - ls tests/testthat
-  - ls /tmp
+  - ls $HOME
   - rm tests/testthat/*
   - ls tests/testthat
-  - ls /tmp
-  - cp /tmp/testthat/test-CRAN-*.R tests/testthat
+  - ls $HOME
+  - cp $HOME/testthat/test-CRAN-*.R tests/testthat
   - set _R_CHECK_FORCE_SUGGESTS_=false
   - travis-tool.sh install_deps
 
