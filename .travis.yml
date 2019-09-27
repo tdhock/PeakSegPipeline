@@ -15,6 +15,7 @@ env:
   - TEST_SUITE=pipeline-noinput
   - TEST_SUITE=pipeline-input
   - TEST_SUITE=CRAN
+  - TEST_SUITE=OTHER
 
 script:
   - mkdir bin

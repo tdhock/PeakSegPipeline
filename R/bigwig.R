@@ -9,10 +9,21 @@ bedGraphToBigWig <- function
   bigWig
 ### bigWig file (output).
 ){
+  chrom <- chromStart <- NULL
+  ## Above to avoid CRAN NOTE.
   unlink(bigWig)
-  if(file.exists(bedGraph) && 0 < file.size(bedGraph)){
+  bedGraph.dt <- fread(
+    bedGraph,
+    col.names=c("chrom", "chromStart", "chromEnd", "value"))
+  ## This if statement is needed because bedGraphToBigWig stops with
+  ## an error code if there are no data, but we don't want to stop,
+  ## even if there are no predicted peaks in some samples.
+  if(nrow(bedGraph.dt)){
+    sorted.dt <- bedGraph.dt[order(chrom, chromStart)]
+    bedGraph.sorted <- paste0(basename(bedGraph), ".sorted")
+    fwrite(sorted.dt, bedGraph.sorted, sep="\t", col.names=FALSE, quote=FALSE)
     cmd <- paste(
-      "bedGraphToBigWig", bedGraph,
+      "bedGraphToBigWig", bedGraph.sorted,
       chromInfo, bigWig)
     system.or.stop(cmd)
   }
