@@ -3,18 +3,27 @@ problem.tempfile <- function
 ### PeakSegFPOP_dir as the cost function database. The
 ### PeakSegPipeline.TMPDIR option is used for the base temporary
 ### directory if that is set, and otherwise tempdir() is used.
-(prob.dir,
+(problem.dir,
 ### full path to problem directory.
   pen.str
 ### penalty string.
 ){
+  problems.dir <- dirname(problem.dir)
+  sample.dir <- dirname(problems.dir)
+  group.dir <- dirname(sample.dir)
+  samples.dir <- dirname(group.dir)
+  data.dir <- dirname(samples.dir)
+  sample.id <- basename(sample.dir)
+  sample.group <- basename(group.dir)
+  data.name <- basename(data.dir)
+  data.prob.pen <- paste(
+    data.name, sample.group, sample.id,
+    basename(problem.dir),
+    pen.str,
+    sep="_")
   file.path(
     getOption("PeakSegPipeline.TMPDIR", tempdir()),
-    paste0(
-      gsub("/", "_", prob.dir),
-      "_",
-      pen.str,
-      ".db"))
+    data.prob.pen)
 ### character: temporary file name.
 }
 
