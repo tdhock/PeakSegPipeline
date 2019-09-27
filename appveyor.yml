@@ -30,10 +30,11 @@ environment:
 
   #- R_VERSION: devel
 
+# ps: prefix means to use powershell, https://www.appveyor.com/docs/build-configuration/#interpreters-and-scripts
 build_script:
-  - Copy-Item -Path tests\testthat -Destination $env:TEMP -Recurse
-  - Remove-Item tests\testthat\*
-  - Copy-Item -Path $env:TEMP\testthat\test-CRAN-*.R -Destination tests\testthat
+  - ps: Copy-Item -Path tests\testthat -Destination $env:TEMP -Recurse
+  - ps: Remove-Item tests\testthat\*
+  - ps: Copy-Item -Path $env:TEMP\testthat\test-CRAN-*.R -Destination tests\testthat
   - set _R_CHECK_FORCE_SUGGESTS_=false
   - travis-tool.sh install_deps
 
