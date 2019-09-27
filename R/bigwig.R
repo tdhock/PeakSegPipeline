@@ -9,6 +9,8 @@ bedGraphToBigWig <- function
   bigWig
 ### bigWig file (output).
 ){
+  chrom <- chromStart <- NULL
+  ## Above to avoid CRAN NOTE.
   unlink(bigWig)
   bedGraph.dt <- fread(
     bedGraph,
