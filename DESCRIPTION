@@ -27,6 +27,6 @@ Imports: data.table (>= 1.11.6),
  PeakSegDisk (>= 2019.7.29),
  future.apply
 Suggests: testthat, httr, batchtools, future
-Remotes: tdhock/nc
+Remotes: tdhock/nc, tdhock/PeakSegDisk@temp-db
 URL: https://github.com/tdhock/PeakSegPipeline
 BugReports: https://github.com/tdhock/PeakSegPipeline/issues

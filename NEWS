@@ -13,6 +13,14 @@ counting function, which should be much faster than using an
 intermediate bedGraph
 file. http://www.cs.uleth.ca/~holzmann/C/system/shell_commands.html
 
+2019.9.28 PR#19
+
+configurable db directory.
+
+2019.9.27 PR#18
+
+bedGraphToBigWig: bugfix for unsorted bedGraph files.
+
 2019.9.18 PR#17
 
 remove pipeline, use jobs_create_run instead.

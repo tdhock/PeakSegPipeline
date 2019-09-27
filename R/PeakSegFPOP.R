@@ -390,7 +390,7 @@ problem.target <- structure(function
   getError <- function(penalty.str){
     stopifnot(is.character(penalty.str))
     stopifnot(length(penalty.str) == 1)
-    result <- PeakSegDisk::PeakSegFPOP_dir(problem.dir, penalty.str)
+    result <- PeakSegDisk::PeakSegFPOP_dir(problem.dir, penalty.str, tempfile())
     penalty.peaks <- result$segments[status=="peak",]
     tryCatch({
       penalty.error <- PeakErrorChrom(penalty.peaks, labels.dt)
@@ -670,7 +670,7 @@ problem.predict <- function
     " based on ", n.features,
     " feature", ifelse(n.features==1, "", "s"),
     ".\n"))
-  result <- PeakSegDisk::PeakSegFPOP_dir(problem.dir, pred.penalty)
+  result <- PeakSegDisk::PeakSegFPOP_dir(problem.dir, pred.penalty, tempfile())
   all.peaks <- result$segments[status=="peak", ]
   bases.vec <- all.peaks[, chromEnd-chromStart]
   in.range <- size.model[, lower.bases < bases.vec & bases.vec < upper.bases]
