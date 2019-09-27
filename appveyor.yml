@@ -32,7 +32,15 @@ environment:
 
 build_script:
   - cp -r tests/testthat testcopy
+  - echo $SHELL
+  - echo %SHELL%
+  - echo $HOME
+  - echo %HOME%
+  - ls tests/testthat
+  - ls testcopy
   - rm tests/testthat/*
+  - ls tests/testthat
+  - ls testcopy
   - cp testcopy/testthat/test-CRAN-*.R tests/testthat
   - rm -rf testcopy
   - set _R_CHECK_FORCE_SUGGESTS_=false
