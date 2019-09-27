@@ -1,3 +1,23 @@
+problem.tempfile <- function
+### Create a (problem,penalty)-specific temporary file name to pass to
+### PeakSegFPOP_dir as the cost function database. The
+### PeakSegPipeline.TMPDIR option is used for the base temporary
+### directory if that is set, and otherwise tempdir() is used.
+(prob.dir,
+### full path to problem directory.
+  pen.str
+### penalty string.
+){
+  file.path(
+    getOption("PeakSegPipeline.TMPDIR", tempdir()),
+    paste0(
+      gsub("/", "_", prob.dir),
+      "_",
+      pen.str,
+      ".db"))
+### character: temporary file name.
+}
+
 problem.train <- function
 ### Train a penalty function that predicts the number of peaks for
 ### each separate problem. Run this step after computing target
@@ -390,7 +410,8 @@ problem.target <- structure(function
   getError <- function(penalty.str){
     stopifnot(is.character(penalty.str))
     stopifnot(length(penalty.str) == 1)
-    result <- PeakSegDisk::PeakSegFPOP_dir(problem.dir, penalty.str, tempfile())
+    result <- PeakSegDisk::PeakSegFPOP_dir(
+      problem.dir, penalty.str, problem.tempfile(problem.dir, penalty.str))
     penalty.peaks <- result$segments[status=="peak",]
     tryCatch({
       penalty.error <- PeakErrorChrom(penalty.peaks, labels.dt)
@@ -670,7 +691,8 @@ problem.predict <- function
     " based on ", n.features,
     " feature", ifelse(n.features==1, "", "s"),
     ".\n"))
-  result <- PeakSegDisk::PeakSegFPOP_dir(problem.dir, pred.penalty, tempfile())
+  result <- PeakSegDisk::PeakSegFPOP_dir(
+    problem.dir, pred.penalty, problem.tempfile(problem.dir, pred.penalty))
   all.peaks <- result$segments[status=="peak", ]
   bases.vec <- all.peaks[, chromEnd-chromStart]
   in.range <- size.model[, lower.bases < bases.vec & bases.vec < upper.bases]
