@@ -31,9 +31,9 @@ environment:
   #- R_VERSION: devel
 
 build_script:
-  - cp -r tests/testthat ~
+  - cp -r tests/testthat /tmp
   - rm tests/testthat/*
-  - cp ~/testthat/test-CRAN-*.R tests/testthat
+  - cp /tmp/testthat/test-CRAN-*.R tests/testthat
   - set _R_CHECK_FORCE_SUGGESTS_=false
   - travis-tool.sh install_deps
 
