@@ -21,9 +21,7 @@ problem.tempfile <- function
     basename(problem.dir),
     pen.str,
     sep="_")
-  file.path(
-    getOption("PeakSegPipeline.TMPDIR", tempdir()),
-    data.prob.pen)
+  file.path(tempdir(), data.prob.pen)
 ### character: temporary file name.
 }
 
