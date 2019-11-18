@@ -293,8 +293,17 @@ cluster functions you have registered), use
 #+END_SRC
 
 You can edit the time/memory required for each job via the =resources=
-argument (these resources are used for each job/step). 
-Details of the jobs/steps are explained on [[https://github.com/tdhock/PeakSegPipeline/wiki/Running-steps-of-the-pipeline-in-parallel][the wiki]].  
+argument (these resources are used for each job/step).  Details of the
+jobs/steps are explained on [[https://github.com/tdhock/PeakSegPipeline/wiki/Running-steps-of-the-pipeline-in-parallel][the wiki]]. To monitor the progress of
+jobs/steps you can use:
+
+#+begin_src R
+reg.dirs <- Sys.glob("~/PeakSegPipeline-test/demo/registry/*")
+reg.list <- lapply(reg.dirs, batchtools::loadRegistry)
+lapply(reg.list, function(reg){
+  batchtools::getStatus(reg=reg)
+})
+#+end_src
 
 The last step includes creation of the summary web page
 =~/PeakSegPipeline-test/demo/index.html= which has links to peak
