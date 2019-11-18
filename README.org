@@ -285,7 +285,7 @@ cluster functions you have registered), use
 #+BEGIN_SRC R
   jobs <- PeakSegPipeline::jobs_create("~/PeakSegPipeline-test/demo")
   PeakSegPipeline::jobs_submit_batchtools(jobs, resources=list(
-    walltime = 24*60,#minutes
+    walltime = 24*60*60,#seconds
     memory = 2000,#megabytes per cpu
     ncpus=2,
     ntasks=1,
