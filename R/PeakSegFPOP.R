@@ -1,8 +1,6 @@
 problem.tempfile <- function
 ### Create a (problem,penalty)-specific temporary file name to pass to
-### PeakSegFPOP_dir as the cost function database. The
-### PeakSegPipeline.TMPDIR option is used for the base temporary
-### directory if that is set, and otherwise tempdir() is used.
+### PeakSegFPOP_dir as the cost function database. 
 (problem.dir,
 ### full path to problem directory.
   pen.str
@@ -21,9 +19,7 @@ problem.tempfile <- function
     basename(problem.dir),
     pen.str,
     sep="_")
-  file.path(
-    getOption("PeakSegPipeline.TMPDIR", tempdir()),
-    data.prob.pen)
+  file.path(tempdir(), data.prob.pen)
 ### character: temporary file name.
 }
 

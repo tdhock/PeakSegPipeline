@@ -84,12 +84,13 @@ genome ", genome, "
 trackDb trackDb.txt
 "), file.path(data.dir.path, "genomes.txt"))
   ## Write hub.txt
+  hub.txt <- file.path(data.dir.path, "hub.txt")
   writeLines(paste0("
 hub ", data.name, "
 shortLabel ", data.name, "
 longLabel ", data.name, "
 genomesFile genomes.txt
-email ", email), file.path(data.dir.path, "hub.txt"))
+email ", email), hub.txt)
   ## create jointProblems.bigBed
   jproblems.glob <- file.path(data.dir.path, "problems", "*", "jointProblems.bed")
   jprobs <- fread(cmd=paste("cat", jproblems.glob))
@@ -170,7 +171,6 @@ itemRgb ", ifelse(names(bigBed.list)=="all_labels", "on", "off"), "
 spectrum ", ifelse(names(bigBed.list)=="peaks_summary", "on", "off"), "
 bigDataUrl ", getURL(unlist(bigBed.list)))
   }
-
   group.track.vec <- paste0("
 track ", group.names, "
 superTrack on show
@@ -226,8 +226,11 @@ longLabel ", group.names, " ChIP-seq samples
     paste(bed.track.vec, collapse="\n"),
     paste(track.vec, collapse="\n"),
     sep="\n\n")
-
   writeLines(track.content, file.path(data.dir.path, "trackDb.txt"))
-
-  cat("Created ", getURL("/hub.txt"), "\n", sep="")
+  cat(
+    "Created ",
+    hub.txt,
+    " which should be served at ",
+    getURL("/hub.txt"),
+    "\n", sep="")
 }

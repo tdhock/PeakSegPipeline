@@ -257,12 +257,27 @@ batchtools configuration (I put it in =~/.batchtools.conf.R=):
     mustWork=TRUE))
 #+END_SRC
 
-Additionally if you want to run some operations in parallel on each
-node, declare a future plan in your =~/.Rprofile= via e.g.
+Some operations in each step/job can be run in parallel on each
+node. This usually results in speedups when there are few jobs per
+compute node (so there is little risk of maxing out disk i/o bandwidth
+on each node). If you want to do these operations in parallel in each
+job, you can declare a future plan in your =~/.Rprofile= via e.g.
 
 #+BEGIN_SRC R
 future::plan("multiprocess")
 #+END_SRC
+
+PeakSegPipeline does a lot of writing to temporary files on disk
+during calls to =PeakSegDisk::PeakSegFPOP_dir= in Step 1 of the
+pipeline. These disk writes are parallelized across all labeled
+samples and contigs. To decrease the chance of maxing out disk i/o
+bandwidth, PeakSegPipeline tries to avoid writing at the same time on
+the same disk, by doing these writes to =tempdir()=, which
+is usually on a local disk on the compute node where the job is
+running (i.e. not available to the other compute nodes, not on a
+network file system). [[https://stat.ethz.ch/R-manual/R-devel/library/base/html/tempfile.html][R puts its temp dir in the first of =TMPDIR=,
+=TMP=, =TEMP= environment variables]], so you can set one of these if
+you don't want to use the default, =/tmp=.
 
 To run the pipeline using batchtools (via SLURM or whatever other
 cluster functions you have registered), use
@@ -270,7 +285,7 @@ cluster functions you have registered), use
 #+BEGIN_SRC R
   jobs <- PeakSegPipeline::jobs_create("~/PeakSegPipeline-test/demo")
   PeakSegPipeline::jobs_submit_batchtools(jobs, resources=list(
-    walltime = 24*60,#minutes
+    walltime = 24*60*60,#seconds
     memory = 2000,#megabytes per cpu
     ncpus=2,
     ntasks=1,
@@ -278,8 +293,17 @@ cluster functions you have registered), use
 #+END_SRC
 
 You can edit the time/memory required for each job via the =resources=
-argument (these resources are used for each job/step). 
-Details of the jobs/steps are explained on [[https://github.com/tdhock/PeakSegPipeline/wiki/Running-steps-of-the-pipeline-in-parallel][the wiki]].  
+argument (these resources are used for each job/step).  Details of the
+jobs/steps are explained on [[https://github.com/tdhock/PeakSegPipeline/wiki/Running-steps-of-the-pipeline-in-parallel][the wiki]]. To monitor the progress of
+jobs/steps you can use:
+
+#+begin_src R
+reg.dirs <- Sys.glob("~/PeakSegPipeline-test/demo/registry/*")
+reg.list <- lapply(reg.dirs, batchtools::loadRegistry)
+lapply(reg.list, function(reg){
+  batchtools::getStatus(reg=reg)
+})
+#+end_src
 
 The last step includes creation of the summary web page
 =~/PeakSegPipeline-test/demo/index.html= which has links to peak

@@ -16,14 +16,6 @@ create_problems_joint <- function
         problemStart <- problemEnd <- problemStart1 <- cluster <- NULL
   ## above to avoid "no visible binding for global variable" NOTEs in
   ## CRAN check.
-  jointProblems.bed.sh <- file.path(prob.dir, "jointProblems.bed.sh")
-  PBS.header <- if(file.exists(jointProblems.bed.sh)){
-    sh.lines <- readLines(jointProblems.bed.sh)
-    pbs.lines <- grep("^#", sh.lines, value=TRUE)
-    paste(pbs.lines, collapse="\n")
-  }else{
-    "#!/bin/bash"
-  }
   ann.colors <-
     c(noPeaks="#f6f4bf",
       peakStart="#ffafaf",
@@ -185,32 +177,7 @@ create_problems_joint <- function
           sep="\t",
           row.names=FALSE,
           col.names=FALSE)
-        ## Script for target.
-        target.tsv <- file.path(jprob.dir, "target.tsv")
-        sh.file <- paste0(target.tsv, ".sh")
-        target.cmd <- Rscript(
-          'PeakSegPipeline::problem.joint.target("%s")', jprob.dir)
-        script.txt <- paste0(PBS.header, "
-#PBS -o ", target.tsv, ".out
-#PBS -e ", target.tsv, ".err
-#PBS -N JTarget", pname, "
-", target.cmd, "
-")
-        writeLines(script.txt, sh.file)
       }
-      ## Script for peaks.
-      peaks.bed <- file.path(jprob.dir, "peaks.bed")
-      sh.file <- paste0(peaks.bed, ".sh")
-      pred.cmd <- Rscript(
-        'PeakSegPipeline::problem.joint.predict("%s")',
-        jprob.dir)
-      script.txt <- paste0(PBS.header, "
-#PBS -o ", peaks.bed, ".out
-#PBS -e ", peaks.bed, ".err
-#PBS -N JPred", problem$problem.name, "
-", pred.cmd, "
-")
-      writeLines(script.txt, sh.file)
     }
     ## Sanity checks -- make sure no joint problems overlap each other,
     ## or are outside the separate problem.
