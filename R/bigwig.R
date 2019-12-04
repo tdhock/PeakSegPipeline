@@ -20,7 +20,7 @@ bedGraphToBigWig <- function
   ## even if there are no predicted peaks in some samples.
   if(nrow(bedGraph.dt)){
     sorted.dt <- bedGraph.dt[order(chrom, chromStart)]
-    bedGraph.sorted <- paste0(basename(bedGraph), ".sorted")
+    bedGraph.sorted <- paste0(bedGraph, ".sorted")
     fwrite(sorted.dt, bedGraph.sorted, sep="\t", col.names=FALSE, quote=FALSE)
     cmd <- paste(
       "bedGraphToBigWig", bedGraph.sorted,
