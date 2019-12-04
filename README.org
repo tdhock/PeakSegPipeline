@@ -305,7 +305,7 @@ lapply(reg.list, function(reg){
 })
 #+end_src
 
-The last step includes creation of the summary web page
+The last step includes creation of the summary web page ([[https://rcdata.nau.edu/genomic-ml/PeakSegFPOP/][links to some examples here]])
 =~/PeakSegPipeline-test/demo/index.html= which has links to peak
 prediction files, plots, and a track hub
 =~/PeakSegPipeline-test/demo/hub.txt= which can be used on the UCSC
