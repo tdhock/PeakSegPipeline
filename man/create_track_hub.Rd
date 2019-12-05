@@ -2,8 +2,11 @@
 \alias{create_track_hub}
 \title{create track hub}
 \description{Create track hub for a project.}
-\usage{create_track_hub(data.dir.path, data.dir.url, genome, 
-    email, goldenPath.url = ucsc.goldenPath.url)}
+\usage{create_track_hub(data.dir.path, 
+    data.dir.url, genome, 
+    email, goldenPath.url = ucsc.goldenPath.url, 
+    verbose = getOption("PeakSegPipeline.verbose", 
+        1))}
 \arguments{
   \item{data.dir.path}{data/project directory path on local filesystem.}
   \item{data.dir.url}{URL for data/project directory, for constructing URLs to
@@ -15,6 +18,8 @@ http://some.domain/~user/demo_project/samples/groupID/sampleID/coverage.bigWig}
   \item{email}{\code{email} address for maintainer of track hub.}
   \item{goldenPath.url}{link to download UCSC \code{genome} chromInfo files, necessary for
 creating bigWigs.}
+  \item{verbose}{
+}
 }
 
 

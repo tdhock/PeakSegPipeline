@@ -2,7 +2,7 @@ jobs_create <- function
 ### Setup a data directory for analysis with PeakSegPipeline.
 (data.dir.arg,
 ### path to project directory.
-  verbose=FALSE
+  verbose=getOption("PeakSegPipeline.verbose", 1)
 ### TRUE for output, FALSE otherwise.
 ){
   bases <- problemEnd <- problemStart <- problem.name <- chrom <- row.i <-
@@ -226,11 +226,11 @@ jobs_create_run <- function
 ### Run entire PeakSegFPOP + PeakSegJoint pipeline.
 (set.dir.path,
 ### data set directory.
-  verbose=TRUE
+  verbose=getOption("PeakSegPipeline.verbose", 1)
 ### print messages?
 ){
   unlink(file.path(
-    set.dir.path, 
+    set.dir.path,
     "samples",
     "*",
     "*",

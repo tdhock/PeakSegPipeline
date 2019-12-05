@@ -13,9 +13,11 @@ counting function, which should be much faster than using an
 intermediate bedGraph
 file. http://www.cs.uleth.ca/~holzmann/C/system/shell_commands.html
 
-2019.9.28 PR#19
+2019.12.5 PR#19
 
-configurable db directory.
+problem.PeakSegFPOP writes to temporary disk.
+
+if(verbose)cat(...) for CRAN.
 
 2019.9.27 PR#18
 

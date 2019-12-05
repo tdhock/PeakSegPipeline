@@ -4,7 +4,7 @@ downloadBigWigs <- structure(function
 ### trackDb text file.
   out.dir,
 ### Output directory.
-  verbose=0
+  verbose=getOption("PeakSegPipeline.verbose", 1)
 ### Print messages?
 ){
   trackDb.vec <- readLines(trackDb.txt)

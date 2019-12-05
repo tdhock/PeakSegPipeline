@@ -3,7 +3,9 @@
 \title{problem coverage}
 \description{Ensure that coverage.bedGraph has been correctly computed for a
 particular genomic segmentation problem.}
-\usage{problem.coverage(problem.dir, verbose = 0)}
+\usage{problem.coverage(problem.dir, 
+    verbose = getOption("PeakSegPipeline.verbose", 
+        1))}
 \arguments{
   \item{problem.dir}{Path to a directory like sampleID/problems/problemID where
 sampleID/coverage.bigWig contains counts of aligned reads in the

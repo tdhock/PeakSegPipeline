@@ -2,9 +2,13 @@
 \alias{problem.joint.predict}
 \title{problem joint predict}
 \description{Compute peak predictions for a joint problem.}
-\usage{problem.joint.predict(jointProblem.dir)}
+\usage{problem.joint.predict(jointProblem.dir, 
+    verbose = getOption("PeakSegPipeline.verbose", 
+        1))}
 \arguments{
   \item{jointProblem.dir}{project/problems/problemID/jointProblems/jointProbID}
+  \item{verbose}{
+}
 }
 
 \value{data.table with one row, describing predicted peaks for both group
