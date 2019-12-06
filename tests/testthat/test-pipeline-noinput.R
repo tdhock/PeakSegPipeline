@@ -48,7 +48,7 @@ test_that("no integer overflow for big chroms", {
   expect_true(is.finite(bigWig.dt$mean.coverage))
 })
 
-## also test denormalize.
+ ## also test denormalize.
 norm.dt <- fread("
 chrom	chromStart	chromEnd	coverage
 chr1	9979	9993	0.07
@@ -65,7 +65,7 @@ chr1	10149	10154	0.42
 chromInfo <- fread("
 chr1 100000
 ")
-work.dir <- tempdir()
+dir.create(work.dir <- file.path(tempdir(), "folder (bad name)"))
 chromInfo.txt <- file.path(work.dir, "chromInfo.txt")
 fwrite(chromInfo, chromInfo.txt, sep="\t", col.names=FALSE)
 input.bedGraph <- file.path(work.dir, "input.bedGraph")
@@ -73,12 +73,12 @@ fwrite(norm.dt, input.bedGraph, col.names=FALSE, sep="\t")
 norm.bigWig <- file.path(work.dir, "norm.bigWig")
 system.or.stop(paste(
   "bedGraphToBigWig",
-  input.bedGraph,
-  chromInfo.txt,
-  norm.bigWig))
+  shQuote(input.bedGraph),
+  shQuote(chromInfo.txt),
+  shQuote(norm.bigWig)))
 denorm.bigWig <- file.path(work.dir, "denorm.bigWig")
-denormalizeBigWig(norm.bigWig, denorm.bigWig)
 test_that("intermediate bedGraph files are deleted", {
+  denormalizeBigWig(norm.bigWig, denorm.bigWig)
   denorm.bedGraph <- file.path(work.dir, "denorm.bedGraph")
   norm.bedGraph <- file.path(work.dir, "norm.bedGraph")
   expect_true(!file.exists(denorm.bedGraph))
@@ -125,10 +125,10 @@ test_that("coverage counts 0:9", {
 
 ## Then test pipeline.
 test.data.dir <- file.path(Sys.getenv("HOME"), "PeakSegPipeline-test")
-non.integer.dir <- file.path(test.data.dir, "non-integer")
-demo.dir <- file.path(test.data.dir, "noinput")
+non.integer.dir <- file.path(test.data.dir, "non-integer (bad)")
+demo.dir <- file.path(test.data.dir, "noinput (bad)")
 index.html <- file.path(demo.dir, "index.html")
-download.to <- function
+ download.to <- function
 (u, f, writeFun=if(grepl("bigWig", f))writeBin else writeLines){
   if(!file.exists(f)){
     require(httr)

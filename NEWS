@@ -1,5 +1,7 @@
 TODOs
 
+test case for denormalizeBigWig with spaces in path.
+
 warning/error for convert_labels when a chunk has no noPeaks labels.
 
 error in convert_labels for noPeaks label with sample groups up?
