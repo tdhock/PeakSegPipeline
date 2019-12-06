@@ -1,8 +1,9 @@
 problem.joint.predict.many <- function
 ### Compute all joint peak predictions for one separate problem, in
 ### parallel over joint problems using future.apply::future_lapply.
-(prob.dir
+(prob.dir,
 ### project/problems/problemID
+  verbose=getOption("PeakSegPipeline.verbose", 1)
 ){
   joint.dir.vec <- Sys.glob(file.path(
     prob.dir, "jointProblems", "*"))
@@ -10,7 +11,7 @@ problem.joint.predict.many <- function
   unlink(peaks.bed)
   prob.progress <- function(joint.dir.i){
     joint.dir <- joint.dir.vec[[joint.dir.i]]
-    cat(sprintf(
+    if(verbose)cat(sprintf(
       "%4d / %4d joint prediction problems %s\n",
       joint.dir.i, length(joint.dir.vec),
       joint.dir))
@@ -34,7 +35,7 @@ problem.joint.predict.many <- function
       }
     }
     if(already.computed){
-      cat("Skipping since peaks.bed already exists.\n")
+      if(verbose)cat("Skipping since peaks.bed already exists.\n")
     }else{
       jprob.peaks <- problem.joint.predict(joint.dir)
     }
@@ -66,8 +67,9 @@ problem.joint.predict.job <- function
 ### Compute all joint peak predictions for the joint problems listed
 ### in jobProblems.bed, in parallel over problems using
 ### future.apply::future_lapply.
-(job.dir
+(job.dir,
 ### project/jobs/jobID
+  verbose=getOption("PeakSegPipeline.verbose", 1)
 ){
   jprob.name <- chrom <- problemStart <- problemEnd <- problem.name <-
     jprob.name <- sample.loss.diff <- group.loss.diff <- NULL
@@ -92,7 +94,7 @@ problem.joint.predict.job <- function
     prob <- jobProblems[joint.dir.i]
     joint.dir <- prob[, file.path(
       problems.dir, problem.name, "jointProblems", jprob.name)]
-    cat(sprintf(
+    if(verbose)cat(sprintf(
       "%4d / %4d joint prediction problems %s\n",
       joint.dir.i, nrow(jobProblems),
       joint.dir))
@@ -108,7 +110,7 @@ problem.joint.predict.job <- function
       })
     }
     if(already.computed){
-      cat("Skipping since peakInfo.rds already exists.\n")
+      if(verbose)cat("Skipping since peakInfo.rds already exists.\n")
     }else{
       pred.row <- problem.joint.predict(joint.dir)
     }
@@ -131,8 +133,9 @@ problem.joint.targets <- function
 ### Compute joint targets for all joint problems in a separate
 ### problem, in parallel over joint problems using
 ### future.apply::future_lapply.
-(problem.dir
+(problem.dir,
 ### project/problems/problemID
+  verbose=getOption("PeakSegPipeline.verbose", 1)
  ){
   segmentations <- model <- min.log.lambda <- max.log.lambda <- NULL
   ## above variable defined in RData file.
@@ -142,13 +145,13 @@ problem.joint.targets <- function
     seq_along(labels.tsv.vec), function(labels.i){
       labels.tsv <- labels.tsv.vec[[labels.i]]
       jprob.dir <- dirname(labels.tsv)
-      cat(sprintf(
+      if(verbose)cat(sprintf(
         "%4d / %4d labeled joint problems %s\n",
         labels.i, length(labels.tsv.vec),
         jprob.dir))
       target.tsv <- file.path(jprob.dir, "target.tsv")
       if(file.exists(target.tsv)){
-        cat("Skipping since target.tsv exists.\n")
+        if(verbose)cat("Skipping since target.tsv exists.\n")
       }else{
         problem.joint.target(jprob.dir)
       }
@@ -178,20 +181,21 @@ problem.joint.targets.train <- function
 ### Compute all joint target intervals then learn joint penalty
 ### functions, in parallel over problems using
 ### future.apply::future_lapply.
-(data.dir
+(data.dir,
 ### project directory.
+  verbose=getOption("PeakSegPipeline.verbose", 1)
 ){
   problem.dir.vec <- Sys.glob(file.path(
     data.dir, "problems", "*"))
   future.apply::future_lapply(seq_along(problem.dir.vec), function(problem.i){
     problem.dir <- problem.dir.vec[[problem.i]]
-    cat(sprintf(
+    if(verbose)cat(sprintf(
       "%4d / %4d problems %s\n",
       problem.i, length(problem.dir.vec),
       problem.dir))
     jointTargets.rds <- file.path(problem.dir, "jointTargets.rds")
     if(file.exists(jointTargets.rds)){
-      cat("Skipping since jointTargets.rds exists.\n")
+      if(verbose)cat("Skipping since jointTargets.rds exists.\n")
     }else{
       problem.joint.targets(problem.dir)
     }
@@ -214,8 +218,9 @@ problem.pred.cluster.targets <- function
 
 problem.joint.train <- function
 ### Learn a penalty function for joint peak prediction.
-(data.dir
+(data.dir,
 ### project directory.
+  verbose=getOption("PeakSegPipeline.verbose", 1)
 ){
   segmentations <- status <- too.lo <- too.hi <- jprobs.bed <- job <-
     . <- chrom <- problemStart <- problemEnd <- jointTargets.rds <- NULL
@@ -245,7 +250,8 @@ problem.joint.train <- function
     if(n.keep<2){
       stop("need at least two targets to train model")
     }
-    cat("Training", model.name, "model using", n.keep, "finite targets.\n")
+    if(verbose)cat(
+      "Training", model.name, "model using", n.keep, "finite targets.\n")
     target.mat <- all.target.mat[keep,]
     feature.mat <- mat.list$features[keep,]
     n.finite.vec <- colSums(is.finite(target.mat))
@@ -269,12 +275,12 @@ problem.joint.train <- function
     pred.dt[, status := ifelse(
       too.lo, "low", ifelse(
         too.hi, "high", "correct"))]
-    cat("Train errors:\n")
-    print(pred.dt[, list(targets=.N), by=status])
+    if(verbose)cat("Train errors:\n")
+    if(verbose)print(pred.dt[, list(targets=.N), by=status])
     model.list[[model.name]] <- joint.model
   }
   save(model.list, mat.list, file=joint.model.RData)
-  cat("Saved ", joint.model.RData, "\n", sep="")
+  if(verbose)cat("Saved ", joint.model.RData, "\n", sep="")
   jprobs.bed.dt <- data.table(jprobs.bed=Sys.glob(file.path(
     data.dir, "problems", "*", "jointProblems.bed")))
   jprobs <- jprobs.bed.dt[, {
@@ -294,7 +300,7 @@ problem.joint.train <- function
       file.path(job.dir, "jobProblems.bed"),
       sep="\t", col.names=FALSE)
   }, by=job]
-  cat(
+  if(verbose)cat(
     "Saved ",
     length(job.id.vec),
     " jobProblems.bed files to ",
@@ -305,8 +311,9 @@ problem.joint.train <- function
 
 problem.joint <- function
 ### Fit a joint model.
-(jointProblem.dir
+(jointProblem.dir,
 ### path/to/jointProblem
+  verbose=getOption("PeakSegPipeline.verbose", 1)
 ){
   problemStart1 <- problemStart <- problemEnd <- chrom <- NULL
   ## above to avoid "no visible binding for global variable" NOTEs in
@@ -322,7 +329,7 @@ problem.joint <- function
   samples.dir <- file.path(data.dir, "samples")
   coverage.bigWig.vec <- Sys.glob(file.path(
     samples.dir, "*", "*", "coverage.bigWig"))
-  cat(
+  if(verbose)cat(
     "Found ", length(coverage.bigWig.vec),
     " bigWig files to jointly segment in ",
     jprob.name, ".\n", sep="")
@@ -354,7 +361,8 @@ problem.joint <- function
   profile.list <- PeakSegJoint::ProfileList(coverage)
   segmentations <- PeakSegJoint::PeakSegJointFaster(profile.list)
   segmentations$features <- PeakSegJoint::featureMatrixJoint(profile.list)
-  cat("Writing segmentation and features to", segmentations.RData, "\n")
+  if(verbose)cat(
+    "Writing segmentation and features to", segmentations.RData, "\n")
   save(segmentations, file=segmentations.RData)
   segmentations$coverage <- coverage
   segmentations
@@ -363,8 +371,9 @@ problem.joint <- function
 
 problem.joint.predict <- function
 ### Compute peak predictions for a joint problem.
-(jointProblem.dir
+(jointProblem.dir,
 ### project/problems/problemID/jointProblems/jointProbID
+  verbose=getOption("PeakSegPipeline.verbose", 1)
 ){
   joint.model <- min.log.lambda <- max.log.lambda <- peaks <- NULL
   model.list <- NULL
@@ -372,7 +381,8 @@ problem.joint.predict <- function
   ## CRAN check.
   segmentations.RData <- file.path(jointProblem.dir, "segmentations.RData")
   if(file.exists(segmentations.RData)){
-    cat("Loading model from ", segmentations.RData, "\n", sep="")
+    if(verbose)cat(
+      "Loading model from ", segmentations.RData, "\n", sep="")
     load(segmentations.RData)
   }else{
     segmentations <- problem.joint(jointProblem.dir)
@@ -440,7 +450,7 @@ problem.joint.predict <- function
     pred.dt[[paste0(model.name, ".loss.diff")]] <- loss.diff
   }
   peakInfo.rds <- file.path(jointProblem.dir, "peakInfo.rds")
-  cat("Writing ", peakInfo.rds, "\n", sep="")
+  if(verbose)cat("Writing ", peakInfo.rds, "\n", sep="")
   saveRDS(pred.dt, peakInfo.rds)
   pred.dt
 ### data.table with one row, describing predicted peaks for both group
@@ -454,8 +464,9 @@ problem.joint.predict <- function
 
 problem.joint.target <- function
 ### Compute target interval for a joint problem.
-(jointProblem.dir
+(jointProblem.dir,
 ### Joint problem directory.
+  verbose=getOption("PeakSegPipeline.verbose", 1)
 ){
   annotation <- chromStart <- chromEnd <- sample.path <-
     sample.group <- sample.id <- flat.errors <- peak.errors <-
@@ -464,7 +475,7 @@ problem.joint.target <- function
   ## CRAN check.
   segmentations.RData <- file.path(jointProblem.dir, "segmentations.RData")
   if(file.exists(segmentations.RData)){
-    cat("Loading model from ", segmentations.RData, "\n", sep="")
+    if(verbose)cat("Loading model from ", segmentations.RData, "\n", sep="")
     load(segmentations.RData)
   }else{
     segmentations <- problem.joint(jointProblem.dir)
@@ -579,31 +590,36 @@ problem.joint.target <- function
     ##              data=
     ##              color="green")
   }
-  cat("Train error for samples:\n")
-  print(sample.select[, c(
-    "min.log.lambda", "max.log.lambda", "complexity", "errors")])
-  cat("Train error for groups:\n")
-  print(group.select[, c(
-    "min.log.lambda", "max.log.lambda", "complexity", "errors")])
+  if(verbose){
+    cat("Train error for samples:\n")
+    print(sample.select[, c(
+      "min.log.lambda", "max.log.lambda", "complexity", "errors")])
+    cat("Train error for groups:\n")
+    print(group.select[, c(
+      "min.log.lambda", "max.log.lambda", "complexity", "errors")])
+  }
   both.select <- rbind(
     data.table(sample.select, model="sample"),
     data.table(group.select, model="group"))
   target.dt <- penaltyLearning::targetIntervals(both.select, "model")
-  cat("Target intervals of minimum error penalty values:\n")
-  print(target.dt)
   target.tsv <- file.path(jointProblem.dir, "target.tsv")
-  cat(
-    "Writing target intervals to ",
-    target.tsv,
-    "\n", sep="")
+  if(verbose){
+    cat("Target intervals of minimum error penalty values:\n")
+    print(target.dt)
+    cat(
+      "Writing target intervals to ",
+      target.tsv,
+      "\n", sep="")
+  }
   fwrite(target.dt, target.tsv)
 ### Nothing.
 }
 
 problem.joint.plot <- function
 ### Plot one chunk.
-(chunk.dir
+(chunk.dir,
 ### project/problems/problemID/chunks/chunkID
+  verbose=getOption("PeakSegPipeline.verbose", 1)
 ){
   chunkStart1 <- chunkStart <- chunkEnd <- problemStart1 <-
     problem.name <- chrom <- problemEnd <- problemStart <- peakStart1 <-
@@ -632,11 +648,12 @@ problem.joint.plot <- function
   probs.in.chunk <- foverlaps(jointProblems, chunk, nomatch=0L)
   probs.in.chunk$sample.group <- "problems"
   probs.in.chunk$sample.id <- "joint"
-  cat("Read",
-      nrow(jointProblems),
-      "joint problems, plotting",
-      nrow(probs.in.chunk),
-      "in chunk.\n")
+  if(verbose)cat(
+    "Read",
+    nrow(jointProblems),
+    "joint problems, plotting",
+    nrow(probs.in.chunk),
+    "in chunk.\n")
   dir.create(chunk.dir, showWarnings=FALSE, recursive=TRUE)
   coverage.list <- list()
   separate.peaks.list <- list()
@@ -676,15 +693,16 @@ problem.joint.plot <- function
   }
   coverage <- do.call(rbind, coverage.list)
   labels <- do.call(rbind, labels.list)
-  cat("Read",
-      nrow(labels),
-      "labels.\n")
-  cat("Read",
-      length(coverage.list),
-      "samples of coverage.\n")
-  cat("Read",
-      length(separate.peaks.list),
-      "samples of separate peak predictions.\n")
+  if(verbose)cat(
+    "Read",
+    nrow(labels),
+    "labels.\n",
+    "Read",
+    length(coverage.list),
+    "samples of coverage.\n",
+    "Read",
+    length(separate.peaks.list),
+    "samples of separate peak predictions.\n")
   joint.peaks.list <- list()
   for(joint.i in 1:nrow(probs.in.chunk)){
     prob <- probs.in.chunk[joint.i,]
@@ -708,7 +726,7 @@ problem.joint.plot <- function
     }
   }
   joint.peaks <- do.call(rbind, joint.peaks.list)
-  cat(
+  if(verbose)cat(
     "Read joint peak predictions:",
     nrow(joint.peaks), "peaks in",
     length(joint.peaks.list), "peakInfo.RData files,",
@@ -806,9 +824,10 @@ problem.joint.plot <- function
   n.rows <- length(coverage.list) + 2
   mypng <- function(base, g){
     f <- file.path(chunk.dir, base)
-    cat("Writing ",
-        f,
-        "\n", sep="")
+    if(verbose)cat(
+      "Writing ",
+      f,
+      "\n", sep="")
     cairo.limit <- 32767
     h <- 60*n.rows
     if(cairo.limit < h){

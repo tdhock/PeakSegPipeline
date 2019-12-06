@@ -2,7 +2,7 @@ system.or.stop <- function
 ### Run a command line or stop with an error.
 (cmd,
 ### Command line, passed to system.
-  verbose=0
+  verbose=getOption("PeakSegPipeline.verbose", 1)
 ### print output?
 ){
   if(verbose)cat(cmd, "\n")

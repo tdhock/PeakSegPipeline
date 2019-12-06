@@ -4,11 +4,12 @@ create_problems_joint <- function
 ### future.apply::future_lapply.
 (prob.dir,
 ### proj.dir/problems/problemID
-  peaks=NULL
+  peaks=NULL,
 ### data.table of peaks predicted in all samples for this problem (if
 ### it has already been computed by problem.predict.allSamples), or
 ### NULL which means to read predicted peaks from
 ### proj.dir/samples/*/*/problemID/peaks.bed files.
+  verbose=getOption("PeakSegPipeline.verbose", 1)
 ){
   chromStart <- chromEnd <- clusterStart1 <- clusterStart <-
     clusterEnd <- . <- annotation <- labelStart <- labelEnd <-
@@ -30,7 +31,7 @@ create_problems_joint <- function
     peaks.glob <- file.path(
       samples.dir, "*", "*", "problems", problem.name, "peaks.bed")
     peaks.bed.vec <- Sys.glob(peaks.glob)
-    cat("Found", length(peaks.bed.vec), peaks.glob, "files.\n")
+    if(verbose)cat("Found", length(peaks.bed.vec), peaks.glob, "files.\n")
     peaks.list <- list()
     for(sample.i in seq_along(peaks.bed.vec)){
       peaks.bed <- peaks.bed.vec[[sample.i]]
@@ -64,12 +65,13 @@ create_problems_joint <- function
       clusterEnd=max(chromEnd)
     ), by=cluster]
     clusters[, clusterStart1 := clusterStart + 1L]
-    cat(nrow(peaks), "total peaks form",
-        nrow(clusters), "overlapping peak clusters.\n")
+    if(verbose)cat(
+      nrow(peaks), "total peaks form",
+      nrow(clusters), "overlapping peak clusters.\n")
     list(
       peaks=clusters[, .(clusterStart, clusterEnd)])
   }else{
-    cat("No predicted peaks.\n")
+    if(verbose)cat("No predicted peaks.\n")
     clusters <- data.table(
       cluster=integer(),
       clusterStart1=integer(),
@@ -102,7 +104,7 @@ create_problems_joint <- function
   }
   labels <- do.call(rbind, labels.list)
   if(is.null(labels)){
-    cat("No labels.\n")
+    if(verbose)cat("No labels.\n")
   }else{
     label.props <- labels[, list(
       prop.noPeaks=mean(annotation=="noPeaks")
@@ -113,7 +115,7 @@ create_problems_joint <- function
     labels.with.no.peaks <- over[is.na(cluster),]
     labels.with.no.peaks[, bases := labelEnd - labelStart]
     labels.with.no.peaks[, reduce := as.integer(bases/3)]
-    cat(
+    if(verbose)cat(
       "Found", nrow(labels.with.no.peaks),
       "labeled regions with no peaks out of",
       nrow(label.props), "total.\n")
@@ -184,7 +186,7 @@ create_problems_joint <- function
     stopifnot(separate.problem$problemStart <= problem.info$problemStart)
     stopifnot(problem.info$problemEnd <= separate.problem$problemEnd)
     problem.info[, stopifnot(problemEnd[-.N] <= problemStart[-1])]
-    cat(
+    if(verbose)cat(
       "Creating ", nrow(problem.info),
       " joint segmentation problems for ", problem.name,
       "\n", sep="")
@@ -197,6 +199,6 @@ create_problems_joint <- function
       col.names=FALSE,
       row.names=FALSE)
   }else{
-    cat("No joint problems.\n")
+    if(verbose)cat("No joint problems.\n")
   }
 }

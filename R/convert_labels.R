@@ -3,7 +3,7 @@ convert_labels <- function
 ### proj.dir/samples/*/*/labels.bed files.
 (proj.dir,
 ### project directory.
-  verbose=0
+  verbose=getOption("PeakSegPipeline.verbose", 1)
 ### Print messages?
 ){
   chromStart <- chromEnd <- . <- chrom <- group.list <- annotation <-

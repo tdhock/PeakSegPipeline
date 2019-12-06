@@ -1,15 +1,18 @@
 Package: PeakSegPipeline
 Type: Package
 Title: Genome-Wide Peak Prediction Using Supervised Learning and Optimal Segmentation
-Version: 2019.9.28
+Version: 2019.12.5
 Author: Toby Dylan Hocking
 Maintainer: Toby Dylan Hocking <toby.hocking@r-project.org>
 Description: Implementations of supervised machine learning
- algorithms for peak detection in genomic data.
- Functional Pruning Optimal Partitioning with up-down constraints
- <arXiv:1810.00117> is used for single-sample peak prediction
+ algorithms for peak detection in genomic data, as described in
+ Hocking and Bourque (2020) <doi:10.1142/9789811215636_0033>.
+ Functional Pruning Optimal Partitioning with up-down constraints,
+ Hocking et al. (2018) <arXiv:1810.00117>
+ is used for single-sample peak prediction
  (independently for each sample and genomic problem).
- A fast heuristic discrete segmentation algorithm <arXiv:1506.01286>
+ A fast heuristic discrete segmentation algorithm,
+ Hocking and Bourque (2015) <arXiv:1506.01286>
  is used for joint peak prediction
  (for each peak, jointly using all samples).
 License: GPL-3

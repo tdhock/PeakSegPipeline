@@ -10,7 +10,9 @@ specified in a file problem.dir/target.minutes; the search will
 stop at a sub-optimal target interval if this many minutes has
 elapsed. Useful for testing environments with build time limits
 (travis).}
-\usage{problem.target(problem.dir, verbose = 0)}
+\usage{problem.target(problem.dir, 
+    verbose = getOption("PeakSegPipeline.verbose", 
+        1))}
 \arguments{
   \item{problem.dir}{problemID directory in which coverage.bedGraph has already been
 computed. If there is a labels.bed file then the number of

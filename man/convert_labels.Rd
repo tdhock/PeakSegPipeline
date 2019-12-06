@@ -3,7 +3,9 @@
 \title{convert labels}
 \description{Convert label text files in proj.dir/labels/*.txt to
 proj.dir/samples/*/*/labels.bed files.}
-\usage{convert_labels(proj.dir, verbose = 0)}
+\usage{convert_labels(proj.dir, 
+    verbose = getOption("PeakSegPipeline.verbose", 
+        1))}
 \arguments{
   \item{proj.dir}{project directory.}
   \item{verbose}{Print messages?}

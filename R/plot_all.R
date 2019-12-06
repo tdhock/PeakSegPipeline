@@ -28,9 +28,10 @@ plot_all <- function
 ### 'PeakSegPipeline::create_track_hub(...)'
 (set.dir.arg,
 ### Path/to/data/dir.
-  zoom.out.times=10
+  zoom.out.times=10,
 ## The UCSC links in the HTML tables will be zoomed out from the peak
 ## this number of times.
+  verbose=getOption("PeakSegPipeline.verbose", 1)
 ){
   jobPeaks <- jprob.name <- sample.loss.diff <- group.loss.diff <-
     Input.up <- zoomPos <- n.groups.up <- str.groups.up <-
@@ -71,7 +72,7 @@ plot_all <- function
       "no predicted joint peaks found; to do joint peak prediction run ",
       file.path(joint.glob, "jobPeaks.sh"))
   }
-  cat(
+  if(verbose)cat(
     "Reading predicted peaks in",
     length(jobPeaks.RData.vec),
     "jobPeaks.RData files.\n",

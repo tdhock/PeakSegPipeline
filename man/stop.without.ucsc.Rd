@@ -3,7 +3,8 @@
 \title{stop without ucsc}
 \description{Stop with an error if UCSC command line programs are not
 available.}
-\usage{stop.without.ucsc(prog.vec = c("bigWigInfo", "bigWigToBedGraph", 
+\usage{stop.without.ucsc(prog.vec = c("bigWigInfo", 
+    "bigWigToBedGraph", 
     "bedToBigBed", "bedGraphToBigWig"))}
 \arguments{
   \item{prog.vec}{

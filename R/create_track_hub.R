@@ -12,9 +12,10 @@ create_track_hub <- function
 ### genome string as defined at UCSC, e.g. "hg19"
   email,
 ### email address for maintainer of track hub.
-  goldenPath.url=ucsc.goldenPath.url
+  goldenPath.url=ucsc.goldenPath.url,
 ### link to download UCSC genome chromInfo files, necessary for
 ### creating bigWigs.
+  verbose=getOption("PeakSegPipeline.verbose", 1)
 ){
   chrom <- problemStart <- problemEnd <- chromEnd <- . <-
     name <- chrom <- chromStart <- strand <- NULL
@@ -227,7 +228,7 @@ longLabel ", group.names, " ChIP-seq samples
     paste(track.vec, collapse="\n"),
     sep="\n\n")
   writeLines(track.content, file.path(data.dir.path, "trackDb.txt"))
-  cat(
+  if(verbose)cat(
     "Created ",
     hub.txt,
     " which should be served at ",

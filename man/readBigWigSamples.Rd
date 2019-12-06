@@ -3,7 +3,8 @@
 \title{readBigWigSamples}
 \description{read a bunch of bigwig files into R as a list of data.frames that
 can be passed to PeakSegJointSeveral.}
-\usage{readBigWigSamples(problem, bigwig.file.vec)}
+\usage{readBigWigSamples(problem, 
+    bigwig.file.vec)}
 \arguments{
   \item{problem}{
 }

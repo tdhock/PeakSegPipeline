@@ -1,6 +1,6 @@
 problem.tempfile <- function
 ### Create a (problem,penalty)-specific temporary file name to pass to
-### PeakSegFPOP_dir as the cost function database. 
+### PeakSegFPOP_dir as the cost function database.
 (problem.dir,
 ### full path to problem directory.
   pen.str
@@ -28,7 +28,9 @@ problem.train <- function
 ### each separate problem. Run this step after computing target
 ### intervals for each labeled separate problem (problem.target), and
 ### before peak prediction (problem.predict).
-(data.dir.str){
+(data.dir.str,
+  verbose=getOption("PeakSegPipeline.verbose", 1)
+){
   status <- too.lo <- too.hi <- penalty <- bases <- chromEnd <- chromStart <-
     upper.lim <- lower.lim <- upper.bases <- lower.bases <- ..density.. <-
       prob <- hjust <- NULL
@@ -39,9 +41,11 @@ problem.train <- function
   model.RData <- file.path(data.dir, "model.RData")
   glob.str <- file.path(
     samples.dir, "*", "*", "problems", "*", "target.tsv")
-  cat("Searching for", glob.str, "files for training.\n")
+  if(verbose)cat(
+    "Searching for", glob.str, "files for training.\n")
   target.tsv.vec <- Sys.glob(glob.str)
-  cat("Found", length(target.tsv.vec), "target.tsv files for training.\n")
+  if(verbose)cat(
+    "Found", length(target.tsv.vec), "target.tsv files for training.\n")
   features.list <- list()
   targets.list <- list()
   for(target.tsv.i in seq_along(target.tsv.vec)){
@@ -49,7 +53,9 @@ problem.train <- function
     problem.dir <- dirname(target.tsv)
     features.tsv <- file.path(problem.dir, "features.tsv")
     if(!file.exists(features.tsv)){
-      cat(sprintf("%4d / %4d Computing %s\n", target.tsv.i, length(target.tsv.vec), features.tsv))
+      if(verbose)cat(sprintf(
+        "%4d / %4d Computing %s\n",
+        target.tsv.i, length(target.tsv.vec), features.tsv))
       problem.features(problem.dir)
     }
     target.vec <- scan(target.tsv, quiet=TRUE)
@@ -63,22 +69,22 @@ problem.train <- function
   set.seed(1)
   model <- if(nrow(features) < 10){
     some.features <- features[, c("log.quartile.100%", "log.data")]
-    cat("Feature matrix:\n")
-    print(some.features)
-    cat("Target matrix:\n")
-    print(unname(targets))
+    if(verbose)cat("Feature matrix:\n")
+    if(verbose)print(some.features)
+    if(verbose)cat("Target matrix:\n")
+    if(verbose)print(unname(targets))
     penaltyLearning::IntervalRegressionUnregularized(
       some.features, targets)
   }else{
     penaltyLearning::IntervalRegressionCV(
-      features, targets, verbose=0,
+      features, targets, verbose=getOption("PeakSegPipeline.verbose", 1),
       initial.regularization=1e-4,
       min.observations=nrow(features),
       reg.type=ifelse(nrow(features) < 20, "1sd", "min"))
   }
   model$train.mean.vec <- colMeans(features)
-  cat("Learned regularization parameter and weights:\n")
-  print(model$pred.param.mat)
+  if(verbose)cat("Learned regularization parameter and weights:\n")
+  if(verbose)print(model$pred.param.mat)
   pred.log.penalty <- as.numeric(model$predict(features))
   pred.dt <- data.table(
     problem.dir=rownames(targets),
@@ -126,8 +132,8 @@ problem.train <- function
   size.model[, lower.lim := mean - times*sd]
   size.model[, upper.bases := 10^(upper.lim)]
   size.model[, lower.bases := 10^(lower.lim)]
-  cat("Train errors:\n")
-  print(pred.dt[, list(targets=.N), by=status])
+  if(verbose)cat("Train errors:\n")
+  if(verbose)print(pred.dt[, list(targets=.N), by=status])
   ## To check if we are extrapolating when predictions are made later,
   ## we save the range of the data
   model$train.feature.ranges <- apply(
@@ -165,7 +171,7 @@ problem.train <- function
         aes(log10.bases, 0, label=label, hjust=hjust),
         data=base.labels, vjust=1)
   }
-  cat("Writing model to", model.RData, "\n")
+  if(verbose)cat("Writing model to", model.RData, "\n")
   save(
     model, features, targets,
     size.model,
@@ -218,7 +224,7 @@ problem.coverage <- function
 ### problemID/coverage.bedGraph does not exist, or its first/last
 ### lines do not match the expected problemID, then we recreate it
 ### from sampleID/coverage.bigWig.
-  verbose=0
+  verbose=getOption("PeakSegPipeline.verbose", 1)
 ### print messages?
 ){
   chrom <- problemStart <- problemEnd <- count.num.str <- coverage <-
@@ -381,7 +387,7 @@ problem.target <- structure(function
 ### computed. If there is a labels.bed file then the number of
 ### incorrect labels will be computed in order to find the target
 ### interval of minimal error penalty values.
-  verbose=0
+  verbose=getOption("PeakSegPipeline.verbose", 1)
  ){
   status <- peaks <- errors <- fp <- fn <- penalty <- max.log.lambda <-
     min.log.lambda <- penalty <- . <- done <- total.loss <- mean.pen.cost <-
@@ -626,8 +632,9 @@ problem.labels <- function
 
 problem.predict <- function
 ### Predict peaks for a genomic segmentation problem.
-(problem.dir
+(problem.dir,
 ### project/samples/groupID/sampleID/problems/problemID.
+  verbose=getOption("PeakSegPipeline.verbose", 1)
  ){
   model <- status <- chromEnd <- chromStart <- size.model <- lower.bases <-
     upper.bases <- NULL
@@ -644,8 +651,9 @@ problem.predict <- function
   sample.group <- basename(group.dir)
   cov.result <- try(problem.coverage(problem.dir))
   if(inherits(cov.result, "try-error")){
-    cat("Could not compute coverage in", problem.dir,
-        "so not predicting peaks.\n")
+    warning(
+      "Could not compute coverage in", problem.dir,
+      "so not predicting peaks.\n")
     return(NULL)
   }
   features.tsv <- file.path(problem.dir, "features.tsv")
@@ -654,14 +662,14 @@ problem.predict <- function
   }else{
     tryCatch({
       problem.features(problem.dir)
-      cat(sprintf("Computed %s\n", features.tsv))
+      if(verbose)cat(sprintf("Computed %s\n", features.tsv))
       TRUE
     }, error=function(e){
       FALSE
     })
   }
   if(!is.computed){
-    cat("Unable to compute", features.tsv, "so not predicting.\n")
+    if(verbose)cat("Unable to compute", features.tsv, "so not predicting.\n")
     return(NULL)
   }
   features <- fread(features.tsv)
@@ -690,7 +698,7 @@ problem.predict <- function
   stopifnot(length(pred.penalty)==1)
   stopifnot(is.finite(pred.penalty))
   n.features <- length(model$pred.feature.names)
-  cat(paste0(
+  if(verbose)cat(paste0(
     "Predicting penalty=", pred.penalty,
     " log(penalty)=", log(pred.penalty),
     " based on ", n.features,
@@ -704,7 +712,7 @@ problem.predict <- function
   peaks <- all.peaks[in.range, ]
   ## save peaks.
   peaks.bed <- file.path(problem.dir, "peaks.bed")
-  cat(
+  if(verbose)cat(
     "Writing ", peaks.bed,
     " with ", nrow(peaks),
     " peak", ifelse(nrow(peaks)==1, "", "s"),
