@@ -25,7 +25,6 @@ test_that("readBigWig returns 0-row data table", {
     empty.dt <- readBigWig(peaks.bigWig, "chr9", 50, 60)
   })
   expect_equal(nrow(empty.dt), 0)
-  expect_identical(names(empty.dt), c("chromStart", "chromEnd", "count"))
 })
 
 test_that("readBigWig returns 1-row data table", {

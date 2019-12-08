@@ -66,7 +66,7 @@ bigWigToBedGraphCommand <- function
   end=NULL
 ### end position to filter data.
 ){
-  isOK <- function(x)is.character(x) && length(x)==1 && !is.na(x)
+  isOK <- function(x)is.atomic(x) && length(x)==1 && !is.na(x)
   paste(
     "bigWigToBedGraph",
     if(isOK(chrom))paste0("-chrom=", chrom),
