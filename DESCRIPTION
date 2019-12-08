@@ -34,4 +34,4 @@ Imports: data.table (>= 1.11.6),
 Suggests: testthat, httr, batchtools, future
 URL: https://github.com/tdhock/PeakSegPipeline
 BugReports: https://github.com/tdhock/PeakSegPipeline/issues
-Remotes: tdhock/PeakSegDisk@bad-paths
+Remotes: tdhock/PeakSegDisk
