@@ -131,11 +131,11 @@ email ", email), hub.txt)
     setkey(bed.long, chrom, chromStart)
     fwrite(bed.long, short, sep="\t", col.names=FALSE, quote=FALSE)
     bigBed <- sub("bed$", "bigBed", bed)
-    system.or.stop(pasteQuote(
+    system.or.stop(paste(
       "bedToBigBed",
-      short,
-      chromInfo.txt,
-      bigBed))
+      shQuote(short),
+      shQuote(chromInfo.txt),
+      shQuote(bigBed)))
     bigBed
   }
   bed.num.vec <- c(

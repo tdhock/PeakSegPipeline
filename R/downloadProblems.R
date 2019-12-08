@@ -20,7 +20,7 @@ downloadProblems <- function
     f <- tempfile()
     gz <- paste0(f, ".gz")
     download.file(u, gz)
-    system.or.stop(pasteQuote("gunzip", gz))
+    system.or.stop(paste("gunzip", shQuote(gz)))
     if(db=="gap"){
       dt <- fread(f)
       fwrite(dt[, 2:4, with=FALSE], f)

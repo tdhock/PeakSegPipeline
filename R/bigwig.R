@@ -22,9 +22,11 @@ bedGraphToBigWig <- function
     sorted.dt <- bedGraph.dt[order(chrom, chromStart)]
     bedGraph.sorted <- paste0(bedGraph, ".sorted")
     fwrite(sorted.dt, bedGraph.sorted, sep="\t", col.names=FALSE, quote=FALSE)
-    system.or.stop(pasteQuote(
-      "bedGraphToBigWig", bedGraph.sorted,
-      chromInfo, bigWig))
+    system.or.stop(paste(
+      "bedGraphToBigWig",
+      shQuote(bedGraph.sorted),
+      shQuote(chromInfo),
+      shQuote(bigWig)))
   }
   file.exists(bigWig)
 ### TRUE if bigWig was created.
@@ -65,13 +67,13 @@ bigWigToBedGraphCommand <- function
 ### end position to filter data.
 ){
   isOK <- function(x)is.character(x) && length(x)==1 && !is.na(x)
-  pasteQuote(
+  paste(
     "bigWigToBedGraph",
     if(isOK(chrom))paste0("-chrom=", chrom),
     if(isOK(start))paste0("-start=", start),
     if(isOK(end))paste0("-end=", end),
-    in.bigWig,
-    out.bedGraph)
+    shQuote(in.bigWig),
+    shQuote(out.bedGraph))
 }
 
 readBigWig <- function
