@@ -2,9 +2,10 @@
 \alias{readBigWig}
 \title{readBigWig}
 \description{Read part of a bigWig file into R as a data.table (assumes
-bigWigToBedGraph is present on your PATH).}
+\code{\link{bigWigToBedGraph}} is present on your PATH).}
 \usage{readBigWig(bigwig.file, 
-    chrom, start, end)}
+    chrom = NULL, start = NULL, 
+    end = NULL)}
 \arguments{
   \item{bigwig.file}{path or URL of bigwig file.}
   \item{chrom}{chromosome to read.}

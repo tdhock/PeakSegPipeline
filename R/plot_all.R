@@ -437,7 +437,7 @@ specific.html.vec
   ## finally, create track hub if hub.sh exists.
   hub.sh <- file.path(set.dir, "hub.sh")
   if(file.exists(hub.sh)){
-    system.or.stop(paste("bash", hub.sh))
+    system.or.stop(pasteQuote("bash", hub.sh))
   }
 ### Nothing.
 }

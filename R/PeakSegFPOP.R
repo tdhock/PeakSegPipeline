@@ -258,19 +258,13 @@ problem.coverage <- function
     ## Create problemID/coverage.bedGraph from
     ## sampleID/coverage.bigWig.
     coverage.bigWig <- file.path(sample.dir, "coverage.bigWig")
-    cov.cmd <- if(file.exists(coverage.bigWig)){
-      problem[, sprintf(
-        "bigWigToBedGraph -chrom=%s -start=%d -end=%d %s %s",
-        chrom, problemStart, problemEnd,
-        coverage.bigWig, prob.cov.bedGraph)]
-    }else{
+    if(!file.exists(coverage.bigWig)){
       stop("To compute ", prob.cov.bedGraph,
            " need ", coverage.bigWig,
            " which does not exist.")
     }
-    system.or.stop(cov.cmd, verbose=verbose)
-    prob.cov <- suppressWarnings(fread(prob.cov.bedGraph, col.names=c(
-      "chrom", "chromStart", "chromEnd", "coverage")))
+    prob.cov <- problem[, readBigWig(
+      coverage.bigWig, chrom, problemStart, problemEnd)]
     if(nrow(prob.cov)==0){
       stop(
         "coverage/count data file ",
@@ -279,11 +273,11 @@ problem.coverage <- function
         coverage.bigWig,
         " has no data in this genomic region")
     }
-    if(any(prob.cov$coverage < 0)){
+    if(any(prob.cov$count < 0)){
       stop("negative coverage in ", prob.cov.bedGraph)
     }
-    prob.cov[, count.num.str := paste(coverage)]
-    prob.cov[, count.int := as.integer(round(coverage))]
+    prob.cov[, count.num.str := paste(count)]
+    prob.cov[, count.int := as.integer(round(count))]
     prob.cov[, count.int.str := paste(count.int)]
     not.int <- prob.cov[count.int.str != count.num.str, ]
     if(nrow(not.int)){

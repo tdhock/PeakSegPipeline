@@ -17,11 +17,10 @@ fwrite(chromInfo, chromInfo.txt, sep="\t", col.names=FALSE)
 input.bedGraph <- file.path(work.dir, "input.bedGraph")
 fwrite(count.dt, input.bedGraph, col.names=FALSE, sep="\t")
 count.bigWig <- file.path(work.dir, "count.bigWig")
-system.or.stop(paste(
-  "bedGraphToBigWig",
+bedGraphToBigWig(
   input.bedGraph,
   chromInfo.txt,
-  count.bigWig))
+  count.bigWig)
 bigWig.dt <- bigWigCoverage(count.bigWig)
 test_that("bigWigCoverage stats are OK", {
   expect_equal(bigWig.dt$total.coverage, 40)
@@ -37,11 +36,10 @@ chromInfo <- data.table(
   chrom=c("chr1", "chr2"),
   chromEnd=.Machine$integer.max)
 fwrite(chromInfo, chromInfo.txt, sep="\t", col.names=FALSE)
-system.or.stop(paste(
-  "bedGraphToBigWig",
+bedGraphToBigWig(
   input.bedGraph,
   chromInfo.txt,
-  count.bigWig))
+  count.bigWig)
 bigWig.dt <- bigWigCoverage(count.bigWig)
 test_that("no integer overflow for big chroms", {
   expect_true(is.finite(bigWig.dt$total.bases))
@@ -71,11 +69,10 @@ fwrite(chromInfo, chromInfo.txt, sep="\t", col.names=FALSE)
 input.bedGraph <- file.path(work.dir, "input.bedGraph")
 fwrite(norm.dt, input.bedGraph, col.names=FALSE, sep="\t")
 norm.bigWig <- file.path(work.dir, "norm.bigWig")
-system.or.stop(paste(
-  "bedGraphToBigWig",
-  shQuote(input.bedGraph),
-  shQuote(chromInfo.txt),
-  shQuote(norm.bigWig)))
+bedGraphToBigWig(
+  input.bedGraph,
+  chromInfo.txt,
+  norm.bigWig)
 denorm.bigWig <- file.path(work.dir, "denorm.bigWig")
 test_that("intermediate bedGraph files are deleted", {
   denormalizeBigWig(norm.bigWig, denorm.bigWig)
@@ -110,11 +107,10 @@ fwrite(chromInfo, chromInfo.txt, sep="\t", col.names=FALSE)
 input.bedGraph <- file.path(work.dir, "input.bedGraph")
 fwrite(norm.dt, input.bedGraph, col.names=FALSE, sep="\t")
 norm.bigWig <- file.path(work.dir, "norm.bigWig")
-system.or.stop(paste(
-  "bedGraphToBigWig",
+bedGraphToBigWig(
   input.bedGraph,
   chromInfo.txt,
-  norm.bigWig))
+  norm.bigWig)
 denorm.bigWig <- file.path(work.dir, "denorm.bigWig")
 denormalizeBigWig(norm.bigWig, denorm.bigWig)
 denorm.dt <- readBigWig(denorm.bigWig, "chr1", 0, 100000)
@@ -195,8 +191,7 @@ for(bigWig.part in bigWig.part.vec){
     out.dt <- data.table(chrom="chr10", bw.dt)
     demo.bedGraph <- sub("bigWig", "bedGraph", demo.bigWig)
     fwrite(out.dt, demo.bedGraph, sep="\t", col.names=FALSE)
-    system.or.stop(
-      paste("bedGraphToBigWig", demo.bedGraph, chrom.sizes.file, demo.bigWig))
+    bedGraphToBigWig(demo.bedGraph, chrom.sizes.file, demo.bigWig)
     unlink(demo.bedGraph)
   }
 }

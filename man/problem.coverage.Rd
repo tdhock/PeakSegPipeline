@@ -18,7 +18,7 @@ from sampleID/coverage.bigWig.}
   \item{verbose}{print messages?}
 }
 
-\value{problem data.table. If necessary, the bigWigToBedGraph command
+\value{problem data.table. If necessary, the \code{\link{bigWigToBedGraph}} command
 line program is used to create problemID/coverage.bedGraph and
 then we (1) stop if there are any negative or non-integer data and
 (2) add lines with zero counts for missing data.}

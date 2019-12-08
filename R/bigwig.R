@@ -22,13 +22,56 @@ bedGraphToBigWig <- function
     sorted.dt <- bedGraph.dt[order(chrom, chromStart)]
     bedGraph.sorted <- paste0(bedGraph, ".sorted")
     fwrite(sorted.dt, bedGraph.sorted, sep="\t", col.names=FALSE, quote=FALSE)
-    cmd <- paste(
+    system.or.stop(pasteQuote(
       "bedGraphToBigWig", bedGraph.sorted,
-      chromInfo, bigWig)
-    system.or.stop(cmd)
+      chromInfo, bigWig))
   }
   file.exists(bigWig)
 ### TRUE if bigWig was created.
+}
+
+bigWigToBedGraph <- function
+### Run bigWigToBedGraph command line program.
+(in.bigWig,
+### character string path to input bigWig file.
+  out.bedGraph,
+### character string path to output bedGraph file.
+  chrom=NULL,
+### character string, chromosome name to filter data.
+  start=NULL,
+### start position to filter data.
+  end=NULL
+### end position to filter data.
+){
+  system.or.stop(bigWigToBedGraphCommand(
+    in.bigWig,
+    out.bedGraph,
+    chrom,
+    start,
+    end))
+}
+
+bigWigToBedGraphCommand <- function
+### Get command line to run bigWigToBedGraph.
+(in.bigWig,
+### character string path to input bigWig file.
+  out.bedGraph,
+### character string path to output bedGraph file.
+  chrom=NULL,
+### character string, chromosome name to filter data.
+  start=NULL,
+### start position to filter data.
+  end=NULL
+### end position to filter data.
+){
+  isOK <- function(x)is.character(x) && length(x)==1 && !is.na(x)
+  pasteQuote(
+    "bigWigToBedGraph",
+    if(isOK(chrom))paste0("-chrom=", chrom),
+    if(isOK(start))paste0("-start=", start),
+    if(isOK(end))paste0("-end=", end),
+    in.bigWig,
+    out.bedGraph)
 }
 
 readBigWig <- function
@@ -36,13 +79,13 @@ readBigWig <- function
 ### bigWigToBedGraph is present on your PATH).
 (bigwig.file,
 ### path or URL of bigwig file.
- chrom,
+ chrom=NULL,
 ### chromosome to read.
- start,
+ start=NULL,
 ### position before reading.
- end
+ end=NULL
 ### plain text file where coverage is saved before reading into R.
- ){
+){
   count <- . <- chromStart <- chromEnd <- NULL
   stopifnot(length(bigwig.file) == 1)
   stopifnot(length(chrom) == 1)
@@ -55,27 +98,13 @@ readBigWig <- function
   stopifnot(0 <= start)
   stopifnot(start < end)
   stopifnot(end < Inf)
-  cmd <- sprintf(
-    "bigWigToBedGraph -chrom=%s -start=%d -end=%d %s /dev/stdout",
-    chrom, start, end,
-    bigwig.file)
-  bg <- fread(cmd=cmd, drop=1)
-  if(nrow(bg)==0){
-    data.table(chromStart=integer(),
-               chromEnd=integer(),
-               count=integer())
-  }else{
-    setnames(bg, c("chromStart", "chromEnd", "norm"))
-    stopifnot(0 <= bg$norm)
-    nonzero <- bg[0 < norm, ]
-    min.nonzero.norm <- min(nonzero[, norm])
-    nonzero[, count := as.integer(norm/min.nonzero.norm) ]
-    nonzero[, .(
-      chromStart,
-      chromEnd,
-      count
-      )]
-  }
+  suppressWarnings({#for 0-row data.
+    fread(
+      cmd=bigWigToBedGraphCommand(
+        bigwig.file, "/dev/stdout", chrom, start, end),
+      drop=1,
+      col.names=c("chromStart", "chromEnd", "count"))
+  })
 ### data.table with columns chromStart chromEnd count.
 }
 
@@ -83,7 +112,7 @@ bigWigInfo <- function
 ### Run bigWigInfo to find chrom sizes.
 (bigwig.file
 ### path or URL of bigwig file.
- ){
+){
   stopifnot(is.character(bigwig.file))
   stopifnot(length(bigwig.file) == 1)
   cmd <- paste("bigWigInfo", bigwig.file, "-chroms | grep '^\\s'")

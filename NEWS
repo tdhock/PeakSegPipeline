@@ -1,7 +1,5 @@
 TODOs
 
-test case for denormalizeBigWig with spaces in path.
-
 warning/error for convert_labels when a chunk has no noPeaks labels.
 
 error in convert_labels for noPeaks label with sample groups up?
@@ -11,11 +9,17 @@ test create_track_hub.
 negative test cases for denormalize* functions.
 
 use popen in C to pipe bigWigToBedGraph stdout to our coverage
-counting function, which should be much faster than using an
-intermediate bedGraph
+counting and denormalizing functions, which should be much faster than
+using an intermediate bedGraph
 file. http://www.cs.uleth.ca/~holzmann/C/system/shell_commands.html
 
+use compiled code instead of command line programs for bigWig/bigBed.
+
 2019.12.5 PR#19
+
+test readBigWig for no data to read.
+
+test case for denormalizeBigWig with spaces in path.
 
 problem.PeakSegFPOP writes to temporary disk.
 

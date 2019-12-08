@@ -79,8 +79,7 @@ for(bigWig.part in bigWig.part.vec){
     out.dt <- data.table(chrom="chr10", bw.dt)
     demo.bedGraph <- sub("bigWig", "bedGraph", demo.bigWig)
     fwrite(out.dt, demo.bedGraph, sep="\t", col.names=FALSE)
-    system.or.stop(
-      paste("bedGraphToBigWig", demo.bedGraph, chrom.sizes.file, demo.bigWig))
+    bedGraphToBigWig(demo.bedGraph, chrom.sizes.file, demo.bigWig)
     unlink(demo.bedGraph)
   }
 }
@@ -115,7 +114,7 @@ test_that("index.html is created", {
 })
 
 if(interactive()){
-  
+
   ## Post-processing to explain the output.
   joint.problems.dt <- fread(paste("cat", file.path(
     demo.dir, "problems", "*", "jointProblems.bed")))
@@ -260,9 +259,9 @@ if(interactive()){
       theme(panel.margin=grid::unit(0, "lines"))+
       facet_grid(sample.group + sample.id ~ ., scales="free")+
       geom_tallrect(aes(
-        xmin=labelStart/1e3, 
+        xmin=labelStart/1e3,
         xmax=labelEnd/1e3,
-        fill=annotation), 
+        fill=annotation),
         alpha=0.5,
         data=show.labels)+
       scale_fill_manual(values=ann.colors)+

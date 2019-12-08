@@ -28,10 +28,12 @@ create_track_hub <- function
     paste0(genome, "_chromInfo.txt"))
   ## First make sure we have the chromInfo file for this genome.
   if(!file.exists(chromInfo.txt)){
-    chromInfo.url <- paste0(goldenPath.url, genome, "/database/chromInfo.txt.gz")
+    chromInfo.url <- paste0(
+      goldenPath.url, genome, "/database/chromInfo.txt.gz")
     chromInfo.gz <- paste0(chromInfo.txt, ".gz")
     download.file(chromInfo.url, chromInfo.gz)
-    system.or.stop(paste("zcat", chromInfo.gz, ">", chromInfo.txt))
+    system.or.stop(paste(
+      "zcat", shQuote(chromInfo.gz), ">", shQuote(chromInfo.txt)))
   }
   ## Then create bedGraph files if necessary.
   bedGraph.file.vec <- Sys.glob(file.path(
@@ -129,11 +131,11 @@ email ", email), hub.txt)
     setkey(bed.long, chrom, chromStart)
     fwrite(bed.long, short, sep="\t", col.names=FALSE, quote=FALSE)
     bigBed <- sub("bed$", "bigBed", bed)
-    cmd <- paste(
+    system.or.stop(pasteQuote(
       "bedToBigBed",
-      short, chromInfo.txt,
-      bigBed)
-    system.or.stop(cmd)
+      short,
+      chromInfo.txt,
+      bigBed))
     bigBed
   }
   bed.num.vec <- c(
