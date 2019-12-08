@@ -1,4 +1,7 @@
 useDynLib(PeakSegPipeline)
+export(denormalizeBigWig)
+export(bigWigCoverage)
+export(problem.coverage)
 export(convert_labels)
 export(downloadProblems)
 export(gap2problems)

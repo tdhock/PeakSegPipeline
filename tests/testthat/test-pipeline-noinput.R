@@ -46,7 +46,7 @@ test_that("no integer overflow for big chroms", {
   expect_true(is.finite(bigWig.dt$mean.coverage))
 })
 
- ## also test denormalize.
+## also test denormalize.
 norm.dt <- fread("
 chrom	chromStart	chromEnd	coverage
 chr1	9979	9993	0.07
@@ -124,7 +124,7 @@ test.data.dir <- file.path(Sys.getenv("HOME"), "PeakSegPipeline-test")
 non.integer.dir <- file.path(test.data.dir, "non-integer (bad)")
 demo.dir <- file.path(test.data.dir, "noinput (bad)")
 index.html <- file.path(demo.dir, "index.html")
- download.to <- function
+download.to <- function
 (u, f, writeFun=if(grepl("bigWig", f))writeBin else writeLines){
   if(!file.exists(f)){
     require(httr)

@@ -117,8 +117,12 @@ bigWigInfo <- function
 ){
   stopifnot(is.character(bigwig.file))
   stopifnot(length(bigwig.file) == 1)
-  cmd <- paste("bigWigInfo", bigwig.file, "-chroms | grep '^\\s'")
-  chroms <- fread(cmd=cmd, header=FALSE, sep=" ")
+  chroms <- fread(
+    cmd=paste(
+      "bigWigInfo",
+      shQuote(bigwig.file),
+      "-chroms | grep '^\\s'"),
+    header=FALSE, sep=" ")
   setnames(chroms, c("chrom", "chrom.int", "chromEnd"))
   chroms$chrom <- sub("\\s*", "", chroms$chrom)
   chroms
