@@ -16,7 +16,7 @@ jobs_create <- function
   data.dir <- normalizePath(data.dir.arg, mustWork=TRUE)
   problems.bed <- file.path(data.dir, "problems.bed")
   samples.dir <- file.path(data.dir, "samples")
-  problems <- fread(problems.bed)
+  problems <- fread(file=problems.bed)
   setnames(problems, c("chrom", "problemStart", "problemEnd"))
   problems[, bases := problemEnd-problemStart]
   problems[, problem.name := sprintf(
@@ -79,7 +79,7 @@ jobs_create <- function
     sample.dir <- sample.dir.vec[[sample.i]]
     problems.dir <- file.path(sample.dir, "problems")
     labels.bed <- file.path(sample.dir, "labels.bed")
-    labels <- if(file.exists(labels.bed))fread(labels.bed, col.names=c(
+    labels <- if(file.exists(labels.bed))fread(file=labels.bed, col.names=c(
       "chrom", "chromStart", "chromEnd", "annotation"))
     labels.by.problem <- if(length(labels)){
       just.to.check <- PeakError(Peaks(), labels)

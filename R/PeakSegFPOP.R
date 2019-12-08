@@ -60,7 +60,7 @@ problem.train <- function
     }
     target.vec <- scan(target.tsv, quiet=TRUE)
     if(any(is.finite(target.vec))){
-      features.list[[problem.dir]] <- fread(features.tsv)
+      features.list[[problem.dir]] <- fread(file=features.tsv)
       targets.list[[problem.dir]] <- target.vec
     }
   }
@@ -99,12 +99,12 @@ problem.train <- function
   correct.targets <- pred.dt[status=="correct", ]
   correct.peaks <- correct.targets[!grepl("Input", problem.dir), {
     target_models.tsv <- file.path(problem.dir, "target_models.tsv")
-    target.models <- fread(target_models.tsv)
+    target.models <- fread(file=target_models.tsv)
     closest <- target.models[which.min(abs(log(penalty)-pred.log.penalty)),]
     coverage.bedGraph <- file.path(problem.dir, "coverage.bedGraph")
     segments.bed <- paste0(
       coverage.bedGraph, "_penalty=", closest$penalty, "_segments.bed")
-    segs <- fread(segments.bed)
+    segs <- fread(file=segments.bed)
     setnames(segs, c("chrom", "chromStart", "chromEnd", "status", "mean"))
     segs[status=="peak", ]
   }, by=problem.dir]
@@ -215,7 +215,7 @@ problem.table <- function
 problem.coverage <- function
 ### Ensure that coverage.bedGraph has been correctly computed for a
 ### particular genomic segmentation problem.
-(problem.dir,
+(problem.dir
 ### Path to a directory like sampleID/problems/problemID where
 ### sampleID/coverage.bigWig contains counts of aligned reads in the
 ### entire genome, and problemID is a chrom range string like
@@ -224,8 +224,6 @@ problem.coverage <- function
 ### problemID/coverage.bedGraph does not exist, or its first/last
 ### lines do not match the expected problemID, then we recreate it
 ### from sampleID/coverage.bigWig.
-  verbose=getOption("PeakSegPipeline.verbose", 1)
-### print messages?
 ){
   chrom <- problemStart <- problemEnd <- count.num.str <- coverage <-
     count.int <- count.int.str <- chromStart <- chromEnd <- J <-
@@ -264,7 +262,10 @@ problem.coverage <- function
            " which does not exist.")
     }
     prob.cov <- problem[, readBigWig(
-      coverage.bigWig, chrom, problemStart, problemEnd)]
+      coverage.bigWig,
+      chrom,
+      problemStart,
+      problemEnd)]
     if(nrow(prob.cov)==0){
       stop(
         "coverage/count data file ",
@@ -286,7 +287,7 @@ problem.coverage <- function
     }
     u.pos <- prob.cov[, sort(unique(c(chromStart, chromEnd)))]
     zero.cov <- data.table(
-      chrom=prob.cov$chrom[1],
+      chrom=problem$chrom,
       chromStart=u.pos[-length(u.pos)],
       chromEnd=u.pos[-1],
       count=0L)
@@ -300,7 +301,7 @@ problem.coverage <- function
       NULL
     }else{
       data.table(
-        chrom=prob.cov$chrom[1],
+        chrom=problem$chrom,
         chromStart=problem$problemStart,
         chromEnd=first.start,
         count=0L)
@@ -308,7 +309,7 @@ problem.coverage <- function
       NULL
     }else{
       data.table(
-        chrom=prob.cov$chrom[1],
+        chrom=problem$chrom,
         chromStart=last.end,
         chromEnd=problem$problemEnd,
         count=0L)
@@ -338,7 +339,7 @@ problem.features <- function
  ){
   stopifnot(is.character(problem.dir))
   stopifnot(length(problem.dir)==1)
-  coverage <- fread(file.path(problem.dir, "coverage.bedGraph"))
+  coverage <- fread(file=file.path(problem.dir, "coverage.bedGraph"))
   setnames(coverage, c("chrom", "chromStart", "chromEnd", "count"))
   bases <- with(coverage, chromEnd-chromStart)
   long <- rep(coverage$count, bases)
@@ -394,7 +395,7 @@ problem.target <- structure(function
   minutes.file <- file.path(problem.dir, "target.minutes")
   minutes.limit <- Inf
   if(file.exists(minutes.file)){
-    minutes.dt <- fread(minutes.file)
+    minutes.dt <- fread(file=minutes.file)
     if(nrow(minutes.dt)==1 && ncol(minutes.dt)==1){
       setnames(minutes.dt, "minutes")
       if(is.numeric(minutes.dt$minutes)){
@@ -407,7 +408,7 @@ problem.target <- structure(function
   stopifnot(is.numeric(minutes.limit))
   stopifnot(is.character(problem.dir))
   stopifnot(length(problem.dir)==1)
-  problem.coverage(problem.dir, verbose=verbose)
+  problem.coverage(problem.dir)
   labels.dt <- problem.labels(problem.dir)
   problem.name <- basename(problem.dir)
   if(verbose)cat(nrow(labels.dt), "labels in", problem.name, "\n")
@@ -588,7 +589,7 @@ problem.labels <- function
   ## CRAN check.
   problem.labels.bed <- file.path(problem.dir, "labels.bed")
   if(file.exists(problem.labels.bed)){
-    return(fread(problem.labels.bed, col.names=c(
+    return(fread(file=problem.labels.bed, col.names=c(
       "chrom", "chromStart", "chromEnd", "annotation")))
   }
   problems.dir <- dirname(problem.dir)
@@ -602,7 +603,7 @@ problem.labels <- function
       problem.labels.bed)
   }
   sample.labels <- fread(
-    sample.labels.bed,
+    file=sample.labels.bed,
     col.names=c(
       "chrom", "chromStart", "chromEnd", "annotation"))
   if(nrow(sample.labels)==0){
@@ -666,7 +667,7 @@ problem.predict <- function
     if(verbose)cat("Unable to compute", features.tsv, "so not predicting.\n")
     return(NULL)
   }
-  features <- fread(features.tsv)
+  features <- fread(file=features.tsv)
   stopifnot(nrow(features)==1)
   feature.mat <- as.matrix(features)
   model.RData <- file.path(data.dir, "model.RData")

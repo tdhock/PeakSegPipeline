@@ -29,8 +29,9 @@ Imports: data.table (>= 1.11.6),
  nc,
  xtable,
  scales, Matrix, ggplot2,
- PeakSegDisk (>= 2019.9.27),
+ PeakSegDisk (>= 2019.12.8),
  future.apply
 Suggests: testthat, httr, batchtools, future
 URL: https://github.com/tdhock/PeakSegPipeline
 BugReports: https://github.com/tdhock/PeakSegPipeline/issues
+Remotes: tdhock/PeakSegDisk@bad-paths

@@ -13,7 +13,7 @@ bedGraphToBigWig <- function
   ## Above to avoid CRAN NOTE.
   unlink(bigWig)
   bedGraph.dt <- fread(
-    bedGraph,
+    file=bedGraph,
     col.names=c("chrom", "chromStart", "chromEnd", "value"))
   ## This if statement is needed because bedGraphToBigWig stops with
   ## an error code if there are no data, but we don't want to stop,
@@ -134,10 +134,11 @@ readBigWigSamples <- function(problem, bigwig.file.vec){
   counts.by.sample <- list()
   for(sample.id in names(bigwig.file.vec)){
     bigwig.file <- bigwig.file.vec[[sample.id]]
-    sample.counts <- with(problem, {
-      readBigWig(bigwig.file, chrom,
-                 problemStart, problemEnd)
-    })
+    sample.counts <- with(problem, readBigWig(
+      bigwig.file,
+      chrom,
+      problemStart,
+      problemEnd))
     ## Make a data.frame and not a data.table, since we will pass this
     ## to the C segmentation code directly.
     counts.by.sample[[sample.id]] <- with(sample.counts, {

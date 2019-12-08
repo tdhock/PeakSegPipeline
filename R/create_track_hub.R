@@ -100,7 +100,7 @@ email ", email), hub.txt)
   jointProblems.bed <- file.path(data.dir.path, "jointProblems.bed")
   if(nrow(jprobs)){
     setnames(jprobs, c("chrom", "problemStart", "problemEnd"))
-    sizes.dt <- fread(chromInfo.txt)
+    sizes.dt <- fread(file=chromInfo.txt)
     names(sizes.dt)[1:2] <- c("chrom", "chromEnd")
     join.dt <- sizes.dt[jprobs, on=list(chrom)]
     join.dt[, problemStart := ifelse(problemStart < 0, 0, problemStart)]
@@ -116,7 +116,7 @@ email ", email), hub.txt)
     unlink(jointProblems.bed)
   }
   bedToBigBed <- function(bed){
-    bed.long <- fread(bed)
+    bed.long <- fread(file=bed)
     names(bed.long)[1:3] <- c("chrom", "chromStart", "chromEnd")
     if(4 <= ncol(bed.long)){
       names(bed.long)[4] <- "name"

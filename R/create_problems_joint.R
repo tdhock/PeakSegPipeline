@@ -42,7 +42,7 @@ create_problems_joint <- function
       group.dir <- dirname(sample.dir)
       sample.group <- basename(group.dir)
       ## no peaks gives a warning, which is handled.
-      sample.peaks <- suppressWarnings(fread(peaks.bed))
+      sample.peaks <- suppressWarnings(fread(file=peaks.bed))
       if(nrow(sample.peaks)){
         setnames(
           sample.peaks,
@@ -88,7 +88,7 @@ create_problems_joint <- function
     sample.id <- basename(sample.dir)
     group.dir <- dirname(sample.dir)
     sample.group <- basename(group.dir)
-    sample.labels <- fread(labels.bed)
+    sample.labels <- fread(file=labels.bed)
     setnames(
       sample.labels,
       c("chrom", "labelStart", "labelEnd", "annotation"))

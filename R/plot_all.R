@@ -169,14 +169,14 @@ plot_all <- function
   summary.dt <- do.call(rbind, summary.dt.list)
   ## Plot each labeled chunk.
   chunk.limits.csv <- file.path(set.dir, "chunk.limits.csv")
-  unsorted.problems <- fread(file.path(set.dir, "problems.bed"))
+  unsorted.problems <- fread(file=file.path(set.dir, "problems.bed"))
   setnames(unsorted.problems, c("chrom", "problemStart", "problemEnd"))
   unsorted.problems[, problemStart1 := problemStart +1L]
   unsorted.problems[, problem.name := sprintf(
     "%s:%d-%d", chrom, problemStart, problemEnd)]
   setkey(unsorted.problems, chrom, problemStart1, problemEnd)
   chunk.dir.vec <- if(file.exists(chunk.limits.csv)){
-    chunks <- fread(chunk.limits.csv)
+    chunks <- fread(file=chunk.limits.csv)
     chunks[, chunk.name := sprintf("%s:%d-%d", chrom, chromStart, chromEnd)]
     chunks[, chromStart1 := chromStart+1L]
     setkey(chunks, chrom, chromStart1, chromEnd)
@@ -327,7 +327,7 @@ plot_all <- function
     sample.id <- basename(sample.dir)
     group.dir <- dirname(sample.dir)
     sample.group <- basename(group.dir)
-    sample.labels <- fread(labels.bed)
+    sample.labels <- fread(file=labels.bed)
     setnames(sample.labels, c("chrom", "labelStart", "labelEnd", "annotation"))
     all.labels.list[[labels.bed]] <- data.table(
       sample.id, sample.group, sample.labels)

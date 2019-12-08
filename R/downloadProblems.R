@@ -22,7 +22,7 @@ downloadProblems <- function
     download.file(u, gz)
     system.or.stop(paste("gunzip", shQuote(gz)))
     if(db=="gap"){
-      dt <- fread(f)
+      dt <- fread(file=f)
       fwrite(dt[, 2:4, with=FALSE], f)
     }
     file.list[[db]] <- f

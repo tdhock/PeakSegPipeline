@@ -77,32 +77,6 @@ for(bigWig.part in bigWig.part.vec){
   }
 }
 
-sample.dir <- dirname(demo.bigWig)
-problem.dir <- file.path(sample.dir, "problems", "chr10:18024675-38818835")
-coverage.bedGraph <- file.path(problem.dir, "coverage.bedGraph")
-unlink(coverage.bedGraph)
-test_that("computing coverage is silent by default", {
-  out.vec <- capture.output({
-    problem <- problem.coverage(problem.dir)
-  })
-  expect_identical(out.vec, character())
-})
-
-unlink(coverage.bedGraph)
-test_that("computing coverage is verbose when creating file", {
-  out.vec <- capture.output({
-    problem <- problem.coverage(problem.dir, verbose=1)
-  })
-  expect_match(out.vec, "bigWigToBedGraph")
-})
-
-test_that("computing coverage is silent when not creating file", {
-  out.vec <- capture.output({
-    problem <- problem.coverage(problem.dir, verbose=1)
-  })
-  expect_identical(out.vec, character())
-})
-
 for(set.dir in c(non.integer.dir, demo.dir)){
   labels.file <- file.path(set.dir, "labels", "some_labels.txt")
   dir.create(dirname(labels.file), showWarnings=FALSE, recursive=TRUE)

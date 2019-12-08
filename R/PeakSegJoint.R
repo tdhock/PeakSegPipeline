@@ -24,7 +24,7 @@ problem.joint.predict.many <- function
         TRUE
       }else{
         tryCatch({
-          jprob.peaks <- fread(jpeaks.bed)
+          jprob.peaks <- fread(file=jpeaks.bed)
           setnames( #errors if bed file empty.
             jprob.peaks,
             c("chrom", "chromStart", "chromEnd", "name", "mean"))
@@ -85,7 +85,7 @@ problem.joint.predict.job <- function
          "create it via PeakSegPipeline::problem.joint.train('",
          data.dir, "')")
   }
-  jobProblems <- fread(jobProblems.bed)
+  jobProblems <- fread(file=jobProblems.bed)
   problems.dir <- file.path(data.dir, "problems")
   setnames(jobProblems, c("chrom", "problemStart", "problemEnd", "problem.name"))
   jobProblems[, jprob.name := sprintf(
@@ -155,7 +155,7 @@ problem.joint.targets <- function
       }else{
         problem.joint.target(jprob.dir)
       }
-      target.dt <- fread(target.tsv)
+      target.dt <- fread(file=target.tsv)
       setkey(target.dt, model)
       segmentations.RData <- file.path(jprob.dir, "segmentations.RData")
       load(segmentations.RData)
@@ -284,12 +284,12 @@ problem.joint.train <- function
   jprobs.bed.dt <- data.table(jprobs.bed=Sys.glob(file.path(
     data.dir, "problems", "*", "jointProblems.bed")))
   jprobs <- jprobs.bed.dt[, {
-      fread(jprobs.bed)
+      fread(file=jprobs.bed)
     }, by=jprobs.bed]
   setnames(jprobs, c(
     "jprobs.bed", "chrom", "problemStart", "problemEnd"))
   jobs.dir <- file.path(data.dir, "jobs")
-  problems <- fread(file.path(data.dir, "problems.bed"))
+  problems <- fread(file=file.path(data.dir, "problems.bed"))
   job.id.vec <- 1:nrow(problems)
   jprobs[, job := rep(job.id.vec, l=.N) ]
   jprobs[, {
@@ -481,7 +481,7 @@ problem.joint.target <- function
     segmentations <- problem.joint(jointProblem.dir)
   }
   labels.bed <- file.path(jointProblem.dir, "labels.tsv")
-  labels <- fread(labels.bed)
+  labels <- fread(file=labels.bed)
   setnames(labels, c(
     "chrom", "chromStart", "chromEnd", "annotation",
     "sample.id", "sample.group"))
@@ -639,7 +639,7 @@ problem.joint.plot <- function
   setnames(chunk, c("chrom", "chunkStart", "chunkEnd"))
   chunk[, chunkStart1 := chunkStart + 1L]
   setkey(chunk, chunkStart1, chunkEnd)
-  jointProblems <- fread(file.path(prob.dir, "jointProblems.bed"))
+  jointProblems <- fread(file=file.path(prob.dir, "jointProblems.bed"))
   setnames(jointProblems, c("chrom", "problemStart", "problemEnd"))
   jointProblems[, problemStart1 := problemStart + 1L]
   jointProblems[, problem.name := sprintf(
@@ -667,7 +667,7 @@ problem.joint.plot <- function
     sample.group <- basename(group.dir)
     labels.bed <- file.path(sample.dir, "labels.bed")
     if(file.exists(labels.bed)){
-      sample.labels <- fread(labels.bed, col.names=c(
+      sample.labels <- fread(file=labels.bed, col.names=c(
         "chrom", "chromStart", "chromEnd", "annotation"))
       labels.list[[problem.dir]] <- data.table(
         sample.id, sample.group, sample.labels)
@@ -679,7 +679,7 @@ problem.joint.plot <- function
       sample.id, sample.group, chunk.cov)
     ## Also store peaks in this chunk, if there are any. (if not there
     ## will be a warning which is suppressed)
-    sample.peaks <- suppressWarnings(fread(file.path(problem.dir, "peaks.bed")))
+    sample.peaks <- suppressWarnings(fread(file=file.path(problem.dir, "peaks.bed")))
     if(nrow(sample.peaks)){
       setnames(sample.peaks, c("chrom", "peakStart", "peakEnd", "status", "mean"))
       sample.peaks[, peakStart1 := peakStart + 1L]

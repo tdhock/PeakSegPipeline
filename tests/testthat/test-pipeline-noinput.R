@@ -136,7 +136,7 @@ download.to <- function
   }
 }
 res.list <- list(
-  walltime = 3600, #in minutes
+  walltime = 3600, #in seconds.
   ncpus=1,
   ntasks=1,
   chunks.as.arrayjobs=TRUE)
