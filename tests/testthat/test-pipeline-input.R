@@ -68,12 +68,7 @@ for(bigWig.part in bigWig.part.vec){
   demo.bigWig <- sub("non-integer", "input", bigWig.file)
   if(!file.exists(demo.bigWig)){
     dir.create(dirname(demo.bigWig), showWarnings=FALSE, recursive=TRUE)
-    bw.dt <- readBigWig(bigWig.file, "chr10", 0, 128616069)
-    out.dt <- data.table(chrom="chr10", bw.dt)
-    demo.bedGraph <- sub("bigWig", "bedGraph", demo.bigWig)
-    fwrite(out.dt, demo.bedGraph, sep="\t", col.names=FALSE)
-    bedGraphToBigWig(demo.bedGraph, chrom.sizes.file, demo.bigWig)
-    unlink(demo.bedGraph)
+    denormalizeBigWig(bigWig.file, demo.bigWig)
   }
 }
 
