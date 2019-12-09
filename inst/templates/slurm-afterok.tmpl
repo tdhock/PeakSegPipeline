@@ -23,7 +23,7 @@ log.file = shQuote(fs::path_expand(log.file))
 -%>
 
 
-#SBATCH --job-name=<%= job.name %>
+#SBATCH --job-name=<%= shQuote(job.name) %>
 #SBATCH --output=<%= log.file %>
 #SBATCH --error=<%= log.file %>
 #SBATCH --time=<%= ceiling(resources$walltime / 60) %>
