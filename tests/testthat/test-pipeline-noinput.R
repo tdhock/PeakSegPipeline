@@ -280,7 +280,7 @@ test_that("index.html is created via batchtools", {
   })
   expect_true(file.exists(index.html))
   log.glob <- file.path(demo.dir, "registry", "*", "logs", "*")
-  system(paste("tail -n 10000", log.glob))
+  system(paste("tail -n 10000", shQuote(log.glob)))
 })
 
 test_that("entries of peaks matrix are 0/1", {
@@ -305,6 +305,6 @@ test_that("run only steps 5-6 creates index.html", {
   expect_true(file.exists(index.html))
   for(step.i in names(reg.list)){
     log.glob <- file.path(demo.dir, "registry", step.i, "logs", "*")
-    system(paste("tail -n 10000", log.glob))
+    system(paste("tail -n 10000", shQuote(log.glob)))
   }
 })
