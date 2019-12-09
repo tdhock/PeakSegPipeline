@@ -120,7 +120,7 @@ test_that("coverage counts 0:9", {
 
 
 ## Then test pipeline.
-test.data.dir <- file.path(Sys.getenv("HOME"), "PeakSegPipeline-test")
+test.data.dir <- file.path("~/PeakSegPipeline-test")
 non.integer.dir <- file.path(test.data.dir, "non-integer (bad)")
 demo.dir <- file.path(test.data.dir, "noinput (bad)")
 index.html <- file.path(demo.dir, "index.html")
