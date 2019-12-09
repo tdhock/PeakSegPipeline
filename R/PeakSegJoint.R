@@ -694,15 +694,16 @@ problem.joint.plot <- function
   coverage <- do.call(rbind, coverage.list)
   labels <- do.call(rbind, labels.list)
   if(verbose)cat(
-    "Read",
+    "Read ",
     nrow(labels),
-    "labels.\n",
-    "Read",
+    " labels.\n",
+    "Read ",
     length(coverage.list),
-    "samples of coverage.\n",
-    "Read",
+    " samples of coverage.\n",
+    "Read ",
     length(separate.peaks.list),
-    "samples of separate peak predictions.\n")
+    " samples of separate peak predictions.\n",
+    sep="")
   joint.peaks.list <- list()
   for(joint.i in 1:nrow(probs.in.chunk)){
     prob <- probs.in.chunk[joint.i,]
@@ -822,29 +823,28 @@ problem.joint.plot <- function
         data=separate.peaks)
   }
   n.rows <- length(coverage.list) + 2
-  mypng <- function(base, g){
-    f <- file.path(chunk.dir, base)
-    if(verbose)cat(
-      "Writing ",
-      f,
-      "\n", sep="")
-    cairo.limit <- 32767
-    h <- 60*n.rows
-    if(cairo.limit < h){
-      h <- floor(cairo.limit / n.rows) * n.rows
-    }
-    png(f, res=100, width=1000, height=h)
-    print(g)
-    dev.off()
-    thumb.png <- sub(".png$", "-thumb.png", f)
-    cmd <- sprintf("convert %s -resize 230 %s", f, thumb.png)
-    system(cmd)
+  cairo.limit <- 32767
+  h <- 60*n.rows
+  if(cairo.limit < h){
+    h <- floor(cairo.limit / n.rows) * n.rows
   }
-  ##mypng("figure-predictions-zoomout.png", gg)
+  w <- 1000
   gg.zoom <- gg+
     coord_cartesian(
       xlim=chunk[, c(chunkStart, chunkEnd)/1e3],
       expand=FALSE)
-  mypng("figure-predictions.png", gg.zoom)
+  mypng <- function(base, denom){
+    f <- file.path(chunk.dir, base)
+    if(verbose)cat(
+      "Writing ",
+      f,
+      "\n",
+      sep="")
+    png(f, res=100, width=w/denom, height=h/denom)
+    print(gg.zoom)
+    dev.off()
+  }
+  mypng("figure-predictions.png", 1)
+  mypng("figure-predictions-thumb.png", 5)
 ### Nothing
 }
