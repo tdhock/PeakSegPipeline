@@ -427,6 +427,8 @@ problem.target <- structure(function
     with(penalty.error, data.table(
       iteration,
       result$loss,
+      possible.fn=sum(possible.tp),
+      possible.fp=sum(possible.fp),
       fn=sum(fn),
       fp=sum(fp)))
   }
@@ -449,7 +451,9 @@ problem.target <- structure(function
       stop("penalty column is not numeric -- check loss in _loss.tsv files")
     }
     error.dt[, errors := fp+fn]
-    if(verbose)print(error.dt[,.(penalty, peaks, status, fp, fn, errors)])
+    error.dt[, w.fp := fp/possible.fp]
+    error.dt[, w.fn := fn/possible.fn]
+    error.dt[, w.err := w.fp+w.fn]
     unique.peaks <- error.dt[, data.table(
       .SD[which.min(iteration)],
       penalties=.N
@@ -460,11 +464,16 @@ problem.target <- structure(function
     path.dt[, already.computed := next.pen %in% names(error.list)]
     path.dt[, no.next := c(diff(peaks) == -1, NA)]
     path.dt[, done := already.computed | no.next]
-    path.dt[, is.min := errors==min(errors)]
-    path.dt[, min.err.interval := cumsum(ifelse(
-      c(is.min[1], diff(is.min))==1, 1, 0))]
+    path.dt[, err.min := errors==min(errors)]
+    path.dt[, is.best := FALSE]
+    path.dt[err.min==TRUE, is.best := w.err==min(w.err)]
+    path.dt[, best.i := cumsum(ifelse(
+      c(is.best[1], diff(is.best))==1, 1, 0))]
+    if(verbose)print(path.dt[,.(
+      penalty, log.pen=log(penalty), peaks, fp, fn, errors, w.err,
+      best=ifelse(is.best, best.i, NA))])
     other.candidates <- path.dt[which(0<diff(fn) & diff(fp)<0)]
-    interval.dt <- path.dt[is.min==TRUE, {
+    interval.dt <- path.dt[is.best==TRUE, {
       i <- if(1 == .N || 0 == errors[1]){
         ## No middle candidate if there is only one model in the
         ## interval, or if there are no errors.
@@ -486,9 +495,10 @@ problem.target <- structure(function
         mid.lambda=max.lambda[i],
         max.lambda=max.lambda[.N],
         max.log.lambda=max.log.lambda[.N],
-        log.size=max.log.lambda[.N]-min.log.lambda[1]
+        log.size=max.log.lambda[.N]-min.log.lambda[1],
+        peaks.diff=max(peaks)-min(peaks)
         )
-    }, by=list(min.err.interval)]
+    }, by=list(best.i)]
     largest.interval <- interval.dt[which.max(log.size)]
     target.vec <- largest.interval[, c(min.log.lambda, max.log.lambda)]
     write(target.vec, file.path(problem.dir, "target.tsv"), sep="\t")
