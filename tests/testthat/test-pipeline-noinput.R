@@ -270,22 +270,26 @@ if(FALSE){
   system("sudo scontrol update NodeName=localhost State=RESUME")
 }
 
+sleep.fun <- function(i){
+  system(paste("squeue -u", Sys.getenv("USER")))
+  10
+}
+
 unlink(index.html)
 test_that("index.html is created via batchtools", {
   reg.list <- jobs_submit_batchtools(jobs, res.list)
   reg <- reg.list[[length(reg.list)]]
-  result <- batchtools::waitForJobs(reg=reg, sleep=function(i){
-    system("squeue")
-    10
-  })
+  result <- batchtools::waitForJobs(reg=reg, sleep=sleep.fun)
   expect_true(file.exists(index.html))
-  log.glob <- file.path(demo.dir, "registry", "*", "logs", "*")
-  system(paste("tail -n 10000", shQuote(log.glob)))
+  log.glob <- file.path(
+    shQuote(normalizePath(demo.dir)),
+    "registry", "*", "logs", "*")
+  system(paste("tail -n 10000", log.glob))
 })
 
 test_that("entries of peaks matrix are 0/1", {
-  mat.tsv.gz <- file.path(demo.dir, "peaks_matrix_sample.tsv.gz")
-  peak.dt <- fread(cmd=paste("zcat", mat.tsv.gz))
+  mat.tsv.gz <- normalizePath(file.path(demo.dir, "peaks_matrix_sample.tsv.gz"))
+  peak.dt <- fread(cmd=paste("zcat", shQuote(mat.tsv.gz)))
   class.vec <- as.character(sapply(peak.dt, class))
   expected.class.vec <- c("character", rep("integer", length(bigWig.part.vec)))
   expect_identical(class.vec, expected.class.vec)
@@ -298,13 +302,12 @@ unlink(index.html)
 test_that("run only steps 5-6 creates index.html", {
   reg.list <- jobs_submit_batchtools(some.jobs, res.list)
   reg <- reg.list[[length(reg.list)]]
-  result <- batchtools::waitForJobs(reg=reg, sleep=function(i){
-    system("squeue")
-    10
-  })
+  result <- batchtools::waitForJobs(reg=reg, sleep=sleep.fun)
   expect_true(file.exists(index.html))
   for(step.i in names(reg.list)){
-    log.glob <- file.path(demo.dir, "registry", step.i, "logs", "*")
-    system(paste("tail -n 10000", shQuote(log.glob)))
+    log.glob <- file.path(
+      shQuote(normalizePath(demo.dir)),
+      "registry", step.i, "logs", "*")
+    system(paste("tail -n 10000", log.glob))
   }
 })
