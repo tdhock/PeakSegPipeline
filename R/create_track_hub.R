@@ -95,7 +95,7 @@ longLabel ", data.name, "
 genomesFile genomes.txt
 email ", email), hub.txt)
   ## create jointProblems.bigBed
-  jproblems.glob <- file.path(data.dir.path, "problems", "*", "jointProblems.bed")
+  jproblems.glob <- file.path(shQuote(data.dir.path), "problems", "*", "jointProblems.bed")
   jprobs <- fread(cmd=paste("cat", jproblems.glob))
   jointProblems.bed <- file.path(data.dir.path, "jointProblems.bed")
   if(nrow(jprobs)){
