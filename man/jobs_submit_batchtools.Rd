@@ -4,7 +4,7 @@
 \description{Submit PeakSegPipeline \code{jobs} via batchtools.}
 \usage{jobs_submit_batchtools(jobs, 
     resources = list(walltime = 24 * 
-        60, memory = 2000, 
+        60 * 60, memory = 2000, 
         ncpus = 2, ntasks = 1, 
         chunks.as.arrayjobs = TRUE))}
 \arguments{

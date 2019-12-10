@@ -164,7 +164,7 @@ jobs_submit_batchtools <- structure(function
     chunks.as.arrayjobs=TRUE)
 ### List of resources for each job, passed to batchtools::submitJobs.
 ){
-  step <- arg <- fun <- NULL
+  step <- arg <- fun <- task <- NULL
   ## Above to avoid CRAN NOTE.
   requireNamespace("batchtools")
   if(!(
