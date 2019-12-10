@@ -12,9 +12,9 @@ bedGraphToBigWig <- function
   chrom <- chromStart <- NULL
   ## Above to avoid CRAN NOTE.
   unlink(bigWig)
-  bedGraph.dt <- fread(
+  bedGraph.dt <- suppressWarnings(fread(
     file=bedGraph,
-    col.names=c("chrom", "chromStart", "chromEnd", "value"))
+    col.names=c("chrom", "chromStart", "chromEnd", "value")))
   ## This if statement is needed because bedGraphToBigWig stops with
   ## an error code if there are no data, but we don't want to stop,
   ## even if there are no predicted peaks in some samples.
