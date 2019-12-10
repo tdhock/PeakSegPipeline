@@ -27,6 +27,7 @@ bedGraphToBigWig <- function
       shQuote(bedGraph.sorted),
       shQuote(chromInfo),
       shQuote(bigWig)))
+    unlink(bedGraph.sorted)
   }
   file.exists(bigWig)
 ### TRUE if bigWig was created.

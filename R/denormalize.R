@@ -57,6 +57,7 @@ denormalizeBigWig <- function
     output.bedGraph,
     output.chromInfo,
     out.path.bigWig)
+  unlink(output.chromInfo)
   unlink(input.bedGraph)
   unlink(output.bedGraph)
 }

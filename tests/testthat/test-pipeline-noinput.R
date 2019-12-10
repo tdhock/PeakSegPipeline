@@ -117,7 +117,14 @@ denorm.dt <- readBigWig(denorm.bigWig, "chr1", 0, 100000)
 test_that("coverage counts 0:9", {
   expect_identical(denorm.dt$count, 1:9)
 })
-
+test_that("denorm.bedGraph.sorted is deleted", {
+  denorm.bedGraph.sorted <- sub("bigWig$", "bedGraph.sorted", denorm.bigWig)
+  expect_false(file.exists(denorm.bedGraph.sorted))
+})
+test_that("denorm.chromInfo is deleted", {
+  denorm.chromInfo <- sub("bigWig$", "chromInfo", denorm.bigWig)
+  expect_false(file.exists(denorm.chromInfo))
+})
 
 ## Then test pipeline.
 test.data.dir <- file.path("~/PeakSegPipeline-test")
