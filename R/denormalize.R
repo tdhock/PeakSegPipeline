@@ -38,11 +38,13 @@ denormalizeBigWig <- function
   )) {
     stop("input.bigWig must be the name of a data file")
   }
-  input.bedGraph <- sub("bigWig$", "bedGraph", input.bigWig)
-  stopifnot(is.character(output.bigWig))
-  output.bedGraph <- sub("bigWig$", "bedGraph", output.bigWig)
-  chromInfo <- bigWigInfo(input.bigWig)
-  bigWigToBedGraph(input.bigWig, input.bedGraph)
+  in.path.bigWig <- normalizePath(input.bigWig, mustWork=TRUE)
+  out.path.bigWig <- normalizePath(output.bigWig, mustWork=FALSE)
+  input.bedGraph <- sub("bigWig$", "bedGraph", in.path.bigWig)
+  stopifnot(is.character(out.path.bigWig))
+  output.bedGraph <- sub("bigWig$", "bedGraph", out.path.bigWig)
+  chromInfo <- bigWigInfo(in.path.bigWig)
+  bigWigToBedGraph(in.path.bigWig, input.bedGraph)
   denormalizeBedGraph(input.bedGraph, output.bedGraph)
   if(verbose)system.or.stop(paste(
     "head",
@@ -54,7 +56,7 @@ denormalizeBigWig <- function
   bedGraphToBigWig(
     output.bedGraph,
     output.chromInfo,
-    output.bigWig)
+    out.path.bigWig)
   unlink(input.bedGraph)
   unlink(output.bedGraph)
 }
