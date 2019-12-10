@@ -82,7 +82,11 @@ jobs_create <- function
     labels <- if(file.exists(labels.bed))fread(file=labels.bed, col.names=c(
       "chrom", "chromStart", "chromEnd", "annotation"))
     labels.by.problem <- if(length(labels)){
-      just.to.check <- PeakError(Peaks(), labels)
+      tryCatch({
+        just.to.check <- PeakError(Peaks(), labels)
+      }, error=function(e){
+        stop(e, " for ", labels.bed)
+      })
       labels[, chromStart1 := chromStart + 1L]
       setkey(labels, chrom, chromStart1, chromEnd)
       setkey(problems, chrom, problemStart1, problemEnd)
@@ -153,7 +157,7 @@ jobs_submit_batchtools <- structure(function
 (jobs,
 ### data.table from jobs_create.
   resources=list(
-    walltime = 24*60,#minutes
+    walltime = 24*60*60,#seconds
     memory = 2000,#megabytes per cpu
     ncpus=2,
     ntasks=1,
@@ -193,19 +197,20 @@ jobs_submit_batchtools <- structure(function
     unlink(step.dir, recursive=TRUE)
     reg <- reg.list[[paste(step.i)]] <- batchtools::makeRegistry(step.dir)
     step.jobs <- jobs[step==step.i]#[1:min(2, .N)]#for testing
+    step.jobs[, task := 1:.N %% 999 ]
+    task.vec <- unique(step.jobs$task)
     batchtools::batchMap(function(task.i, job.dt){
       library(PeakSegPipeline)
-      job <- job.dt[task.i]
-      fun <- get(job$fun)
-      fun(job$arg)
-    }, 1:nrow(step.jobs), reg=reg, more.args=list(job.dt=step.jobs))
+      task.jobs <- job.dt[task==task.i]
+      for(row.i in 1:nrow(task.jobs)){
+        row.job <- task.jobs[row.i]
+        fun <- get(row.job$fun)
+        fun(row.job$arg)
+      }
+    }, task.vec, reg=reg, more.args=list(job.dt=step.jobs))
     job.table <- batchtools::getJobTable(reg=reg)
     chunks <- data.table(job.table, chunk=1)
-    job.name.vec <- step.jobs[, paste0(
-      sub("problem.", "", fun),
-      "_",
-      basename(arg)
-    )]
+    job.name.vec <- paste0("Step", step.i, "Task", task.vec)
     batchtools::setJobNames(job.table$job.id, job.name.vec)
     resources[["afterok"]] <- afterok
     batchtools::submitJobs(chunks, resources=resources, reg=reg)
