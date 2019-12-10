@@ -195,7 +195,7 @@ plot_all <- function
     base.tsv.gz <- paste0(
       "peaks_matrix_", suffix, ".tsv.gz")
     path.tsv.gz <- file.path(set.dir, base.tsv.gz)
-    cmd <- paste("zcat", path.tsv.gz)
+    cmd <- paste("zcat", shQuote(path.tsv.gz))
     fread(cmd=cmd, ...)
   }
   ## Read first row and column of samples matrix to get names.
