@@ -389,7 +389,8 @@ problem.target <- structure(function
       bases <- no.next <- is.min <- min.err.interval <- max.lambda <-
         already.computed <- is.other <- dist <- min.lambda <- log.size <-
           mid.lambda <- chrom <- problemStart <- problemEnd <- chromEnd <-
-            annotation <- NULL
+            annotation <- w.fp <- w.fn <- possible.fp <- possible.fn <-
+              w.err <- err.min <- is.best <- best.i <- NULL
   ## above to avoid "no visible binding for global variable" NOTEs in
   ## CRAN check.
   minutes.file <- file.path(problem.dir, "target.minutes")
@@ -410,8 +411,7 @@ problem.target <- structure(function
   stopifnot(length(problem.dir)==1)
   problem.coverage(problem.dir)
   labels.dt <- problem.labels(problem.dir)
-  problem.name <- basename(problem.dir)
-  if(verbose)cat(nrow(labels.dt), "labels in", problem.name, "\n")
+  if(verbose)cat(nrow(labels.dt), "labels in", problem.dir, "\n")
   ## Compute the label error for one penalty parameter.
   getError <- function(penalty.str){
     stopifnot(is.character(penalty.str))
@@ -451,8 +451,8 @@ problem.target <- structure(function
       stop("penalty column is not numeric -- check loss in _loss.tsv files")
     }
     error.dt[, errors := fp+fn]
-    error.dt[, w.fp := fp/possible.fp]
-    error.dt[, w.fn := fn/possible.fn]
+    error.dt[, w.fp := ifelse(possible.fp==0, fp, fp/possible.fp)]
+    error.dt[, w.fn := ifelse(possible.fn==0, fn, fn/possible.fn)]
     error.dt[, w.err := w.fp+w.fn]
     unique.peaks <- error.dt[, data.table(
       .SD[which.min(iteration)],
