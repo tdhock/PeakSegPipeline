@@ -15,7 +15,9 @@ file. http://www.cs.uleth.ca/~holzmann/C/system/shell_commands.html
 
 use compiled code instead of command line programs for bigWig/bigBed.
 
-2019.12.5 PR#19
+2019.12.10 PR#19
+
+jobs_create gains target.minutes argument.
 
 test readBigWig for no data to read.
 
