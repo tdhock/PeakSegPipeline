@@ -499,7 +499,7 @@ problem.target <- structure(function
         peaks.diff=max(peaks)-min(peaks)
         )
     }, by=list(best.i)]
-    largest.interval <- interval.dt[which.max(log.size)]
+    largest.interval <- interval.dt[which.max(peaks.diff)]
     target.vec <- largest.interval[, c(min.log.lambda, max.log.lambda)]
     write(target.vec, file.path(problem.dir, "target.tsv"), sep="\t")
     diff.target.vec <- target.vec-last.target.vec
