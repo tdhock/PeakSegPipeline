@@ -2,12 +2,20 @@ jobs_create <- function
 ### Setup a data directory for analysis with PeakSegPipeline.
 (data.dir.arg,
 ### path to project directory.
+  target.minutes=NULL,
+### Maximum number of minutes to spend computing the target interval
+### during Step1 of the pipeline (learning what penalties result in
+### low label error). If this is a number then a target.minutes file
+### will be written to each problem directory -- this number in this
+### file is used as the maximum number of minutes by the
+### problem.target function.
   verbose=getOption("PeakSegPipeline.verbose", 1)
 ### TRUE for output, FALSE otherwise.
 ){
   bases <- problemEnd <- problemStart <- problem.name <- chrom <- row.i <-
     problemStart1 <- chromStart1 <- chromStart <- chromEnd <- chunk.limits <-
-      chunk.name <- . <- regions.by.chunk.file <- chunk <- NULL
+      chunk.name <- . <- regions.by.chunk.file <- chunk <-
+        step <- tm.file <- arg <- NULL
   ## above to avoid CRAN NOTE.
   if(FALSE){#for debugging.
     data.dir.arg <- "~/genomic-ml/PeakSegFPOP/labels/ATAC_JV_adipose/"
@@ -133,6 +141,16 @@ jobs_create <- function
     fun="plot_all",
     arg=data.dir)
   all.job <- do.call(rbind, all.job.list)
+  if(is.numeric(target.minutes) && length(target.minutes)==1){
+    step1 <- all.job[step==1]
+    if(verbose)cat(
+      "Creating target.minutes files for", nrow(step1), "problems.\n")
+    step1[, tm.file := file.path(arg, "target.minutes")]
+    step1[, {
+      dir.create(dirname(tm.file), showWarnings=FALSE, recursive=TRUE)
+      cat(target.minutes, file=tm.file)
+    }, by=tm.file]
+  }
   hub.sh <- file.path(data.dir, "hub.sh")
   if(!file.exists(hub.sh)){
     code <- sprintf(
@@ -231,8 +249,8 @@ jobs_create_run <- function
 ### Run entire PeakSegFPOP + PeakSegJoint pipeline.
 (set.dir.path,
 ### data set directory.
-  verbose=getOption("PeakSegPipeline.verbose", 1)
-### print messages?
+  ...
+### passed to jobs_create
 ){
   unlink(file.path(
     set.dir.path,
@@ -240,7 +258,7 @@ jobs_create_run <- function
     "*",
     "*",
     "labels.bed"))
-  jobs <- jobs_create(set.dir.path, verbose=verbose)
+  jobs <- jobs_create(set.dir.path, ...)
   for(job.i in 1:nrow(jobs)){
     job <- jobs[job.i]
     fun <- get(job$fun)
