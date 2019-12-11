@@ -226,7 +226,7 @@ test_that("error for non-integer data in bigWigs", {
 })
 unlink(non.integer.dir, recursive=TRUE, force=TRUE)
 
-## Set time limit.
+## Set time limit manually.
 (sample.dir.vec <- Sys.glob(file.path(
   demo.dir, "samples", "*", "*")))
 prob.dir.vec <- file.path(

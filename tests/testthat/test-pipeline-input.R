@@ -89,18 +89,6 @@ test_that("error for non-integer data in bigWigs", {
 })
 unlink(non.integer.dir, recursive=TRUE, force=TRUE)
 
-## Set time limit.
-(sample.dir.vec <- Sys.glob(file.path(
-  demo.dir, "samples", "*", "*")))
-prob.dir.vec <- file.path(
-  sample.dir.vec, "problems", "chr10:18024675-38818835")
-limit.dt <- data.table(minutes=5)
-for(prob.dir in prob.dir.vec){
-  dir.create(prob.dir, showWarnings=FALSE, recursive=TRUE)
-  limit.file <- file.path(prob.dir, "target.minutes")
-  fwrite(limit.dt, limit.file, col.names=FALSE)
-}
-
 ## test for informative error early if ucsc not available.
 path.vec <- stop.without.ucsc()
 prog <- path.vec[["bigWigInfo"]]
@@ -116,7 +104,7 @@ Sys.chmod(prog, old.mode)
 ## Pipeline should run to completion for integer count data.
 unlink(index.html)
 test_that("index.html is created", {
-  jobs_create_run(demo.dir)
+  jobs_create_run(demo.dir, target.minutes=5)
   expect_true(file.exists(index.html))
 })
 
