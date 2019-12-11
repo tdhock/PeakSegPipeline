@@ -18,6 +18,7 @@ cp $PKG/tests/testthat/test-CRAN*.R $RELEASE/tests/testthat
 
 echo Building $RELEASE
 RCMD="R --vanilla CMD"
+RCMD="R CMD"
 $RCMD build $RELEASE | tee build.out
 PKG_TGZ=$(grep building build.out|sed "s/.*\($PKG.*.tar.gz\).*/\1/")
 
