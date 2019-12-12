@@ -24,10 +24,8 @@ interval of minimal error penalty values.}
 
 \value{List of info related to target interval computation: target is the
 interval of log(penalty) values that achieve minimum incorrect
-labels (numeric vector of length 2), target.iterations is a
-data.table with target intervals as a function of iteration,
-models is a data.table with one row per model for which the label
-error was computed.}
+labels (numeric vector of length 2), models and iterations are
+data.tables with one row per model.}
 
 \author{Toby Dylan Hocking}
 
@@ -72,8 +70,8 @@ target.list <- problem.target(problem.dir, verbose=1)
 
 ## These are all the models computed in order to find the target
 ## interval.
-print(target.list$models[, list(
-  penalty, log.penalty=log(penalty), peaks, total.loss, fn, fp, errors)])
+print(target.list$models[order(penalty), list(
+  penalty, log.penalty=log(penalty), peaks, total.loss, fn, fp)])
 
 ## This is the target interval in log(penalty) values.
 print(target.list$target)

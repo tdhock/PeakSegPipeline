@@ -95,8 +95,9 @@ problem.train <- function
     too.hi=as.logical(targets[,2] < pred.log.penalty))
   pred.dt[, status := ifelse(
     too.lo, "low",
-                      ifelse(too.hi, "high", "correct"))]
-  correct.targets <- pred.dt[status=="correct", ]
+    ifelse(too.hi, "high", "correct"))]
+  correct.targets <- pred.dt[status=="correct"]
+  ##TODO
   correct.peaks <- correct.targets[!grepl("Input", problem.dir), {
     target_models.tsv <- file.path(problem.dir, "target_models.tsv")
     target.models <- fread(file=target_models.tsv)
@@ -104,9 +105,17 @@ problem.train <- function
     coverage.bedGraph <- file.path(problem.dir, "coverage.bedGraph")
     segments.bed <- paste0(
       coverage.bedGraph, "_penalty=", closest$penalty, "_segments.bed")
-    segs <- fread(file=segments.bed)
-    setnames(segs, c("chrom", "chromStart", "chromEnd", "status", "mean"))
-    segs[status=="peak", ]
+    colClasses <- c(
+      "chrom"="character",
+      "chromStart"="integer",
+      "chromEnd"="integer",
+      "status"="character",
+      "mean"="numreic")
+    segs <- fread(
+      file=segments.bed,
+      col.names=names(colClasses),
+      colClasses=paste(colClasses))
+    segs[status=="peak"]
   }, by=problem.dir]
   correct.peaks[, bases := chromEnd-chromStart]
   correct.peaks[, log10.bases := log10(bases)]
@@ -367,6 +376,110 @@ problem.features <- function
 ### already.
 }
 
+problem.models <- function
+### Read models from filesystem. Reads both CSV and RDS files, then
+### saves them all in RDS, then deletes all CSV files.
+(problem.dir,
+### character string path: samples/groupID/sampleID/problems/probID
+  verbose=getOption("PeakSegPipeline.verbose", 1)
+### print messages?
+){
+  suffix.vec <- path <- penalty <- penalty.str <- status <-
+    NULL
+  col.name.list <- list(
+    "loss.tsv"=PeakSegDisk::col.name.list$loss,
+    "segments.bed"=PeakSegDisk::col.name.list$segments,
+    "timing.tsv"=c("penalty", "megabytes", "seconds"))
+  colClasses.vec <- c(
+    penalty="numeric",
+    megabytes="numeric",
+    seconds="numeric",
+    segments="integer",
+    peaks="integer",
+    bases="integer",
+    bedGraph.lines="integer",
+    mean.pen.cost="numeric",
+    total.loss="numeric",
+    equality.constraints="integer",
+    mean.intervals="numeric",
+    max.intervals="integer",
+    chrom="character",
+    chromStart="integer",
+    chromEnd="integer",
+    status="character",
+    mean="numeric")
+  csv.file.vec <- Sys.glob(file.path(
+    problem.dir, "coverage.bedGraph_penalty=*"))
+  csv.err.dt <- if(length(csv.file.vec)==0){
+    data.table()
+  }else{
+    labels.dt <- problem.labels(problem.dir)
+    csv.file.dt <- data.table(path=csv.file.vec, nc::capture_first_vec(
+      csv.file.vec,
+      "penalty=",
+      penalty.str=".*?",
+      "_",
+      suffix.vec=".*"))
+    csv.file.dt[, if(
+      identical(suffix.vec, names(col.name.list))
+    ){
+      tsv.data.list <- list()
+      for(suffix.i in seq_along(col.name.list)){
+        suffix <- suffix.vec[[suffix.i]]
+        col.names <- col.name.list[[suffix.i]]
+        colClasses <- unname(colClasses.vec[col.names])
+        tsv.data.list[[suffix]] <- fread(
+          file=path[[suffix.i]],
+          col.names=col.names,
+          colClasses=colClasses)
+      }
+      peak.dt <- tsv.data.list$segments.bed[status=="peak"]
+      err.dt <- data.table(PeakError::PeakErrorChrom(peak.dt, labels.dt))
+      err.row <- with(err.dt, data.table(
+        possible.fn=sum(possible.tp),
+        possible.fp=sum(possible.fp),
+        fn=sum(fn),
+        fp=sum(fp)))
+      if(nrow(tsv.data.list$timing.tsv)){
+        with(tsv.data.list, data.table(
+          timing.tsv[loss.tsv, on="penalty"],
+          err.row,
+          segments.dt=list(list(segments.bed)),
+          errors.dt=list(list(err.dt))))
+      }
+    }, by="penalty.str"][order(penalty)]
+  }
+  models.rds <- file.path(problem.dir, "models.rds")
+  if(file.exists(models.rds)){
+    ## If the same penalty.str is found in the rds and csv files, then
+    ## take the one from the csv files (more recently computed).
+    rds.err.dt <- readRDS(models.rds)
+    keep.err.dt <- if(nrow(rds.err.dt)==0){
+      data.table()
+    }else{
+      rds.err.dt[!penalty.str %in% csv.err.dt$penalty.str]
+    }
+  }else{
+    rds.err.dt <- data.table()
+    keep.err.dt <- data.table()
+  }
+  n.rep <- nrow(rds.err.dt)-nrow(keep.err.dt)
+  if(verbose)cat(sprintf(
+    "Models in csv=%d rds=%d%s\n",
+    nrow(csv.err.dt),
+    nrow(rds.err.dt),
+    if(n.rep)paste0(" replacing ", n.rep) else ""))
+  all.err.dt <- rbind(
+    if(nrow(csv.err.dt))csv.err.dt else NULL,
+    keep.err.dt)
+  saveRDS(all.err.dt, models.rds)
+  unlink(csv.file.vec)
+  all.err.dt
+### Data table with all info from model files. One row per model, with
+### list columns segments.dt and errors.dt with elements that are data
+### tables representing the segmentation model and label errors.
+}  
+
 problem.target <- structure(function
 ### Compute target interval for a segmentation problem. This function
 ### repeatedly calls PeakSegDisk::PeakSegFPOP_dir with different penalty values,
@@ -390,7 +503,7 @@ problem.target <- structure(function
         already.computed <- is.other <- dist <- min.lambda <- log.size <-
           mid.lambda <- chrom <- problemStart <- problemEnd <- chromEnd <-
             annotation <- w.fp <- w.fn <- possible.fp <- possible.fn <-
-              w.err <- err.min <- is.best <- best.i <- NULL
+              w.err <- err.min <- is.best <- best.i <- peaks.diff <- NULL
   ## above to avoid "no visible binding for global variable" NOTEs in
   ## CRAN check.
   minutes.file <- file.path(problem.dir, "target.minutes")
@@ -412,135 +525,153 @@ problem.target <- structure(function
   problem.coverage(problem.dir)
   labels.dt <- problem.labels(problem.dir)
   if(verbose)cat(nrow(labels.dt), "labels in", problem.dir, "\n")
+  model.err.dt <- problem.models(problem.dir)
+  error.cols <- c(
+    "iteration", "penalty", "fp", "fn", "possible.fp", "possible.fn",
+    "peaks", "total.loss")
   ## Compute the label error for one penalty parameter.
   getError <- function(penalty.str){
     stopifnot(is.character(penalty.str))
     stopifnot(length(penalty.str) == 1)
-    result <- PeakSegDisk::PeakSegFPOP_dir(
-      problem.dir, penalty.str, problem.tempfile(problem.dir, penalty.str))
-    penalty.peaks <- result$segments[status=="peak",]
-    tryCatch({
-      penalty.error <- PeakErrorChrom(penalty.peaks, labels.dt)
-    }, error=function(e){
-      stop("try deleting _segments.bed and recomputing, error computing number of incorrect labels: ", e)
-    })
-    with(penalty.error, data.table(
-      iteration,
-      result$loss,
-      possible.fn=sum(possible.tp),
-      possible.fp=sum(possible.fp),
-      fn=sum(fn),
-      fp=sum(fp)))
+    one.row <- if(penalty.str %in% model.err.dt$penalty.str){
+      select.dt <- data.table(penalty.str)
+      model.err.dt[select.dt, on="penalty.str"]
+    }else{
+      result <- PeakSegDisk::PeakSegFPOP_dir(
+        problem.dir, penalty.str, problem.tempfile(problem.dir, penalty.str))
+      penalty.peaks <- result$segments[status=="peak",]
+      tryCatch({
+        penalty.error <- PeakErrorChrom(penalty.peaks, labels.dt)
+      }, error=function(e){
+        stop("try deleting _segments.bed and recomputing, error computing number of incorrect labels: ", e)
+      })
+      with(penalty.error, data.table(
+        result$loss,
+        possible.fn=sum(possible.tp),
+        possible.fp=sum(possible.fp),
+        fn=sum(fn),
+        fp=sum(fp)))
+    }
+    data.table(iteration, one.row)[, error.cols, with=FALSE]
   }
   ## Also compute feature vector here so train is faster later.
   problem.features(problem.dir)
-  error.list <- list()
-  next.pen <- c(0, Inf)
   iteration <- 0
+  error.list <- if(nrow(model.err.dt)==0){
+    list()
+  }else{
+    split(
+      data.table(
+        iteration, model.err.dt
+      )[, error.cols, with=FALSE],
+      model.err.dt$penalty.str)
+  }
   last.target.vec <- c(-Inf, Inf)
   target.result.list <- list()
-  while(length(next.pen)){
-    if(verbose)cat(
-      "Next =", paste(next.pen, collapse=", "),
-      "\n")
-    next.str <- paste(next.pen)
-    iteration <- iteration+1
-    error.list[next.str] <- future.apply::future_lapply(next.str, getError)
-    error.dt <- do.call(rbind, error.list)[order(penalty)]
-    if(!is.numeric(error.dt$penalty)){
-      stop("penalty column is not numeric -- check loss in _loss.tsv files")
-    }
-    error.dt[, errors := fp+fn]
-    error.dt[, w.fp := ifelse(possible.fp==0, fp, fp/possible.fp)]
-    error.dt[, w.fn := ifelse(possible.fn==0, fn, fn/possible.fn)]
-    error.dt[, w.err := w.fp+w.fn]
-    unique.peaks <- error.dt[, data.table(
-      .SD[which.min(iteration)],
-      penalties=.N
-    ), by=list(peaks)]
-    path.dt <- data.table(penaltyLearning::modelSelection(
-      unique.peaks, "total.loss", "peaks"))
-    path.dt[, next.pen := max.lambda]
-    path.dt[, already.computed := next.pen %in% names(error.list)]
-    path.dt[, no.next := c(diff(peaks) == -1, NA)]
-    path.dt[, done := already.computed | no.next]
-    path.dt[, err.min := errors==min(errors)]
-    path.dt[, is.best := FALSE]
-    path.dt[err.min==TRUE, is.best := w.err==min(w.err)]
-    path.dt[, best.i := cumsum(ifelse(
-      c(is.best[1], diff(is.best))==1, 1, 0))]
-    if(verbose)print(path.dt[,.(
-      penalty, log.pen=log(penalty), peaks, fp, fn, errors, w.err,
-      best=ifelse(is.best, best.i, NA))])
-    other.candidates <- path.dt[which(0<diff(fn) & diff(fp)<0)]
-    interval.dt <- path.dt[is.best==TRUE, {
-      i <- if(1 == .N || 0 == errors[1]){
-        ## No middle candidate if there is only one model in the
-        ## interval, or if there are no errors.
-        NA
-      }else{
-        d <- data.table(
-          i=1:(.N-1),
-          ## do not attempt to explore other.candidates -- try
-          ## different ones!
-          is.other=next.pen[-.N] %in% other.candidates$next.pen,
-          dist=diff(max.log.lambda)+diff(min.log.lambda),
-          done=done[-.N])
-        d[is.other==FALSE & done==FALSE, i[which.max(dist)]]
+  still.searching <- TRUE
+  while(still.searching){
+    next.pen <- if(length(error.list)<2){
+      c(0, Inf)
+    }else{
+      error.dt <- do.call(rbind, error.list)[order(penalty)]
+      if(!is.numeric(error.dt$penalty)){
+        stop("penalty column is not numeric -- check loss in _loss.tsv files")
       }
-      if(length(i)==0)i <- NA
-      data.table(
-        min.lambda=min.lambda[1],
-        min.log.lambda=min.log.lambda[1],
-        mid.lambda=max.lambda[i],
-        max.lambda=max.lambda[.N],
-        max.log.lambda=max.log.lambda[.N],
-        log.size=max.log.lambda[.N]-min.log.lambda[1],
-        peaks.diff=max(peaks)-min(peaks)
+      error.dt[, errors := fp+fn]
+      error.dt[, w.fp := ifelse(possible.fp==0, fp, fp/possible.fp)]
+      error.dt[, w.fn := ifelse(possible.fn==0, fn, fn/possible.fn)]
+      error.dt[, w.err := w.fp+w.fn]
+      unique.peaks <- error.dt[, data.table(
+        .SD[which.min(iteration)],
+        penalties=.N
+      ), by=list(peaks)]
+      path.dt <- data.table(penaltyLearning::modelSelection(
+        unique.peaks, "total.loss", "peaks"))
+      path.dt[, next.pen := max.lambda]
+      path.dt[, already.computed := next.pen %in% names(error.list)]
+      path.dt[, no.next := c(diff(peaks) == -1, NA)]
+      path.dt[, done := already.computed | no.next]
+      path.dt[, err.min := errors==min(errors)]
+      path.dt[, is.best := FALSE]
+      path.dt[err.min==TRUE, is.best := w.err==min(w.err)]
+      path.dt[, best.i := cumsum(ifelse(
+        c(is.best[1], diff(is.best))==1, 1, 0))]
+      if(verbose)print(path.dt[,.(
+        penalty, log.pen=log(penalty), peaks, fp, fn, errors, w.err,
+        best=ifelse(is.best, best.i, NA))])
+      other.candidates <- path.dt[which(0<diff(fn) & diff(fp)<0)]
+      interval.dt <- path.dt[is.best==TRUE, {
+        i <- if(1 == .N || 0 == errors[1]){
+          ## No middle candidate if there is only one model in the
+          ## interval, or if there are no errors.
+          NA
+        }else{
+          d <- data.table(
+            i=1:(.N-1),
+            ## do not attempt to explore other.candidates -- try
+            ## different ones!
+            is.other=next.pen[-.N] %in% other.candidates$next.pen,
+            dist=diff(max.log.lambda)+diff(min.log.lambda),
+            done=done[-.N])
+          d[is.other==FALSE & done==FALSE, i[which.max(dist)]]
+        }
+        if(length(i)==0)i <- NA
+        data.table(
+          min.lambda=min.lambda[1],
+          min.log.lambda=min.log.lambda[1],
+          mid.lambda=max.lambda[i],
+          max.lambda=max.lambda[.N],
+          max.log.lambda=max.log.lambda[.N],
+          log.size=max.log.lambda[.N]-min.log.lambda[1],
+          peaks.diff=max(peaks)-min(peaks)
         )
-    }, by=list(best.i)]
-    largest.interval <- interval.dt[which.max(peaks.diff)]
-    target.vec <- largest.interval[, c(min.log.lambda, max.log.lambda)]
-    write(target.vec, file.path(problem.dir, "target.tsv"), sep="\t")
-    diff.target.vec <- target.vec-last.target.vec
-    last.target.vec <- target.vec
-    target.result.list[[paste(iteration)]] <- largest.interval[, data.table(
-      iteration,
-      min.log.lambda,
-      max.log.lambda)]
-    target.lambda <- largest.interval[, c(min.lambda, max.lambda)]
-    error.candidates <- path.dt[next.pen %in% target.lambda]
-    stopping.candidates <- rbind(error.candidates, other.candidates)[done==FALSE]
-    seconds.now <- as.numeric(Sys.time())
-    minutes.elapsed <- (seconds.now-seconds.start)/60
-    if(verbose)cat(sprintf(
-      "%f minutes elapsed / %f limit\nTarget interval: %f %f change: %f %f\n",
-      minutes.elapsed, minutes.limit,
-      target.vec[1], target.vec[2],
-      diff.target.vec[1], diff.target.vec[2]))
-    next.pen <- if(minutes.elapsed < minutes.limit && nrow(stopping.candidates)){
-      lambda.vec <- interval.dt[, c(min.lambda, mid.lambda, max.lambda)]
-      interval.candidates <- path.dt[next.pen %in% lambda.vec][done==FALSE]
-      unique(rbind(stopping.candidates, interval.candidates)$next.pen)
+      }, by=list(best.i)]
+      largest.interval <- interval.dt[which.max(peaks.diff)]
+      target.vec <- largest.interval[, c(min.log.lambda, max.log.lambda)]
+      write(target.vec, file.path(problem.dir, "target.tsv"), sep="\t")
+      diff.target.vec <- target.vec-last.target.vec
+      last.target.vec <- target.vec
+      target.result.list[[paste(iteration)]] <- largest.interval[, data.table(
+        iteration,
+        min.log.lambda,
+        max.log.lambda)]
+      target.lambda <- largest.interval[, c(min.lambda, max.lambda)]
+      error.candidates <- path.dt[next.pen %in% target.lambda]
+      stopping.candidates <- rbind(
+        error.candidates, other.candidates)[done==FALSE]
+      seconds.now <- as.numeric(Sys.time())
+      minutes.elapsed <- (seconds.now-seconds.start)/60
+      if(verbose)cat(sprintf(
+        "%f minutes elapsed / %f limit\nTarget interval: %f %f change: %f %f\n",
+        minutes.elapsed, minutes.limit,
+        target.vec[1], target.vec[2],
+        diff.target.vec[1], diff.target.vec[2]))
+      if(minutes.elapsed < minutes.limit && nrow(stopping.candidates)){
+        lambda.vec <- interval.dt[, c(min.lambda, mid.lambda, max.lambda)]
+        interval.candidates <- path.dt[next.pen %in% lambda.vec][done==FALSE]
+        unique(
+          rbind(stopping.candidates, interval.candidates)$next.pen)
+      }
+    }#if no models else
+    if(length(next.pen)==0){
+      still.searching <- FALSE
+    }else{
+      if(verbose)cat(
+        "Next =", paste(next.pen, collapse=", "),
+        "\n")
+      next.str <- paste(next.pen)
+      iteration <- iteration+1
+      error.list[next.str] <- future.apply::future_lapply(next.str, getError)
     }
   }#while(!is.null(pen))
-  write.table(
-    error.dt,
-    file.path(problem.dir, "target_models.tsv"),
-    sep="\t",
-    quote=FALSE,
-    row.names=FALSE,
-    col.names=TRUE)
   list(
     target=target.vec,
-    target.iterations=do.call(rbind, target.result.list),
-    models=error.dt)
+    models=problem.models(problem.dir),
+    iterations=error.dt)
 ### List of info related to target interval computation: target is the
 ### interval of log(penalty) values that achieve minimum incorrect
-### labels (numeric vector of length 2), target.iterations is a
-### data.table with target intervals as a function of iteration,
-### models is a data.table with one row per model for which the label
-### error was computed.
+### labels (numeric vector of length 2), models and iterations are
+### data.tables with one row per model.
 }, ex=function(){
 
   library(PeakSegPipeline)
@@ -579,8 +710,8 @@ problem.target <- structure(function
 
   ## These are all the models computed in order to find the target
   ## interval.
-  print(target.list$models[, list(
-    penalty, log.penalty=log(penalty), peaks, total.loss, fn, fp, errors)])
+  print(target.list$models[order(penalty), list(
+    penalty, log.penalty=log(penalty), peaks, total.loss, fn, fp)])
 
   ## This is the target interval in log(penalty) values.
   print(target.list$target)

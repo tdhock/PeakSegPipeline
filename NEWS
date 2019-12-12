@@ -15,7 +15,11 @@ file. http://www.cs.uleth.ca/~holzmann/C/system/shell_commands.html
 
 use compiled code instead of command line programs for bigWig/bigBed.
 
-2019.12.10 PR#19
+2019.12.12 PR#19
+
+new problem.models function which reads CSV/RDS models, then saves all
+models to RDS, then deletes all CSV files, to help avoid going over
+quota on number of files in big data sets.
 
 jobs_create gains target.minutes argument.
 

@@ -28,7 +28,7 @@ test_that("problem.target uses problem/labels.bed if present", {
   expect_is(target.list, "list")
   expect_is(target.list$target, "numeric")
   expect_identical(length(target.list$target), 2L)
-  expect_is(target.list$target.iterations, "data.table")
+  expect_is(target.list$iterations, "data.table")
   expect_is(target.list$models, "data.table")
 })
 
@@ -50,6 +50,19 @@ test_that("problem.target uses sampleID/labels.bed if present", {
   expect_is(target.list, "list")
   expect_is(target.list$target, "numeric")
   expect_identical(length(target.list$target), 2L)
-  expect_is(target.list$target.iterations, "data.table")
+  expect_is(target.list$iterations, "data.table")
   expect_is(target.list$models, "data.table")
+})
+
+test_that("model CSV files are deleted", {
+  file.vec <- Sys.glob(file.path(problem.dir, "coverage.bedGraph_penalty=*"))
+  expect_equal(length(file.vec), 0)
+})
+
+test_that("models RDS file is present", {
+  models.rds <- file.path(problem.dir, "models.rds")
+  dt <- readRDS(models.rds)
+  expect_is(dt, "data.table")
+  expect_is(dt$errors.dt[[1]], "data.table")
+  expect_is(dt$segments.dt[[1]], "data.table")
 })
