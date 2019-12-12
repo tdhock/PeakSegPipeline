@@ -97,25 +97,11 @@ problem.train <- function
     too.lo, "low",
     ifelse(too.hi, "high", "correct"))]
   correct.targets <- pred.dt[status=="correct"]
-  ##TODO
   correct.peaks <- correct.targets[!grepl("Input", problem.dir), {
-    target_models.tsv <- file.path(problem.dir, "target_models.tsv")
-    target.models <- fread(file=target_models.tsv)
-    closest <- target.models[which.min(abs(log(penalty)-pred.log.penalty)),]
-    coverage.bedGraph <- file.path(problem.dir, "coverage.bedGraph")
-    segments.bed <- paste0(
-      coverage.bedGraph, "_penalty=", closest$penalty, "_segments.bed")
-    colClasses <- c(
-      "chrom"="character",
-      "chromStart"="integer",
-      "chromEnd"="integer",
-      "status"="character",
-      "mean"="numreic")
-    segs <- fread(
-      file=segments.bed,
-      col.names=names(colClasses),
-      colClasses=paste(colClasses))
-    segs[status=="peak"]
+    models.dt <- problem.models(problem.dir)
+    closest <- models.dt[which.min(abs(log(penalty)-pred.log.penalty))]
+    segs.dt <- closest$segments.dt[[1]]
+    segs.dt[status=="peak"]
   }, by=problem.dir]
   correct.peaks[, bases := chromEnd-chromStart]
   correct.peaks[, log10.bases := log10(bases)]
