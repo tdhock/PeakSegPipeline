@@ -72,7 +72,7 @@ problem.train <- function
     train.dt.list[[problem.dir]] <- data.table(
       problem.dir, target.row, feature.row)
   }
-  train.dt <- do.call(rbind, train.dt.list)
+  train.dt <- do.call(rbind, train.dt.list)[, .SD[1], by=problem.dir]
   fwrite(train.dt, train_data.csv)
   unlink(target.tsv.vec)
   some.finite <- train.dt[
@@ -126,10 +126,14 @@ problem.train <- function
   }
   correct.peak.stats[is.na(median.bases), median.bases := {
     models.rds <- file.path(problem.dir, "models.rds")
-    models.dt <- readRDS(models.rds)
-    closest <- models.dt[which.min(abs(log(penalty)-pred.log.penalty))]
-    segs.dt <- closest$segments.dt[[1]]
-    segs.dt[status=="peak", as.numeric(median(chromEnd-chromStart))]
+    as.numeric(if(file.exists(models.rds)){
+      models.dt <- readRDS(models.rds)
+      closest <- models.dt[which.min(abs(log(penalty)-pred.log.penalty))]
+      segs.dt <- closest$segments.dt[[1]]
+      segs.dt[status=="peak", median(chromEnd-chromStart)]
+    }else{
+      NA
+    })
   }, by=problem.dir]
   new.cache <- correct.peak.stats[, .(problem.dir, cached.bases=median.bases)]
   fwrite(new.cache, correct_peaks.csv)
