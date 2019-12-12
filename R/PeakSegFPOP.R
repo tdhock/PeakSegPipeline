@@ -33,7 +33,8 @@ problem.train <- function
 ){
   status <- too.lo <- too.hi <- penalty <- bases <- chromEnd <- chromStart <-
     upper.lim <- lower.lim <- upper.bases <- lower.bases <- ..density.. <-
-      prob <- hjust <- . <- min.log.lambda <- max.log.lambda <- NULL
+      prob <- hjust <- . <- min.log.lambda <- max.log.lambda <- median.bases <-
+        cached.bases <- NULL
   ## above to avoid "no visible binding for global variable" NOTEs in
   ## CRAN check.
   data.dir <- normalizePath(data.dir.str, mustWork=TRUE)
@@ -553,9 +554,11 @@ problem.target <- structure(function
       penalty.peaks <- result$segments[status=="peak",]
       tryCatch({
         penalty.error <- PeakErrorChrom(penalty.peaks, labels.dt)
-      }, error=function(e){
-        stop("try deleting _segments.bed and recomputing, error computing number of incorrect labels: ", e)
-      })
+      }, error=function(e)stop(
+        "try deleting _segments.bed and recomputing, ",
+        "error computing number of incorrect labels: ",
+        e)
+      )
       with(penalty.error, data.table(
         result$loss,
         possible.fn=sum(possible.tp),
