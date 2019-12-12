@@ -167,11 +167,39 @@ test_that("no duplicate models in problem cache", {
 
 test_that("no duplicate observations in train data cache", {
   train_data.csv <- file.path(demo.dir, "train_data.csv")
-  train.orig <- fread(file=train_data.csv)
+  train.orig <- fread(file=train_data.csv)[order(problem.dir)]
+  count.orig <- table(table(train.orig$problem.dir))
+  expect_identical(names(count.orig), "1")
   tlist <- problem.target(train.orig$problem.dir[1])
   problem.train(demo.dir)
-  train.new <- fread(file=train_data.csv)
-  expect_equal(nrow(train.new), nrow(train.orig))
-  count.tab <- table(table(train.new$problem.dir))
-  expect_identical(names(count.tab), "1")
+  train.new <- fread(file=train_data.csv)[order(problem.dir)]
+  expect_identical(train.new$problem.dir, train.orig$problem.dir)
+  count.new <- table(table(train.new$problem.dir))
+  expect_identical(names(count.new), "1")
+})
+
+test_that("problem.target does not waste time on very similar penalties", {
+  problem.dir <- normalizePath(file.path(
+    demo.dir, "samples/kidney/MS002201/problems/chr10:18024675-38818835"))
+  tlist.1 <- problem.target(problem.dir)
+  max.ok <- 2
+  ## First remove any models that are duplicated.
+  counts.1 <- tlist.1$models[, .(penalties=.N), by=peaks]
+  keep.peaks <- counts.1[penalties<=max.ok, peaks]
+  keep.models <- tlist.1$models[peaks %in% keep.peaks]
+  saveRDS(keep.models, file.path(problem.dir, "models.rds"))
+  ## Now run the algo again.
+  tlist.2 <- problem.target(problem.dir)
+  tlist.2$models[, comp.before := penalty %in% tlist.1$models$penalty]
+  print(tlist.2$models[order(penalty), .(penalty, peaks, comp.before)])
+  counts.2 <- tlist.2$models[, .(penalties=.N), by=peaks]
+  too.many.2 <- counts.2[max.ok<penalties]
+  expect_equal(nrow(too.many.2), 0)
+  ## Now run again... buggy version got more models here.
+  tlist.3 <- problem.target(problem.dir)
+  tlist.3$models[, comp.before := penalty %in% tlist.2$models$penalty]
+  print(tlist.3$models[order(penalty), .(penalty, peaks, comp.before)])
+  counts.3 <- tlist.3$models[, .(penalties=.N), by=peaks]
+  too.many.3 <- counts.3[max.ok<penalties]
+  expect_equal(nrow(too.many.3), 0)
 })
