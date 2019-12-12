@@ -62,8 +62,12 @@ test_that("model CSV files are deleted", {
 
 test_that("models RDS file is present", {
   models.rds <- file.path(problem.dir, "models.rds")
-  dt <- readRDS(models.rds)
-  expect_is(dt, "data.table")
-  expect_is(dt$errors.dt[[1]], "data.table")
-  expect_is(dt$segments.dt[[1]], "data.table")
+  models.dt <- readRDS(models.rds)
+  expect_is(models.dt, "data.table")
+  err.dt <- dt$errors.dt[[1]]
+  expect_equal(models.dt$possible.fp[1], sum(err.dt$possible.fp))
+  expect_equal(models.dt$possible.fn[1], sum(err.dt$possible.tp))
+  model.row <- models.dt[1]
+  seg.dt <- model.row$segments.dt[[1]]
+  expect_equal(nrow(seg.dt), model.row$segments)
 })
