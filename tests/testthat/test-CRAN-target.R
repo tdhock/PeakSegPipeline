@@ -1,5 +1,6 @@
 library(testthat)
 context("problem.target")
+library(data.table)
 library(PeakSegPipeline)
 
 data(Mono27ac, envir=environment())
