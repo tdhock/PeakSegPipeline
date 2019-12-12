@@ -117,7 +117,8 @@ problem.train <- function
   if(file.exists(correct_peaks.csv)){
     correct.cache <- fread(file=correct_peaks.csv)
     if(nrow(correct.cache)){
-      correct.peak.stats[correct.cache, median.bases := cached.bases]
+      correct.peak.stats[
+        correct.cache, median.bases := cached.bases, on="problem.dir"]
     }
   }
   correct.peak.stats[is.na(median.bases), median.bases := {
@@ -159,7 +160,7 @@ problem.train <- function
   model$train.feature.ranges <- apply(
     features[, model$pred.feature.names, drop=FALSE], 2, range)
   ## Plot the size model and limits.
-  log10.bases.grid <- correct.peaks[, seq(
+  log10.bases.grid <- correct.peak.stats[, seq(
     min(log10.bases), max(log10.bases), l=100)]
   normal.dens <- data.table(
     log10.bases=log10.bases.grid,
@@ -176,7 +177,7 @@ problem.train <- function
       geom_histogram(
         aes(
           log10.bases, ..density..),
-        data=correct.peaks)+
+        data=correct.peak.stats)+
       geom_vline(
         aes(xintercept=mean),
         data=size.model,
@@ -195,7 +196,6 @@ problem.train <- function
   save(
     model, features, targets,
     size.model,
-    correct.peaks,
     file=model.RData)
 }
 
@@ -593,7 +593,7 @@ problem.target <- structure(function
       error.dt[, w.fn := ifelse(possible.fn==0, fn, fn/possible.fn)]
       error.dt[, w.err := w.fp+w.fn]
       unique.peaks <- error.dt[, data.table(
-        .SD[which.min(iteration)],
+        .SD[which.max(penalty)],
         penalties=.N
       ), by=list(peaks)]
       path.dt <- data.table(penaltyLearning::modelSelection(
