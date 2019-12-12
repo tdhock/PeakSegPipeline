@@ -135,7 +135,8 @@ problem.train <- function
       NA
     })
   }, by=problem.dir]
-  new.cache <- correct.peak.stats[, .(problem.dir, cached.bases=median.bases)]
+  new.cache <- correct.peak.stats[
+    !is.na(median.bases), .(problem.dir, cached.bases=median.bases)]
   fwrite(new.cache, correct_peaks.csv)
   correct.peak.stats[, log10.bases := log10(median.bases)]
   size.model <- correct.peak.stats[, list(
