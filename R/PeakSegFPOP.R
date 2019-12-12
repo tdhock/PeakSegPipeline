@@ -46,9 +46,10 @@ problem.train <- function
     "Searching for", glob.str, "files for training.\n")
   target.tsv.vec <- Sys.glob(glob.str)
   if(verbose)cat(
-    "Found", length(target.tsv.vec), "target.tsv files for training.\n")
+    "Found", length(target.tsv.vec), "new target.tsv files for training.\n")
   train.dt <- if(file.exists(train_data.csv)){
-    fread(train_data.csv)
+    train.all <- fread(file=train_data.csv)
+    train.all[!problem.dir %in% dirname(target.tsv.vec)]
   }else{
     data.table()
   }
@@ -65,7 +66,7 @@ problem.train <- function
     }
     feature.row <- fread(file=features.tsv)
     target.row <- fread(
-      target.tsv,
+      file=target.tsv,
       col.names=c("min.log.lambda", "max.log.lambda"))
     train.dt.list[[problem.dir]] <- data.table(
       problem.dir, target.row, feature.row)
@@ -98,7 +99,7 @@ problem.train <- function
   if(verbose)print(model$pred.param.mat)
   pred.log.penalty <- as.numeric(model$predict(features))
   pred.dt <- data.table(
-    problem.dir=rownames(targets),
+    problem.dir=train.dt$problem.dir,
     too.lo=as.logical(pred.log.penalty < targets[,1]),
     lower.limit=targets[,1],
     pred.log.penalty,
@@ -108,15 +109,28 @@ problem.train <- function
     too.lo, "low",
     ifelse(too.hi, "high", "correct"))]
   correct.targets <- pred.dt[status=="correct"]
-  correct.peaks <- correct.targets[!grepl("Input", problem.dir), {
-    models.dt <- problem.models(problem.dir)
+  correct.prob.vec <- correct.targets[!grepl("Input", problem.dir), problem.dir]
+  correct.peak.stats <- data.table(
+    problem.dir=correct.prob.vec,
+    median.bases=NA_real_)
+  correct_peaks.csv <- file.path(data.dir, "correct_peaks.csv")
+  if(file.exists(correct_peaks.csv)){
+    correct.cache <- fread(file=correct_peaks.csv)
+    if(nrow(correct.cache)){
+      correct.peak.stats[correct.cache, median.bases := cached.bases]
+    }
+  }
+  correct.peak.stats[is.na(median.bases), median.bases := {
+    models.rds <- file.path(problem.dir, "models.rds")
+    models.dt <- readRDS(models.rds)
     closest <- models.dt[which.min(abs(log(penalty)-pred.log.penalty))]
     segs.dt <- closest$segments.dt[[1]]
-    segs.dt[status=="peak"]
+    segs.dt[status=="peak", median(chromEnd-chromStart)]
   }, by=problem.dir]
-  correct.peaks[, bases := chromEnd-chromStart]
-  correct.peaks[, log10.bases := log10(bases)]
-  size.model <- correct.peaks[, list(
+  new.cache <- correct.peak.stats[, .(problem.dir, cached.bases=median.bases)]
+  fwrite(new.cache, correct_peaks.csv)
+  correct.peak.stats[, log10.bases := log10(median.bases)]
+  size.model <- correct.peak.stats[, list(
     mean=mean(log10.bases),
     sd=sd(log10.bases)
   )]

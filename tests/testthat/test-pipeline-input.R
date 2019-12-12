@@ -151,3 +151,27 @@ test_that("joint_peaks.bigWig files have the right number of peaks", {
   }
   expect_equal(observed.peaks, expected.peaks)
 })
+
+test_that("no duplicate models in problem cache", {
+  models.rds <- Sys.glob(file.path(
+    demo.dir, "samples", "*", "*", "problems", "*", "models.rds"))[1]
+  prob.dir <- dirname(models.rds)
+  models.dt <- PeakSegPipeline:::problem.models(prob.dir)
+  count.tab <- table(table(models.dt$penalty.str))
+  expect_identical(names(count.tab), "1")
+  inf.fit <- PeakSegDisk::PeakSegFPOP_dir(prob.dir, "Inf")
+  models.new <- PeakSegPipeline:::problem.models(prob.dir)
+  count.new <- table(table(models.new$penalty.str))
+  expect_identical(names(count.new), "1")
+})
+
+test_that("no duplicate observations in train data cache", {
+  train_data.csv <- file.path(demo.dir, "train_data.csv")
+  train.orig <- fread(file=train_data.csv)
+  tlist <- problem.target(train.orig$problem.dir[1])
+  problem.train(demo.dir)
+  train.new <- fread(file=train_data.csv)
+  expect_equal(nrow(train.new), nrow(train.orig))
+  count.tab <- table(table(train.new$problem.dir))
+  expect_identical(names(count.tab), "1")
+})
