@@ -100,7 +100,7 @@ problem.train <- function
   if(verbose)print(model$pred.param.mat)
   pred.log.penalty <- as.numeric(model$predict(features))
   pred.dt <- data.table(
-    problem.dir=train.dt$problem.dir,
+    problem.dir=some.finite$problem.dir,
     too.lo=as.logical(pred.log.penalty < targets[,1]),
     lower.limit=targets[,1],
     pred.log.penalty,
@@ -110,16 +110,18 @@ problem.train <- function
     too.lo, "low",
     ifelse(too.hi, "high", "correct"))]
   correct.targets <- pred.dt[status=="correct"]
-  correct.prob.vec <- correct.targets[!grepl("Input", problem.dir), problem.dir]
-  correct.peak.stats <- data.table(
-    problem.dir=correct.prob.vec,
-    median.bases=NA_real_)
+  correct.peak.stats <- correct.targets[!grepl("Input", problem.dir), .(
+    problem.dir,
+    median.bases=NA_real_,
+    pred.log.penalty)]
   correct_peaks.csv <- file.path(data.dir, "correct_peaks.csv")
   if(file.exists(correct_peaks.csv)){
     correct.cache <- fread(file=correct_peaks.csv)
     if(nrow(correct.cache)){
       correct.peak.stats[
-        correct.cache, median.bases := cached.bases, on="problem.dir"]
+        correct.cache,
+        median.bases := as.numeric(cached.bases),
+        on="problem.dir"]
     }
   }
   correct.peak.stats[is.na(median.bases), median.bases := {
