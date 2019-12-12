@@ -33,12 +33,13 @@ problem.train <- function
 ){
   status <- too.lo <- too.hi <- penalty <- bases <- chromEnd <- chromStart <-
     upper.lim <- lower.lim <- upper.bases <- lower.bases <- ..density.. <-
-      prob <- hjust <- NULL
+      prob <- hjust <- . <- min.log.lambda <- max.log.lambda <- NULL
   ## above to avoid "no visible binding for global variable" NOTEs in
   ## CRAN check.
   data.dir <- normalizePath(data.dir.str, mustWork=TRUE)
   samples.dir <- file.path(data.dir, "samples")
   model.RData <- file.path(data.dir, "model.RData")
+  train_data.csv <- file.path(data.dir, "train_data.csv")
   glob.str <- file.path(
     samples.dir, "*", "*", "problems", "*", "target.tsv")
   if(verbose)cat(
@@ -46,26 +47,36 @@ problem.train <- function
   target.tsv.vec <- Sys.glob(glob.str)
   if(verbose)cat(
     "Found", length(target.tsv.vec), "target.tsv files for training.\n")
-  features.list <- list()
-  targets.list <- list()
+  train.dt <- if(file.exists(train_data.csv)){
+    fread(train_data.csv)
+  }else{
+    data.table()
+  }
+  train.dt.list <- list(cached=train.dt)
   for(target.tsv.i in seq_along(target.tsv.vec)){
     target.tsv <- target.tsv.vec[[target.tsv.i]]
     problem.dir <- dirname(target.tsv)
+    if(verbose)cat(sprintf(
+      "%4d / %4d Reading features/targets %s\n",
+      target.tsv.i, length(target.tsv.vec), problem.dir))
     features.tsv <- file.path(problem.dir, "features.tsv")
     if(!file.exists(features.tsv)){
-      if(verbose)cat(sprintf(
-        "%4d / %4d Computing %s\n",
-        target.tsv.i, length(target.tsv.vec), features.tsv))
       problem.features(problem.dir)
     }
-    target.vec <- scan(target.tsv, quiet=TRUE)
-    if(any(is.finite(target.vec))){
-      features.list[[problem.dir]] <- fread(file=features.tsv)
-      targets.list[[problem.dir]] <- target.vec
-    }
+    feature.row <- fread(file=features.tsv)
+    target.row <- fread(
+      target.tsv,
+      col.names=c("min.log.lambda", "max.log.lambda"))
+    train.dt.list[[problem.dir]] <- data.table(
+      problem.dir, target.row, feature.row)
   }
-  features <- as.matrix(do.call(rbind, features.list))
-  targets <- do.call(rbind, targets.list)
+  train.dt <- do.call(rbind, train.dt.list)
+  fwrite(train.dt, train_data.csv)
+  unlink(target.tsv.vec)
+  some.finite <- train.dt[
+    is.finite(min.log.lambda) | is.finite(max.log.lambda)]
+  features <- as.matrix(some.finite[, -(1:3), with=FALSE])
+  targets <- as.matrix(some.finite[, .(min.log.lambda, max.log.lambda)])
   set.seed(1)
   model <- if(nrow(features) < 10){
     some.features <- features[, c("log.quartile.100%", "log.data")]
