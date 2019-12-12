@@ -129,7 +129,7 @@ problem.train <- function
     models.dt <- readRDS(models.rds)
     closest <- models.dt[which.min(abs(log(penalty)-pred.log.penalty))]
     segs.dt <- closest$segments.dt[[1]]
-    segs.dt[status=="peak", median(chromEnd-chromStart)]
+    segs.dt[status=="peak", as.numeric(median(chromEnd-chromStart))]
   }, by=problem.dir]
   new.cache <- correct.peak.stats[, .(problem.dir, cached.bases=median.bases)]
   fwrite(new.cache, correct_peaks.csv)
