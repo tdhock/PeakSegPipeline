@@ -64,7 +64,7 @@ test_that("models RDS file is present", {
   models.rds <- file.path(problem.dir, "models.rds")
   models.dt <- readRDS(models.rds)
   expect_is(models.dt, "data.table")
-  err.dt <- dt$errors.dt[[1]]
+  err.dt <- models.dt$errors.dt[[1]]
   expect_equal(models.dt$possible.fp[1], sum(err.dt$possible.fp))
   expect_equal(models.dt$possible.fn[1], sum(err.dt$possible.tp))
   model.row <- models.dt[1]
