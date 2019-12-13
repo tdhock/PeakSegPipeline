@@ -601,7 +601,9 @@ problem.joint.target <- function
   both.select <- rbind(
     data.table(sample.select, model="sample"),
     data.table(group.select, model="group"))
-  target.dt <- penaltyLearning::targetIntervals(both.select, "model")
+  log.size.positive <- both.select[min.log.lambda!=max.log.lambda]
+  target.dt <- penaltyLearning::targetIntervals(
+    log.size.positive, "model")
   target.tsv <- file.path(jointProblem.dir, "target.tsv")
   if(verbose){
     cat("Target intervals of minimum error penalty values:\n")
