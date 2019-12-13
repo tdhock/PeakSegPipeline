@@ -135,11 +135,11 @@ problem.train <- function
       NA
     })
   }, by=problem.dir]
+  correct.peak.stats[, log10.bases := log10(median.bases)]
   finite.peak.stats <- correct.peak.stats[is.finite(log10.bases)]
   new.cache <- finite.peak.stats[, .(
     problem.dir, cached.bases=median.bases)]
   fwrite(new.cache, correct_peaks.csv)
-  finite.peak.stats[, log10.bases := log10(median.bases)]
   size.model <- finite.peak.stats[, list(
     mean=mean(log10.bases),
     sd=sd(log10.bases)
@@ -795,7 +795,7 @@ problem.predict <- function
   verbose=getOption("PeakSegPipeline.verbose", 1)
  ){
   model <- status <- chromEnd <- chromStart <- size.model <- lower.bases <-
-    upper.bases <- NULL
+    upper.bases <- penalty <- NULL
   ## above to avoid "no visible binding for global variable" NOTEs in
   ## CRAN check.
   stopifnot(is.character(problem.dir))
