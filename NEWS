@@ -17,6 +17,8 @@ use compiled code instead of command line programs for bigWig/bigBed.
 
 2019.12.12 PR#19
 
+import data.table >= 1.12.4 for list column support.
+
 new problem.models function which reads CSV/RDS models, then saves all
 models to RDS, then deletes all CSV files, to help avoid going over
 quota on number of files in big data sets.
