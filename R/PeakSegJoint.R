@@ -159,7 +159,7 @@ problem.joint.targets <- function
       setkey(target.dt, model)
       segmentations.RData <- file.path(jprob.dir, "segmentations.RData")
       load(segmentations.RData)
-      data.table(
+      data.table(#lists of data tables and matrices.
         sample.target=list(
           target.dt["sample", c(min.log.lambda, max.log.lambda)]),
         group.target=list(

@@ -135,11 +135,12 @@ problem.train <- function
       NA
     })
   }, by=problem.dir]
-  new.cache <- correct.peak.stats[
-    !is.na(median.bases), .(problem.dir, cached.bases=median.bases)]
+  finite.peak.stats <- correct.peak.stats[is.finite(log10.bases)]
+  new.cache <- finite.peak.stats[, .(
+    problem.dir, cached.bases=median.bases)]
   fwrite(new.cache, correct_peaks.csv)
-  correct.peak.stats[, log10.bases := log10(median.bases)]
-  size.model <- correct.peak.stats[, list(
+  finite.peak.stats[, log10.bases := log10(median.bases)]
+  size.model <- finite.peak.stats[, list(
     mean=mean(log10.bases),
     sd=sd(log10.bases)
   )]
@@ -168,7 +169,7 @@ problem.train <- function
   model$train.feature.ranges <- apply(
     features[, model$pred.feature.names, drop=FALSE], 2, range)
   ## Plot the size model and limits.
-  log10.bases.grid <- correct.peak.stats[, seq(
+  log10.bases.grid <- finite.peak.stats[, seq(
     min(log10.bases), max(log10.bases), l=100)]
   normal.dens <- data.table(
     log10.bases=log10.bases.grid,
@@ -185,7 +186,7 @@ problem.train <- function
       geom_histogram(
         aes(
           log10.bases, ..density..),
-        data=correct.peak.stats)+
+        data=finite.peak.stats)+
       geom_vline(
         aes(xintercept=mean),
         data=size.model,
@@ -463,8 +464,8 @@ problem.models <- function
         with(tsv.data.list, data.table(
           timing.tsv[loss.tsv, on="penalty"],
           err.row,
-          segments.dt=list(list(segments.bed)),
-          errors.dt=list(list(err.dt))))
+          segments.dt=list(segments.bed),#list of data tables.
+          errors.dt=list(err.dt)))#list of data tables.
       }
     }, by="penalty.str"][order(penalty)]
   }
@@ -861,9 +862,19 @@ problem.predict <- function
     " based on ", n.features,
     " feature", ifelse(n.features==1, "", "s"),
     ".\n"))
-  result <- PeakSegDisk::PeakSegFPOP_dir(
-    problem.dir, pred.penalty, problem.tempfile(problem.dir, pred.penalty))
-  all.peaks <- result$segments[status=="peak", ]
+  models.dt <- problem.models(problem.dir)#cache newly computed model.
+  pred.segs <- if(pred.penalty %in% models.dt$penalty){
+    if(verbose)cat("Penalty exists in cache.\n")
+    pred.row <- models.dt[penalty==pred.penalty][1]
+    pred.row$segments.dt[[1]]
+  }else{
+    if(verbose)cat("Computing new penalty.\n")
+    result <- PeakSegDisk::PeakSegFPOP_dir(
+      problem.dir, pred.penalty, problem.tempfile(problem.dir, pred.penalty))
+    result$segments
+  }
+  all.peaks <- pred.segs[status=="peak"]
+  problem.models(problem.dir)#cache newly computed model.
   bases.vec <- all.peaks[, chromEnd-chromStart]
   in.range <- size.model[, lower.bases < bases.vec & bases.vec < upper.bases]
   peaks <- all.peaks[in.range, ]

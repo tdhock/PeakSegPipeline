@@ -22,7 +22,7 @@ SystemRequirements: Command line programs
  web site; detailed instructions also available on
  https://github.com/tdhock/PeakSegPipeline/wiki/FAQ
 Depends: R (>= 2.10)
-Imports: data.table (>= 1.11.6), 
+Imports: data.table (>= 1.12.8), 
  PeakError,
  PeakSegJoint (>= 2017.12.23),
  penaltyLearning (>= 2017.07.11),
