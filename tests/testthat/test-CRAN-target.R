@@ -70,6 +70,6 @@ test_that("models RDS file is present", {
   expect_equal(models.dt$possible.fn[1], sum(err.dt$possible.tp))
   model.row <- models.dt[1]
   seg.dt <- model.row$segments.dt[[1]]
-  expect_is(segments.dt, "data.table")
+  expect_is(seg.dt, "data.table")
   expect_equal(nrow(seg.dt), model.row$segments)
 })
