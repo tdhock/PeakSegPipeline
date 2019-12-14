@@ -29,6 +29,8 @@ download.to <- function
   }
 }
 
+## bcell is purposefully left un-labeled, which means it should be
+## used for prediction but not training.
 label.txt <- "
 chr10:33,061,897-33,162,814 noPeaks
 chr10:33,456,000-33,484,755 peakStart kidney

@@ -433,7 +433,7 @@ problem.models <- function
   csv.err.dt <- if(length(csv.file.vec)==0){
     data.table()
   }else{
-    labels.dt <- problem.labels(problem.dir)
+    labels.dt <- problem.labels(problem.dir, stop.without.labels=FALSE)
     csv.file.dt <- data.table(path=csv.file.vec, nc::capture_first_vec(
       csv.file.vec,
       "penalty=",
@@ -543,7 +543,7 @@ problem.target <- structure(function
   stopifnot(is.character(problem.dir))
   stopifnot(length(problem.dir)==1)
   problem.coverage(problem.dir)
-  labels.dt <- problem.labels(problem.dir)
+  labels.dt <- problem.labels(problem.dir, stop.without.labels=TRUE)
   if(verbose)cat(nrow(labels.dt), "labels in", problem.dir, "\n")
   model.err.dt <- problem.models(problem.dir)
   error.cols <- c(
@@ -743,8 +743,9 @@ problem.target <- structure(function
 problem.labels <- function
 ### read problemID/labels.bed if it exists, otherwise read
 ### sampleID/labels.bed
-(problem.dir
-  ## project/samples/groupID/sampleID/problems/problemID
+(problem.dir,
+### project/samples/groupID/sampleID/problems/problemID
+  stop.without.labels=TRUE
 ){
   problemStart1 <- problemStart <- chromStart1 <- chromStart <-
     chrom <- problemEnd <- chromEnd <- annotation <- NULL
@@ -759,11 +760,19 @@ problem.labels <- function
   sample.dir <- dirname(problems.dir)
   sample.labels.bed <- file.path(sample.dir, "labels.bed")
   if(!file.exists(sample.labels.bed)){
-    stop(
-      "need labels to compute target interval but none found for problem; ",
-      "please create either ",
-      sample.labels.bed, " or ",
-      problem.labels.bed)
+    if(isTRUE(stop.without.labels)){
+      stop(
+        "need labels to compute target interval but none found for problem; ",
+        "please create either ",
+        sample.labels.bed, " or ",
+        problem.labels.bed)
+    }else{
+      return(data.table(
+        chrom=character(),
+        chromStart=integer(),
+        chromEnd=integer(),
+        annotation=character()))
+    }
   }
   sample.labels <- fread(
     file=sample.labels.bed,
