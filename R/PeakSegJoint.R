@@ -213,7 +213,7 @@ problem.pred.cluster.targets <- function
   peaks.dt <- problem.predict.allSamples(prob.dir)
   create_problems_joint(prob.dir, peaks.dt)
   problem.joint.targets(prob.dir)
-### List of features and target matrices (same as problem.joint.target).
+### List of features and target matrices (same as problem.joint.targets).
 }
 
 problem.joint.train <- function

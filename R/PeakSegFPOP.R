@@ -861,20 +861,21 @@ problem.predict <- function
       " columns but ", length(model$train.mean.vec),
       " features were used to train the model")
   }
-  pred.penalty <- as.numeric(exp(model$predict(feature.mat)))
-  stopifnot(length(pred.penalty)==1)
-  stopifnot(is.finite(pred.penalty))
+  pred.log.penalty <- model$predict(feature.mat)
+  stopifnot(length(pred.log.penalty)==1)
+  stopifnot(is.finite(pred.log.penalty))
+  pred.penalty <- as.numeric(exp(pred.log.penalty))
   n.features <- length(model$pred.feature.names)
   if(verbose)cat(paste0(
     "Predicting penalty=", pred.penalty,
-    " log(penalty)=", log(pred.penalty),
+    " log(penalty)=", pred.log.penalty,
     " based on ", n.features,
     " feature", ifelse(n.features==1, "", "s"),
     ".\n"))
   models.dt <- problem.models(problem.dir)#cache newly computed model.
-  pred.segs <- if(pred.penalty %in% models.dt$penalty){
+  pred.segs <- if(pred.penalty %in% models.dt$penalty.str){
     if(verbose)cat("Penalty exists in cache.\n")
-    pred.row <- models.dt[penalty==pred.penalty][1]
+    pred.row <- models.dt[penalty.str==pred.penalty][1]
     pred.row$segments.dt[[1]]
   }else{
     if(verbose)cat("Computing new penalty.\n")
@@ -886,7 +887,7 @@ problem.predict <- function
   problem.models(problem.dir)#cache newly computed model.
   bases.vec <- all.peaks[, chromEnd-chromStart]
   in.range <- size.model[, lower.bases < bases.vec & bases.vec < upper.bases]
-  peaks <- all.peaks[in.range, ]
+  peaks <- all.peaks[in.range]
   ## save peaks.
   peaks.bed <- file.path(problem.dir, "peaks.bed")
   if(verbose)cat(
@@ -901,6 +902,11 @@ problem.predict <- function
     sep="\t",
     col.names=FALSE,
     row.names=FALSE)
+  ## These files can be recomputed, so delete them to save on disk
+  ## quota.
+  to.delete <- c(
+    "target.minutes", "target.tsv", "coverage.bedGraph", "features.tsv")
+  unlink(file.path(problem.dir, to.delete))
   if(nrow(peaks)){
     data.table(sample.id, sample.group, peaks)
   }
