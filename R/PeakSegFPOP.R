@@ -210,7 +210,7 @@ problem.train <- function
 
 problem.predict.allSamples <- function
 ### Predict for all samples, parallelized over problems via
-### future.apply::future_lapply.
+### psp_lapply.
 (prob.dir
 ### project/problems/problemID directory.
  ){
@@ -221,7 +221,7 @@ problem.predict.allSamples <- function
     set.dir, "samples", "*", "*"))
   prob.name <- basename(prob.dir)
   problem.vec <- file.path(sample.dir.vec, "problems", prob.name)
-  peaks.list <- future.apply::future_lapply(problem.vec, problem.predict)
+  peaks.list <- psp_lapply(problem.vec, problem.predict)
   do.call(rbind, peaks.list)
 ### data.table of predicted peaks.
 }
@@ -505,7 +505,7 @@ problem.target <- structure(function
 ### repeatedly calls PeakSegDisk::PeakSegFPOP_dir with different penalty values,
 ### until it finds an interval of penalty values with minimal label
 ### error. The calls to PeakSegFPOP are parallelized using
-### future.apply::future_lapply.  A time limit in minutes may be
+### psp_lapply.  A time limit in minutes may be
 ### specified in a file problem.dir/target.minutes; the search will
 ### stop at a sub-optimal target interval if this many minutes has
 ### elapsed. Useful for testing environments with build time limits
@@ -683,7 +683,7 @@ problem.target <- structure(function
         "\n")
       next.str <- paste(next.pen)
       iteration <- iteration+1
-      error.list[next.str] <- future.apply::future_lapply(next.str, getError)
+      error.list[next.str] <- psp_lapply(next.str, getError)
     }
   }#while(!is.null(pen))
   list(

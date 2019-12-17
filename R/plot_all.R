@@ -21,7 +21,7 @@ orderChrom <- function(chrom.vec, ...){
 plot_all <- function
 ### Gather and plot results of peak calling, generate summary web page
 ### set.dir.arg/index.html. Labeled chunk plots are created in
-### parallel via future.apply::future_lapply. If set.dir.arg/hub.sh
+### parallel via psp_lapply. If set.dir.arg/hub.sh
 ### exists it is called at the end of this function in order to
 ### generate a track hub based on the peak model files -- it should
 ### contain something like Rscript -e
@@ -184,7 +184,7 @@ plot_all <- function
     chunks.with.problems[, file.path(
       set.dir, "problems", problem.name, "chunks", chunk.name)]
   }
-  future.apply::future_lapply(chunk.dir.vec, function(chunk.dir){
+  psp_lapply(chunk.dir.vec, function(chunk.dir){
     PeakSegPipeline::problem.joint.plot(chunk.dir)
   })
   problems <- unsorted.problems[orderChrom(chrom, problemStart),]

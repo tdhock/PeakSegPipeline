@@ -3,7 +3,7 @@
 \title{problem joint predict job}
 \description{Compute all joint peak predictions for the joint problems listed
 in jobProblems.bed, in parallel over problems using
-\code{\link[future.apply]{future_lapply}}.}
+\code{\link{psp_lapply}}.}
 \usage{problem.joint.predict.job(job.dir, 
     verbose = getOption("PeakSegPipeline.verbose", 
         1))}

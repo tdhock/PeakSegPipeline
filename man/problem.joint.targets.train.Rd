@@ -3,7 +3,7 @@
 \title{problem joint targets train}
 \description{Compute all joint target intervals then learn joint penalty
 functions, in parallel over problems using
-\code{\link[future.apply]{future_lapply}}.}
+\code{\link{psp_lapply}}.}
 \usage{problem.joint.targets.train(data.dir, 
     verbose = getOption("PeakSegPipeline.verbose", 
         1))}

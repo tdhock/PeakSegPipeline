@@ -3,7 +3,7 @@
 \title{create problems joint}
 \description{Create joint problems for one separate problem, after separate
 peak prediction. Parallelized over joint problems via
-\code{\link[future.apply]{future_lapply}}.}
+\code{\link{psp_lapply}}.}
 \usage{create_problems_joint(prob.dir, 
     peaks = NULL, verbose = getOption("PeakSegPipeline.verbose", 
         1))}

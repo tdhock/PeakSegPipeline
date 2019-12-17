@@ -1,6 +1,6 @@
 problem.joint.predict.many <- function
 ### Compute all joint peak predictions for one separate problem, in
-### parallel over joint problems using future.apply::future_lapply.
+### parallel over joint problems using psp_lapply.
 (prob.dir,
 ### project/problems/problemID
   verbose=getOption("PeakSegPipeline.verbose", 1)
@@ -43,7 +43,7 @@ problem.joint.predict.many <- function
     jprob.peaks
   }
   ## out of memory errors, so don't run in parallel!
-  peaks.list <- future.apply::future_lapply(seq_along(joint.dir.vec), prob.progress)
+  peaks.list <- psp_lapply(seq_along(joint.dir.vec), prob.progress)
   ##lapply(seq_along(joint.dir.vec), prob.progress)
   peaks <- if(length(peaks.list)==0){
     data.table()
@@ -66,7 +66,7 @@ problem.joint.predict.many <- function
 problem.joint.predict.job <- function
 ### Compute all joint peak predictions for the joint problems listed
 ### in jobProblems.bed, in parallel over problems using
-### future.apply::future_lapply.
+### psp_lapply.
 (job.dir,
 ### project/jobs/jobID
   verbose=getOption("PeakSegPipeline.verbose", 1)
@@ -120,7 +120,7 @@ problem.joint.predict.job <- function
       prob[, data.table(problem.name, jprob.name, pred.row)]
     }
   }
-  jmodel.list <- future.apply::future_lapply(1:nrow(jobProblems), prob.progress)
+  jmodel.list <- psp_lapply(1:nrow(jobProblems), prob.progress)
   jobPeaks <- do.call(rbind, jmodel.list)
   jobPeaks.RData <- file.path(job.dir, "jobPeaks.RData")
   save(jobPeaks, file=jobPeaks.RData)
@@ -132,7 +132,7 @@ problem.joint.predict.job <- function
 problem.joint.targets <- function
 ### Compute joint targets for all joint problems in a separate
 ### problem, in parallel over joint problems using
-### future.apply::future_lapply.
+### psp_lapply.
 (problem.dir,
 ### project/problems/problemID
   verbose=getOption("PeakSegPipeline.verbose", 1)
@@ -141,7 +141,7 @@ problem.joint.targets <- function
   ## above variable defined in RData file.
   labels.tsv.vec <- Sys.glob(file.path(
     problem.dir, "jointProblems", "*", "labels.tsv"))
-  targets.features.list <- future.apply::future_lapply(
+  targets.features.list <- psp_lapply(
     seq_along(labels.tsv.vec), function(labels.i){
       labels.tsv <- labels.tsv.vec[[labels.i]]
       jprob.dir <- dirname(labels.tsv)
@@ -180,14 +180,14 @@ problem.joint.targets <- function
 problem.joint.targets.train <- function
 ### Compute all joint target intervals then learn joint penalty
 ### functions, in parallel over problems using
-### future.apply::future_lapply.
+### psp_lapply.
 (data.dir,
 ### project directory.
   verbose=getOption("PeakSegPipeline.verbose", 1)
 ){
   problem.dir.vec <- Sys.glob(file.path(
     data.dir, "problems", "*"))
-  future.apply::future_lapply(seq_along(problem.dir.vec), function(problem.i){
+  psp_lapply(seq_along(problem.dir.vec), function(problem.i){
     problem.dir <- problem.dir.vec[[problem.i]]
     if(verbose)cat(sprintf(
       "%4d / %4d problems %s\n",

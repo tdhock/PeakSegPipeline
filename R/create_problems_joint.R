@@ -1,7 +1,18 @@
+psp_lapply <- function
+### Use the lapply-like function defined in the PeakSegPipeline.lapply
+### option, or the default base::lapply.
+(...
+### Passed to the lapply-like function.
+){
+  fun <- getOption("PeakSegPipeline.lapply", lapply)
+  fun(...)
+### Result of the lapply-like function.
+}
+
 create_problems_joint <- function
 ### Create joint problems for one separate problem, after separate
 ### peak prediction. Parallelized over joint problems via
-### future.apply::future_lapply.
+### psp_lapply.
 (prob.dir,
 ### proj.dir/problems/problemID
   peaks=NULL,
@@ -190,7 +201,7 @@ create_problems_joint <- function
       "Creating ", nrow(problem.info),
       " joint segmentation problems for ", problem.name,
       "\n", sep="")
-    nothing <- future.apply::future_lapply(1:nrow(problem.info), makeProblem)
+    nothing <- psp_lapply(1:nrow(problem.info), makeProblem)
     write.table(
       problem.info[, .(chrom, problemStart, problemEnd)],
       jointProblems.bed,

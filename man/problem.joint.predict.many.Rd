@@ -2,7 +2,7 @@
 \alias{problem.joint.predict.many}
 \title{problem joint predict many}
 \description{Compute all joint peak predictions for one separate problem, in
-parallel over joint problems using \code{\link[future.apply]{future_lapply}}.}
+parallel over joint problems using \code{\link{psp_lapply}}.}
 \usage{problem.joint.predict.many(prob.dir, 
     verbose = getOption("PeakSegPipeline.verbose", 
         1))}
