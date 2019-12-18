@@ -161,6 +161,7 @@ test_that("no duplicate models in problem cache", {
   models.dt <- PeakSegPipeline:::problem.models(prob.dir)
   count.tab <- table(table(models.dt$penalty.str))
   expect_identical(names(count.tab), "1")
+  PeakSegPipeline:::problem.coverage(prob.dir)
   inf.fit <- PeakSegDisk::PeakSegFPOP_dir(prob.dir, "Inf")
   models.new <- PeakSegPipeline:::problem.models(prob.dir)
   count.new <- table(table(models.new$penalty.str))
