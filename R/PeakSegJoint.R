@@ -359,7 +359,11 @@ problem.joint <- function
       theme(panel.spacing=grid::unit(0, "lines"))
   }
   profile.list <- PeakSegJoint::ProfileList(coverage)
-  segmentations <- PeakSegJoint::PeakSegJointFaster(profile.list)
+  segmentations <- tryCatch({
+    PeakSegJoint::PeakSegJointFaster(profile.list, 2:7)
+  }, error=function(e){
+    PeakSegJoint::PeakSegJointFaster(profile.list, 2)
+  })
   segmentations$features <- PeakSegJoint::featureMatrixJoint(profile.list)
   if(verbose)cat(
     "Writing segmentation and features to", segmentations.RData, "\n")
