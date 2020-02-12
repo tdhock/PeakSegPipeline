@@ -6,7 +6,8 @@ context("create track hub")
 test.data.dir <- file.path(Sys.getenv("HOME"), "PeakSegPipeline-test")
 non.integer.dir <- file.path(test.data.dir, "non-integer")
 demo.dir <- file.path(test.data.dir, "input")
-hub.txt <- file.path(demo.dir,"hub.txt")
+hub.txt <- file.path(demo.dir, "hub.txt")
+trackDb.txt <- file.path(demo.dir, "trackDb.txt")
 
 download.to <- function
 (u, f, writeFun=if(grepl("bigWig", f))writeBin else writeLines){
@@ -22,9 +23,8 @@ download.to <- function
 
 ### Download bigWig files from github.
 bigWig.part.vec <- c(
-  "Input/MS010302",
-  "bcell/MS010302",
-  "kidney/MS002201"
+  "kidney/MS002201",
+  "bcell/MS010302"
 )
 
 label.txt <- "
@@ -42,20 +42,6 @@ chr10:38,296,008-38,307,179 peakStart bcell kidney
 chr10:38,379,045-38,391,967 peakStart bcell kidney
 chr10:38,404,899-38,412,089 peakEnd bcell kidney
 chr10:38,413,073-38,444,133 noPeaks
-
-chr10:38,585,584-38,643,190 noPeaks
-chr10:38,643,191-38,650,766 peakStart bcell kidney
-chr10:38,731,066-38,750,574 peakEnd bcell kidney
-chr10:38,750,960-38,790,663 noPeaks
-
-chr10:38,807,475-38,815,200 noPeaks
-chr10:38,815,201-38,816,355 peakStart bcell kidney Input
-chr10:38,818,377-38,819,342 peakEnd bcell kidney Input
-
-chr10:39,098,319-39,111,384 noPeaks
-chr10:39,125,134-39,125,550 peakStart bcell kidney Input
-chr10:39,125,594-39,126,266 peakEnd bcell kidney Input
-chr10:39,126,866-39,140,858 noPeaks
 "
 
 chrom.sizes.file <- tempfile()
@@ -112,8 +98,59 @@ for(prob.dir in prob.dir.vec){
 
 system(paste("bigWigToBedGraph", demo.bigWig, "/dev/stdout|head"))
 
-jobs_create_run(demo.dir)
+# Step 0
+convert_labels(demo.dir)
+# Step 1
+problem.dir.glob <- file.path(demo.dir, "samples", "*", "*", "*", "*")
+problem.dir.vec <- Sys.glob(problem.dir.glob)
+for(problem.dir in problem.dir.vec){
+  problem.target(problem.dir)
+}
+# Step 2
+problem.train(demo.dir)
+# Step 3
+prob.dir <- file.path(demo.dir, "problems", "chr10:18024675-38818835")
+problem.pred.cluster.targets(prob.dir)
+# Step 4
+problem.joint.train(demo.dir)
+# Step 5
+job <- file.path(demo.dir, "jobs", "1")
+problem.joint.predict.job(job)
+# Step 6
+plot_all(demo.dir)
+
+url <- paste0("http://CHANGE.THIS/~URL/", basename(demo.dir))
+email <- "toby.hocking@r-project.org"
+genome <- "hg19"
+create_track_hub(demo.dir, url, genome, email)
 
 test_that("hub.txt file is created", {
   expect_true(file.exists(hub.txt))
+})
+
+test_that("hub.txt file has correct email", {
+  hub.vec <- readLines(hub.txt)
+  index <- length(hub.vec)
+  hub.txt.email <- substring(hub.vec[index], 7)
+  expect_equal(hub.txt.email, email)
+})
+
+test_that("trackDb.txt file has the correct link to the bigwig files", {
+  trackDb.vec <- readLines(trackDb.txt)
+  kidney.coverage.line <- grep("samples/kidney/MS002201/coverage.bigWig", trackDb.vec)
+  kidney.jointpeak.line <- grep("samples/kidney/MS002201/joint_peaks.bigWig", trackDb.vec)
+  bcell.coverage.line <- grep("samples/bcell/MS010302/coverage.bigWig", trackDb.vec)
+  bcell.jointpeak.line <- grep("samples/bcell/MS010302/joint_peaks.bigWig", trackDb.vec)
+  split.index <- 14
+  trackDb.kidney.coverage.url <- substring(trackDb.vec[kidney.coverage.line], split.index)
+  trackDb.kidney.jointpeak.url <- substring(trackDb.vec[kidney.jointpeak.line], split.index)
+  trackDb.bcell.coverage.url <- substring(trackDb.vec[bcell.coverage.line], split.index)
+  trackDb.bcell.jointpeak.url <- substring(trackDb.vec[bcell.jointpeak.line], split.index)
+  sorted.bigWig.part.vec <- sort(bigWig.part.vec)
+  bcell.url <- paste0(url, "/samples/", sorted.bigWig.part.vec[1], "/")
+  kidney.url <- paste0(url, "/samples/", sorted.bigWig.part.vec[2], "/")
+  expect_equal(trackDb.kidney.coverage.url, paste0(kidney.url, "coverage.bigWig"))
+  expect_equal(trackDb.kidney.jointpeak.url, paste0(kidney.url, "joint_peaks.bigWig"))
+  expect_equal(trackDb.bcell.coverage.url, paste0(bcell.url, "coverage.bigWig"))
+  expect_equal(trackDb.bcell.jointpeak.url, paste0(bcell.url, "joint_peaks.bigWig"))
 })
