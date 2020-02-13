@@ -320,7 +320,7 @@ problem.joint <- function
   ## CRAN check.
   segmentations.RData <- file.path(jointProblem.dir, "segmentations.RData")
   jprob.name <- basename(jointProblem.dir)
-  jointProblem.row <- problem.table(jprob.name)
+  jointProblem.row <- PeakSegPipeline:::problem.table(jprob.name)
   jointProblems <- dirname(jointProblem.dir)
   prob.dir <- dirname(jointProblems)
   prob.name <- basename(prob.dir)
@@ -336,12 +336,12 @@ problem.joint <- function
   coverage.list <- list()
   for(coverage.i in seq_along(coverage.bigWig.vec)){
     coverage.bigWig <- coverage.bigWig.vec[[coverage.i]]
-    save.coverage <- jointProblem.row[, readBigWig(
+    save.coverage <- jointProblem.row[, PeakSegPipeline:::readBigWig(
       coverage.bigWig, chrom, problemStart, problemEnd)]
     sample.dir <- dirname(coverage.bigWig)
     group.dir <- dirname(sample.dir)
     if(nrow(save.coverage)){
-      coverage.list[[coverage.i]] <- data.table(
+      coverage.list[[coverage.i]] <- data.table::data.table(
         sample.id=basename(sample.dir),
         sample.group=basename(group.dir),
         save.coverage)

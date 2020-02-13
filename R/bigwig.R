@@ -101,10 +101,11 @@ readBigWig <- function
   stopifnot(0 <= start)
   stopifnot(start < end)
   stopifnot(end < Inf)
+  cmd <- PeakSegPipeline:::bigWigToBedGraphCommand(
+    bigwig.file, "/dev/stdout", chrom, start, end)
   suppressWarnings({#for 0-row data.
-    fread(
-      cmd=bigWigToBedGraphCommand(
-        bigwig.file, "/dev/stdout", chrom, start, end),
+    data.table::fread(
+      cmd=cmd,
       drop=1,
       col.names=c("chromStart", "chromEnd", "count"))
   })
