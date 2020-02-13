@@ -103,12 +103,16 @@ readBigWig <- function
   stopifnot(end < Inf)
   cmd <- PeakSegPipeline:::bigWigToBedGraphCommand(
     bigwig.file, "/dev/stdout", chrom, start, end)
-  suppressWarnings({#for 0-row data.
+  cov.dt <- suppressWarnings({#for 0-row data.
     data.table::fread(
       cmd=cmd,
       drop=1,
       col.names=c("chromStart", "chromEnd", "count"))
   })
+  ## some large counts appear as e.g. 1.00001e+06 which data.table
+  ## reads as numeric, so here we coerce to integer.
+  cov.dt[, count := as.integer(count)]
+  cov.dt
 ### data.table with columns chromStart chromEnd count.
 }
 
@@ -128,26 +132,6 @@ bigWigInfo <- function
   setnames(chroms, c("chrom", "chrom.int", "chromEnd"))
   chroms$chrom <- sub("\\s*", "", chroms$chrom)
   chroms
-}
-
-### read a bunch of bigwig files into R as a list of data.frames that
-### can be passed to PeakSegJointSeveral.
-readBigWigSamples <- function(problem, bigwig.file.vec){
-  counts.by.sample <- list()
-  for(sample.id in names(bigwig.file.vec)){
-    bigwig.file <- bigwig.file.vec[[sample.id]]
-    sample.counts <- with(problem, readBigWig(
-      bigwig.file,
-      chrom,
-      problemStart,
-      problemEnd))
-    ## Make a data.frame and not a data.table, since we will pass this
-    ## to the C segmentation code directly.
-    counts.by.sample[[sample.id]] <- with(sample.counts, {
-      data.frame(chromStart, chromEnd, count)
-    })
-  }
-  counts.by.sample
 }
 
 stop.without.ucsc <- function
