@@ -61,8 +61,8 @@ for(bigWig.part in bigWig.part.vec){
     out.dt <- data.table(chrom="chr10", bw.dt)
     demo.bedGraph <- sub("bigWig", "bedGraph", demo.bigWig)
     fwrite(out.dt, demo.bedGraph, sep="\t", col.names=FALSE)
-    system.or.stop(
-      paste("bedGraphToBigWig", demo.bedGraph, chrom.sizes.file, demo.bigWig))
+    cmd <- paste("bedGraphToBigWig", normalizePath(demo.bedGraph), normalizePath(chrom.sizes.file), normalizePath(demo.bigWig))
+    system.or.stop(cmd)
     unlink(demo.bedGraph)
   }
 }
@@ -95,8 +95,6 @@ for(prob.dir in prob.dir.vec){
   limit.file <- file.path(prob.dir, "target.minutes")
   fwrite(limit.dt, limit.file, col.names=FALSE)
 }
-
-system(paste("bigWigToBedGraph", demo.bigWig, "/dev/stdout|head"))
 
 # Step 0
 convert_labels(demo.dir)
