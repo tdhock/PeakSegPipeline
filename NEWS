@@ -15,6 +15,11 @@ file. http://www.cs.uleth.ca/~holzmann/C/system/shell_commands.html
 
 use compiled code instead of command line programs for bigWig/bigBed.
 
+2020.2.13 PR#20
+
+Import new PeakSegJoint which uses double instead of int to avoid
+overflow errors.
+
 2019.12.12 PR#19
 
 import data.table >= 1.12.4 for list column support.

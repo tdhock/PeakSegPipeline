@@ -1,7 +1,7 @@
 Package: PeakSegPipeline
 Type: Package
 Title: Genome-Wide Peak Prediction Using Supervised Learning and Optimal Segmentation
-Version: 2019.12.12
+Version: 2020.2.13
 Author: Toby Dylan Hocking
 Maintainer: Toby Dylan Hocking <toby.hocking@r-project.org>
 Description: Implementations of supervised machine learning
@@ -24,7 +24,7 @@ SystemRequirements: Command line programs
 Depends: R (>= 2.10)
 Imports: data.table (>= 1.12.4), 
  PeakError,
- PeakSegJoint (>= 2017.12.23),
+ PeakSegJoint (>= 2020.2.13),
  penaltyLearning (>= 2017.07.11),
  nc,
  xtable,
@@ -34,4 +34,4 @@ Imports: data.table (>= 1.12.4),
 Suggests: testthat, httr, batchtools, future
 URL: https://github.com/tdhock/PeakSegPipeline
 BugReports: https://github.com/tdhock/PeakSegPipeline/issues
-Remotes: tdhock/PeakSegDisk@review2
+Remotes: tdhock/PeakSegDisk, tdhock/PeakSegJoint@491bf43571c6c2901bbc83a824e6603555b28d94
