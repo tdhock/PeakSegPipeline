@@ -82,13 +82,18 @@ plot_all <- function
   background.list <- list()
   for(job.i in seq_along(jobPeaks.RData.vec)){
     jobPeaks.RData <- jobPeaks.RData.vec[[job.i]]
+    if(verbose)cat(sprintf(
+      "%4d / %4d %s\n", job.i, length(jobPeaks.RData.vec), jobPeaks.RData))
     load(jobPeaks.RData)
     if(nrow(jobPeaks)){
       jobPeaks[, n.samples := sapply(jobPeaks$background.mean.vec, nrow)]
       not.all.samples <- jobPeaks[n.samples < max(n.samples)]
       if(nrow(not.all.samples)){
         print(not.all.samples)
-        stop("some problems do not have all ", max(jobPeaks$n.samples), " samples")
+        stop(
+          "some problems do not have all ",
+          max(jobPeaks$n.samples),
+          " samples")
       }
       bkg.mat <- do.call(cbind, jobPeaks$background.mean.vec)
       background.list[[job.i]] <- rowMeans(bkg.mat, na.rm=TRUE)
@@ -112,6 +117,8 @@ plot_all <- function
   }
   for(job.i in seq_along(jobPeaks.RData.vec)){
     jobPeaks.RData <- jobPeaks.RData.vec[[job.i]]
+    if(verbose)cat(sprintf(
+      "%4d / %4d %s\n", job.i, length(jobPeaks.RData.vec), jobPeaks.RData))
     load(jobPeaks.RData)
     if(nrow(jobPeaks)){
       out.mat.list <- list()
