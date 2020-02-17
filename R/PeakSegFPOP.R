@@ -309,7 +309,7 @@ problem.coverage <- function
     prob.cov[, count.num.str := paste(count)]
     prob.cov[, count.int := as.integer(round(count))]
     prob.cov[, count.int.str := paste(count.int)]
-    not.int <- prob.cov[count.int.str != count.num.str, ]
+    not.int <- prob.cov[count.int.str != count.num.str]
     if(nrow(not.int)){
       print(not.int)
       stop("non-integer data in ", prob.cov.bedGraph)

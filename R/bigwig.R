@@ -109,9 +109,6 @@ readBigWig <- function
       drop=1,
       col.names=c("chromStart", "chromEnd", "count"))
   })
-  ## some large counts appear as e.g. 1.00001e+06 which data.table
-  ## reads as numeric, so here we coerce to integer.
-  cov.dt[, count := as.integer(count)]
   cov.dt
 ### data.table with columns chromStart chromEnd count.
 }

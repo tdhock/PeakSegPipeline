@@ -129,6 +129,7 @@ test_that("denorm.chromInfo is deleted", {
 ## Then test pipeline.
 test.data.dir <- file.path("~/PeakSegPipeline-test")
 non.integer.dir <- file.path(test.data.dir, "non-integer (bad)")
+unlink(non.integer.dir, recursive=TRUE, force=TRUE)#start fresh.
 demo.dir <- file.path(test.data.dir, "noinput (bad)")
 index.html <- file.path(demo.dir, "index.html")
 download.to <- function
@@ -218,13 +219,22 @@ chr10	125919472	128616069
 ", file=problems.bed)
 }
 
-## Pipeline should raise error for non-integer data.
-test_that("error for non-integer data in bigWigs", {
+test_that("pipeline error for non-integer data in bigWigs", {
   expect_error({
-    jobs_create_run(non.integer.dir)
+    jobs_create_run(non.integer.dir, steps=1)
   }, "non-integer data in")
 })
-unlink(non.integer.dir, recursive=TRUE, force=TRUE)
+
+test_that("coverage error for non-integer data in bigWigs", {
+  non.int.prob.dirs <- Sys.glob(file.path(
+    non.integer.dir, "samples", "*", "*", "problems", "*"))
+  unlink(file.path(non.int.prob.dirs, "coverage.bedGraph"))
+  one.prob.dir <- non.int.prob.dirs[1]
+  expected.err <- paste("non-integer data in", one.prob.dir)
+  expect_error({
+    problem.coverage(one.prob.dir)
+  }, expected.err, fixed=TRUE)
+})
 
 ## Set time limit manually.
 (sample.dir.vec <- Sys.glob(file.path(

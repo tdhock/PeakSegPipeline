@@ -249,8 +249,9 @@ jobs_create_run <- function
 ### Run entire PeakSegFPOP + PeakSegJoint pipeline.
 (set.dir.path,
 ### data set directory.
-  ...
+  ...,
 ### passed to jobs_create
+  steps=NULL
 ){
   unlink(file.path(
     set.dir.path,
@@ -258,7 +259,12 @@ jobs_create_run <- function
     "*",
     "*",
     "labels.bed"))
-  jobs <- jobs_create(set.dir.path, ...)
+  all.jobs <- jobs_create(set.dir.path, ...)
+  jobs <- if(is.null(steps)){
+    all.jobs
+  }else{
+    all.jobs[step %in% steps]
+  }
   for(job.i in 1:nrow(jobs)){
     job <- jobs[job.i]
     fun <- get(job$fun)

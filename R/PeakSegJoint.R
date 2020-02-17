@@ -358,6 +358,9 @@ problem.joint <- function
       theme_bw()+
       theme(panel.spacing=grid::unit(0, "lines"))
   }
+  ## some large counts appear as e.g. 1.00001e+06 which data.table
+  ## reads as numeric, so here we coerce to integer.
+  coverage[, count := as.integer(count)]
   profile.list <- PeakSegJoint::ProfileList(coverage)
   segmentations <- tryCatch({
     PeakSegJoint::PeakSegJointFaster(profile.list, 2:7)
