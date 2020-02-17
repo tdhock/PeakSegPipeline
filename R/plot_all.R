@@ -80,7 +80,8 @@ plot_all <- function
   ## First pass to figure out background level for each sample.
   summary.dt.list <- list()
   background.list <- list()
-  for(job.i in seq_along(jobPeaks.RData.vec)){
+  job.i.vec <- seq_along(jobPeaks.RData.vec)
+  for(job.i in job.i.vec){
     jobPeaks.RData <- jobPeaks.RData.vec[[job.i]]
     if(verbose)cat(sprintf(
       "%4d / %4d %s\n", job.i, length(jobPeaks.RData.vec), jobPeaks.RData))
@@ -89,11 +90,25 @@ plot_all <- function
       jobPeaks[, n.samples := sapply(jobPeaks$background.mean.vec, nrow)]
       not.all.samples <- jobPeaks[n.samples < max(n.samples)]
       if(nrow(not.all.samples)){
-        print(not.all.samples)
-        stop(
-          "some problems do not have all ",
-          max(jobPeaks$n.samples),
-          " samples")
+        if(verbose){
+          cat("Some samples missing, re-doing joint predictions:\n")
+          print(not.all.samples)
+        }
+        jprob.dir.vec <- not.all.samples[, file.path(
+          set.dir, "problems", problem.name, "jointProblems", jprob.name)]
+        unlink(file.path(jprob.dir.vec, "segmentations.RData"))
+        unlink(file.path(jprob.dir.vec, "peakInfo.rds"))
+        job.dir <- dirname(jobPeaks.RData)
+        jobPeaks <- PeakSegPipeline::problem.joint.predict.job(job.dir)
+        ## try again.
+        jobPeaks[, n.samples := sapply(jobPeaks$background.mean.vec, nrow)]
+        not.all.samples <- jobPeaks[n.samples < max(n.samples)]
+        if(nrow(not.all.samples)){
+          stop(
+            "some problems do not have all ",
+            max(jobPeaks$n.samples),
+            " samples")
+        }
       }
       bkg.mat <- do.call(cbind, jobPeaks$background.mean.vec)
       background.list[[job.i]] <- rowMeans(bkg.mat, na.rm=TRUE)
@@ -115,7 +130,7 @@ plot_all <- function
     out.tsv <- out.tsv.vec[[out.col]]
     conn.list[[out.col]] <- gzfile(out.tsv, "w")
   }
-  for(job.i in seq_along(jobPeaks.RData.vec)){
+  for(job.i in job.i.vec){
     jobPeaks.RData <- jobPeaks.RData.vec[[job.i]]
     if(verbose)cat(sprintf(
       "%4d / %4d %s\n", job.i, length(jobPeaks.RData.vec), jobPeaks.RData))
