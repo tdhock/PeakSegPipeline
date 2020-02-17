@@ -226,7 +226,7 @@ problem.predict.allSamples <- function
 ### data.table of predicted peaks.
 }
 
-problem.table <- function
+problem.table <- structure(function
 ### Convert a path with a problem string to a data.table.
 (problem.dir
 ### path with a problem string, e.g. chrX:6000-1000000
@@ -239,7 +239,10 @@ problem.table <- function
     "-",
     problemEnd="[0-9]+", as.integer)
 ### data.table with columns chrom, problemStart, problemEnd.
-}
+}, ex=function(){
+  PeakSegPipeline::problem.table(
+    "dataSet/samples/group1/sample1/problems/chrX:6000-1000000")
+})
 
 problem.coverage <- function
 ### Ensure that coverage.bedGraph has been correctly computed for a
@@ -804,7 +807,7 @@ problem.predict <- function
   verbose=getOption("PeakSegPipeline.verbose", 1)
  ){
   model <- status <- chromEnd <- chromStart <- size.model <- lower.bases <-
-    upper.bases <- penalty <- NULL
+    upper.bases <- penalty <- penalty.str <- NULL
   ## above to avoid "no visible binding for global variable" NOTEs in
   ## CRAN check.
   stopifnot(is.character(problem.dir))

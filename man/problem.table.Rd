@@ -14,4 +14,7 @@
 
 
 
-
+\examples{
+PeakSegPipeline::problem.table(
+  "dataSet/samples/group1/sample1/problems/chrX:6000-1000000")
+}

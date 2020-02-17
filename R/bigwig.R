@@ -54,7 +54,7 @@ bigWigToBedGraph <- function
     end))
 }
 
-bigWigToBedGraphCommand <- function
+bigWigToBedGraphCommand <- structure(function
 ### Get command line to run bigWigToBedGraph.
 (in.bigWig,
 ### character string path to input bigWig file.
@@ -75,7 +75,10 @@ bigWigToBedGraphCommand <- function
     if(isOK(end))paste0("-end=", end),
     shQuote(in.bigWig),
     shQuote(out.bedGraph))
-}
+}, ex=function(){
+  PeakSegPipeline::bigWigToBedGraphCommand(
+    "in.bigWig", "out.bedGraph", "chr1", 0, 100)
+})
 
 readBigWig <- function
 ### Read part of a bigWig file into R as a data.table (assumes
@@ -101,7 +104,7 @@ readBigWig <- function
   stopifnot(0 <= start)
   stopifnot(start < end)
   stopifnot(end < Inf)
-  cmd <- PeakSegPipeline:::bigWigToBedGraphCommand(
+  cmd <- PeakSegPipeline::bigWigToBedGraphCommand(
     bigwig.file, "/dev/stdout", chrom, start, end)
   cov.dt <- suppressWarnings({#for 0-row data.
     data.table::fread(

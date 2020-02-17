@@ -20,4 +20,7 @@
 
 
 
-
+\examples{
+PeakSegPipeline::bigWigToBedGraphCommand(
+  "in.bigWig", "out.bedGraph", "chr1", 0, 100)
+}

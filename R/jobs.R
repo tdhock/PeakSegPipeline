@@ -252,7 +252,10 @@ jobs_create_run <- function
   ...,
 ### passed to jobs_create
   steps=NULL
+### integer vector of step ID numbers to subset on.
 ){
+  step <- NULL
+  ## Above for CRAN check.
   unlink(file.path(
     set.dir.path,
     "samples",
