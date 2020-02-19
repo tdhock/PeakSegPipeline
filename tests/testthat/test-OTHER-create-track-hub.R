@@ -26,6 +26,7 @@ chr10	38384896	38388766	18.85
 chr10	38405366	38407487	20.89
 chr10	38646768	38737802	12.77
 "
+dir.create(dirname(joint_peaks.bedGraph.file), showWarnings=FALSE, recursive=TRUE)
 writeLines(joint_peaks.bedGraph, joint_peaks.bedGraph.file)
 
 download.to <- function
