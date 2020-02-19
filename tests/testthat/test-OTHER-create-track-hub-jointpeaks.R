@@ -90,3 +90,5 @@ test_that("trackDb.txt file has the correct link to the bigwig files", {
   expect_equal(coverage.url, paste0(base.url, "coverage.bigWig"))
   expect_equal(jointpeak.url, paste0(base.url, "joint_peaks.bigWig"))
 })
+
+unlink(demo.dir, recursive = TRUE)
