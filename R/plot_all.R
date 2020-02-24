@@ -84,7 +84,8 @@ plot_all <- function
   for(job.i in job.i.vec){
     jobPeaks.RData <- jobPeaks.RData.vec[[job.i]]
     if(verbose)cat(sprintf(
-      "%4d / %4d %s\n", job.i, length(jobPeaks.RData.vec), jobPeaks.RData))
+      "%4d / %4d first pass %s\n",
+      job.i, length(jobPeaks.RData.vec), jobPeaks.RData))
     load(jobPeaks.RData)
     if(nrow(jobPeaks)){
       jobPeaks[, n.samples := sapply(jobPeaks$background.mean.vec, nrow)]
@@ -133,7 +134,8 @@ plot_all <- function
   for(job.i in job.i.vec){
     jobPeaks.RData <- jobPeaks.RData.vec[[job.i]]
     if(verbose)cat(sprintf(
-      "%4d / %4d %s\n", job.i, length(jobPeaks.RData.vec), jobPeaks.RData))
+      "%4d / %4d second pass %s\n",
+      job.i, length(jobPeaks.RData.vec), jobPeaks.RData))
     load(jobPeaks.RData)
     if(nrow(jobPeaks)){
       out.mat.list <- list()
@@ -228,7 +230,9 @@ plot_all <- function
   setnames(pos.dt, c("chrom", "peakStart", "peakEnd"))
   ord.vec <- pos.dt[, orderChrom(chrom, peakStart, peakEnd)]
   pos.ord.dt <- pos.dt[ord.vec]
-  for(sample.i in 2:length(col.name.vec)){
+  sample.i.vec <- 2:length(col.name.vec)
+  for(i in seq_along(sample.i.vec)){
+    sample.i <- sample.i.vec[[i]]
     presence.dt <- zcat("sample", select=sample.i)[ord.vec]
     has.peak <- which(presence.dt[[1]]==1)
     mean.vec <- zcat("meanCoverage", select=sample.i)[ord.vec][[1]]
@@ -239,6 +243,8 @@ plot_all <- function
     out.path <- col.name.vec[[sample.i]]
     out.file <- file.path(
       set.dir, "samples", out.path, "joint_peaks.bedGraph")
+    if(verbose)cat(sprintf(
+      "%4d / %4d writing %s\n", i, length(sample.i.vec), out.file))
     fwrite(
       bg.dt,
       out.file,
