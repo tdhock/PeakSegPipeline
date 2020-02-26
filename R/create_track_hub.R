@@ -12,9 +12,10 @@ create_track_hub <- function
 ### genome string as defined at UCSC, e.g. "hg19"
   email,
 ### email address for maintainer of track hub.
-  goldenPath.url=ucsc.goldenPath.url
+  goldenPath.url=ucsc.goldenPath.url,
 ### link to download UCSC genome chromInfo files, necessary for
 ### creating bigWigs.
+  verbose=getOption("PeakSegPipeline.verbose", 1)
 ){
   chrom <- problemStart <- problemEnd <- chromEnd <- . <-
     name <- chrom <- chromStart <- strand <- NULL
@@ -27,10 +28,12 @@ create_track_hub <- function
     paste0(genome, "_chromInfo.txt"))
   ## First make sure we have the chromInfo file for this genome.
   if(!file.exists(chromInfo.txt)){
-    chromInfo.url <- paste0(goldenPath.url, genome, "/database/chromInfo.txt.gz")
+    chromInfo.url <- paste0(
+      goldenPath.url, genome, "/database/chromInfo.txt.gz")
     chromInfo.gz <- paste0(chromInfo.txt, ".gz")
     download.file(chromInfo.url, chromInfo.gz)
-    system.or.stop(paste("zcat", chromInfo.gz, ">", chromInfo.txt))
+    system.or.stop(paste(
+      "zcat", shQuote(chromInfo.gz), ">", shQuote(chromInfo.txt)))
   }
   ## Then create bedGraph files if necessary.
   bedGraph.file.vec <- Sys.glob(file.path(
@@ -84,19 +87,20 @@ genome ", genome, "
 trackDb trackDb.txt
 "), file.path(data.dir.path, "genomes.txt"))
   ## Write hub.txt
+  hub.txt <- file.path(data.dir.path, "hub.txt")
   writeLines(paste0("
 hub ", data.name, "
 shortLabel ", data.name, "
 longLabel ", data.name, "
 genomesFile genomes.txt
-email ", email), file.path(data.dir.path, "hub.txt"))
+email ", email), hub.txt)
   ## create jointProblems.bigBed
-  jproblems.glob <- file.path(data.dir.path, "problems", "*", "jointProblems.bed")
+  jproblems.glob <- file.path(shQuote(data.dir.path), "problems", "*", "jointProblems.bed")
   jprobs <- fread(cmd=paste("cat", jproblems.glob))
   jointProblems.bed <- file.path(data.dir.path, "jointProblems.bed")
   if(nrow(jprobs)){
     setnames(jprobs, c("chrom", "problemStart", "problemEnd"))
-    sizes.dt <- fread(chromInfo.txt)
+    sizes.dt <- fread(file=chromInfo.txt)
     names(sizes.dt)[1:2] <- c("chrom", "chromEnd")
     join.dt <- sizes.dt[jprobs, on=list(chrom)]
     join.dt[, problemStart := ifelse(problemStart < 0, 0, problemStart)]
@@ -112,7 +116,7 @@ email ", email), file.path(data.dir.path, "hub.txt"))
     unlink(jointProblems.bed)
   }
   bedToBigBed <- function(bed){
-    bed.long <- fread(bed)
+    bed.long <- fread(file=bed)
     names(bed.long)[1:3] <- c("chrom", "chromStart", "chromEnd")
     if(4 <= ncol(bed.long)){
       names(bed.long)[4] <- "name"
@@ -127,11 +131,11 @@ email ", email), file.path(data.dir.path, "hub.txt"))
     setkey(bed.long, chrom, chromStart)
     fwrite(bed.long, short, sep="\t", col.names=FALSE, quote=FALSE)
     bigBed <- sub("bed$", "bigBed", bed)
-    cmd <- paste(
+    system.or.stop(paste(
       "bedToBigBed",
-      short, chromInfo.txt,
-      bigBed)
-    system.or.stop(cmd)
+      shQuote(short),
+      shQuote(chromInfo.txt),
+      shQuote(bigBed)))
     bigBed
   }
   bed.num.vec <- c(
@@ -170,7 +174,6 @@ itemRgb ", ifelse(names(bigBed.list)=="all_labels", "on", "off"), "
 spectrum ", ifelse(names(bigBed.list)=="peaks_summary", "on", "off"), "
 bigDataUrl ", getURL(unlist(bigBed.list)))
   }
-
   group.track.vec <- paste0("
 track ", group.names, "
 superTrack on show
@@ -226,8 +229,11 @@ longLabel ", group.names, " ChIP-seq samples
     paste(bed.track.vec, collapse="\n"),
     paste(track.vec, collapse="\n"),
     sep="\n\n")
-
   writeLines(track.content, file.path(data.dir.path, "trackDb.txt"))
-
-  cat("Created ", getURL("/hub.txt"), "\n", sep="")
+  if(verbose)cat(
+    "Created ",
+    hub.txt,
+    " which should be served at ",
+    getURL("/hub.txt"),
+    "\n", sep="")
 }

@@ -9,9 +9,38 @@ test create_track_hub.
 negative test cases for denormalize* functions.
 
 use popen in C to pipe bigWigToBedGraph stdout to our coverage
-counting function, which should be much faster than using an
-intermediate bedGraph
+counting and denormalizing functions, which should be much faster than
+using an intermediate bedGraph
 file. http://www.cs.uleth.ca/~holzmann/C/system/shell_commands.html
+
+use compiled code instead of command line programs for bigWig/bigBed.
+
+2020.2.13 PR#20
+
+Import new PeakSegJoint which uses double instead of int to avoid
+overflow errors.
+
+2019.12.12 PR#19
+
+import data.table >= 1.12.4 for list column support.
+
+new problem.models function which reads CSV/RDS models, then saves all
+models to RDS, then deletes all CSV files, to help avoid going over
+quota on number of files in big data sets.
+
+jobs_create gains target.minutes argument.
+
+test readBigWig for no data to read.
+
+test case for denormalizeBigWig with spaces in path.
+
+problem.PeakSegFPOP writes to temporary disk.
+
+if(verbose)cat(...) for CRAN.
+
+2019.9.27 PR#18
+
+bedGraphToBigWig: bugfix for unsorted bedGraph files.
 
 2019.9.18 PR#17
 

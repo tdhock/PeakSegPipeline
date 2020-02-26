@@ -2,12 +2,20 @@ jobs_create <- function
 ### Setup a data directory for analysis with PeakSegPipeline.
 (data.dir.arg,
 ### path to project directory.
-  verbose=FALSE
+  target.minutes=NULL,
+### Maximum number of minutes to spend computing the target interval
+### during Step1 of the pipeline (learning what penalties result in
+### low label error). If this is a number then a target.minutes file
+### will be written to each problem directory -- this number in this
+### file is used as the maximum number of minutes by the
+### problem.target function.
+  verbose=getOption("PeakSegPipeline.verbose", 1)
 ### TRUE for output, FALSE otherwise.
 ){
   bases <- problemEnd <- problemStart <- problem.name <- chrom <- row.i <-
     problemStart1 <- chromStart1 <- chromStart <- chromEnd <- chunk.limits <-
-      chunk.name <- . <- regions.by.chunk.file <- chunk <- NULL
+      chunk.name <- . <- regions.by.chunk.file <- chunk <-
+        step <- tm.file <- arg <- NULL
   ## above to avoid CRAN NOTE.
   if(FALSE){#for debugging.
     data.dir.arg <- "~/genomic-ml/PeakSegFPOP/labels/ATAC_JV_adipose/"
@@ -16,7 +24,7 @@ jobs_create <- function
   data.dir <- normalizePath(data.dir.arg, mustWork=TRUE)
   problems.bed <- file.path(data.dir, "problems.bed")
   samples.dir <- file.path(data.dir, "samples")
-  problems <- fread(problems.bed)
+  problems <- fread(file=problems.bed)
   setnames(problems, c("chrom", "problemStart", "problemEnd"))
   problems[, bases := problemEnd-problemStart]
   problems[, problem.name := sprintf(
@@ -79,10 +87,14 @@ jobs_create <- function
     sample.dir <- sample.dir.vec[[sample.i]]
     problems.dir <- file.path(sample.dir, "problems")
     labels.bed <- file.path(sample.dir, "labels.bed")
-    labels <- if(file.exists(labels.bed))fread(labels.bed, col.names=c(
+    labels <- if(file.exists(labels.bed))fread(file=labels.bed, col.names=c(
       "chrom", "chromStart", "chromEnd", "annotation"))
     labels.by.problem <- if(length(labels)){
-      just.to.check <- PeakError(Peaks(), labels)
+      tryCatch({
+        just.to.check <- PeakError(Peaks(), labels)
+      }, error=function(e){
+        stop(e, " for ", labels.bed)
+      })
       labels[, chromStart1 := chromStart + 1L]
       setkey(labels, chrom, chromStart1, chromEnd)
       setkey(problems, chrom, problemStart1, problemEnd)
@@ -129,6 +141,16 @@ jobs_create <- function
     fun="plot_all",
     arg=data.dir)
   all.job <- do.call(rbind, all.job.list)
+  if(is.numeric(target.minutes) && length(target.minutes)==1){
+    step1 <- all.job[step==1]
+    if(verbose)cat(
+      "Creating target.minutes files for", nrow(step1), "problems.\n")
+    step1[, tm.file := file.path(arg, "target.minutes")]
+    step1[, {
+      dir.create(dirname(tm.file), showWarnings=FALSE, recursive=TRUE)
+      cat(target.minutes, file=tm.file)
+    }, by=tm.file]
+  }
   hub.sh <- file.path(data.dir, "hub.sh")
   if(!file.exists(hub.sh)){
     code <- sprintf(
@@ -153,14 +175,14 @@ jobs_submit_batchtools <- structure(function
 (jobs,
 ### data.table from jobs_create.
   resources=list(
-    walltime = 24*60,#minutes
+    walltime = 24*60*60,#seconds
     memory = 2000,#megabytes per cpu
     ncpus=2,
     ntasks=1,
     chunks.as.arrayjobs=TRUE)
 ### List of resources for each job, passed to batchtools::submitJobs.
 ){
-  step <- arg <- fun <- NULL
+  step <- arg <- fun <- task <- NULL
   ## Above to avoid CRAN NOTE.
   requireNamespace("batchtools")
   if(!(
@@ -193,19 +215,20 @@ jobs_submit_batchtools <- structure(function
     unlink(step.dir, recursive=TRUE)
     reg <- reg.list[[paste(step.i)]] <- batchtools::makeRegistry(step.dir)
     step.jobs <- jobs[step==step.i]#[1:min(2, .N)]#for testing
+    step.jobs[, task := 1:.N %% 999 ]
+    task.vec <- unique(step.jobs$task)
     batchtools::batchMap(function(task.i, job.dt){
       library(PeakSegPipeline)
-      job <- job.dt[task.i]
-      fun <- get(job$fun)
-      fun(job$arg)
-    }, 1:nrow(step.jobs), reg=reg, more.args=list(job.dt=step.jobs))
+      task.jobs <- job.dt[task==task.i]
+      for(row.i in 1:nrow(task.jobs)){
+        row.job <- task.jobs[row.i]
+        fun <- get(row.job$fun)
+        fun(row.job$arg)
+      }
+    }, task.vec, reg=reg, more.args=list(job.dt=step.jobs))
     job.table <- batchtools::getJobTable(reg=reg)
     chunks <- data.table(job.table, chunk=1)
-    job.name.vec <- step.jobs[, paste0(
-      sub("problem.", "", fun),
-      "_",
-      basename(arg)
-    )]
+    job.name.vec <- paste0("Step", step.i, "Task", task.vec)
     batchtools::setJobNames(job.table$job.id, job.name.vec)
     resources[["afterok"]] <- afterok
     batchtools::submitJobs(chunks, resources=resources, reg=reg)
@@ -226,16 +249,25 @@ jobs_create_run <- function
 ### Run entire PeakSegFPOP + PeakSegJoint pipeline.
 (set.dir.path,
 ### data set directory.
-  verbose=TRUE
-### print messages?
+  ...,
+### passed to jobs_create
+  steps=NULL
+### integer vector of step ID numbers to subset on.
 ){
+  step <- NULL
+  ## Above for CRAN check.
   unlink(file.path(
-    set.dir.path, 
+    set.dir.path,
     "samples",
     "*",
     "*",
     "labels.bed"))
-  jobs <- jobs_create(set.dir.path, verbose=verbose)
+  all.jobs <- jobs_create(set.dir.path, ...)
+  jobs <- if(is.null(steps)){
+    all.jobs
+  }else{
+    all.jobs[step %in% steps]
+  }
   for(job.i in 1:nrow(jobs)){
     job <- jobs[job.i]
     fun <- get(job$fun)

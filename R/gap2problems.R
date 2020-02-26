@@ -13,12 +13,12 @@ gap2problems <- function
   ## above to avoid "no visible binding for global variable" NOTEs in
   ## CRAN check.
   stopifnot(is.character(gap.bed), length(gap.bed)==1, file.exists(gap.bed))
-  gap <- fread(gap.bed, select=1:3, col.names=c("chrom", "gapStart", "gapEnd"))
+  gap <- fread(file=gap.bed, select=1:3, col.names=c("chrom", "gapStart", "gapEnd"))
   stopifnot(
     is.character(chromInfo.txt),
     length(chromInfo.txt)==1,
     file.exists(chromInfo.txt))
-  chromInfo <- fread(chromInfo.txt, select=1:2, col.names=c("chrom", "bases"))
+  chromInfo <- fread(file=chromInfo.txt, select=1:2, col.names=c("chrom", "bases"))
   join.dt <- gap[chromInfo, on=list(chrom)]
   problems <- rbind(
     join.dt[is.na(gapStart), {

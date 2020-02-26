@@ -25,8 +25,9 @@ denormalizeBigWig <- function
 ### non-zero value.
 (input.bigWig,
 ### Input bigWig file with non-integer data.
-  output.bigWig
+  output.bigWig,
 ### Output bigWig file with integer data.
+  verbose=getOption("PeakSegPipeline.verbose", 1)
 ){
   chrom <- chromEnd <- NULL
   ## Above to avoid CRAN check NOTE.
@@ -37,28 +38,26 @@ denormalizeBigWig <- function
   )) {
     stop("input.bigWig must be the name of a data file")
   }
-  input.bedGraph <- sub("bigWig$", "bedGraph", input.bigWig)
-  stopifnot(is.character(output.bigWig))
-  output.bedGraph <- sub("bigWig$", "bedGraph", output.bigWig)
-  chromInfo <- bigWigInfo(input.bigWig)
-  cmd <- paste(
-    "bigWigToBedGraph",
-    input.bigWig,
-    input.bedGraph)
-  system.or.stop(cmd)
+  in.path.bigWig <- normalizePath(input.bigWig, mustWork=TRUE)
+  out.path.bigWig <- normalizePath(output.bigWig, mustWork=FALSE)
+  input.bedGraph <- sub("bigWig$", "bedGraph", in.path.bigWig)
+  stopifnot(is.character(out.path.bigWig))
+  output.bedGraph <- sub("bigWig$", "bedGraph", out.path.bigWig)
+  chromInfo <- bigWigInfo(in.path.bigWig)
+  bigWigToBedGraph(in.path.bigWig, input.bedGraph)
   denormalizeBedGraph(input.bedGraph, output.bedGraph)
-  cmd <- paste(
+  if(verbose)system.or.stop(paste(
     "head",
-    input.bedGraph,
-    output.bedGraph)
-  system.or.stop(cmd)
+    shQuote(input.bedGraph),
+    shQuote(output.bedGraph)))
   output.chromInfo <- sub("bedGraph$", "chromInfo", output.bedGraph)
   chromSizes <- chromInfo[, list(chrom, chromEnd)]
   fwrite(chromSizes, output.chromInfo, sep="\t", col.names=FALSE)
   bedGraphToBigWig(
     output.bedGraph,
     output.chromInfo,
-    output.bigWig)
+    out.path.bigWig)
+  unlink(output.chromInfo)
   unlink(input.bedGraph)
   unlink(output.bedGraph)
 }

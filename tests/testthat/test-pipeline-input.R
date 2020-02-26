@@ -29,6 +29,8 @@ download.to <- function
   }
 }
 
+## bcell is purposefully left un-labeled, which means it should be
+## used for prediction but not training.
 label.txt <- "
 chr10:33,061,897-33,162,814 noPeaks
 chr10:33,456,000-33,484,755 peakStart kidney
@@ -68,41 +70,9 @@ for(bigWig.part in bigWig.part.vec){
   demo.bigWig <- sub("non-integer", "input", bigWig.file)
   if(!file.exists(demo.bigWig)){
     dir.create(dirname(demo.bigWig), showWarnings=FALSE, recursive=TRUE)
-    bw.dt <- readBigWig(bigWig.file, "chr10", 0, 128616069)
-    out.dt <- data.table(chrom="chr10", bw.dt)
-    demo.bedGraph <- sub("bigWig", "bedGraph", demo.bigWig)
-    fwrite(out.dt, demo.bedGraph, sep="\t", col.names=FALSE)
-    system.or.stop(
-      paste("bedGraphToBigWig", demo.bedGraph, chrom.sizes.file, demo.bigWig))
-    unlink(demo.bedGraph)
+    denormalizeBigWig(bigWig.file, demo.bigWig)
   }
 }
-
-sample.dir <- dirname(demo.bigWig)
-problem.dir <- file.path(sample.dir, "problems", "chr10:18024675-38818835")
-coverage.bedGraph <- file.path(problem.dir, "coverage.bedGraph")
-unlink(coverage.bedGraph)
-test_that("computing coverage is silent by default", {
-  out.vec <- capture.output({
-    problem <- problem.coverage(problem.dir)
-  })
-  expect_identical(out.vec, character())
-})
-
-unlink(coverage.bedGraph)
-test_that("computing coverage is verbose when creating file", {
-  out.vec <- capture.output({
-    problem <- problem.coverage(problem.dir, verbose=1)
-  })
-  expect_match(out.vec, "bigWigToBedGraph")
-})
-
-test_that("computing coverage is silent when not creating file", {
-  out.vec <- capture.output({
-    problem <- problem.coverage(problem.dir, verbose=1)
-  })
-  expect_identical(out.vec, character())
-})
 
 for(set.dir in c(non.integer.dir, demo.dir)){
   labels.file <- file.path(set.dir, "labels", "some_labels.txt")
@@ -121,18 +91,6 @@ test_that("error for non-integer data in bigWigs", {
 })
 unlink(non.integer.dir, recursive=TRUE, force=TRUE)
 
-## Set time limit.
-(sample.dir.vec <- Sys.glob(file.path(
-  demo.dir, "samples", "*", "*")))
-prob.dir.vec <- file.path(
-  sample.dir.vec, "problems", "chr10:18024675-38818835")
-limit.dt <- data.table(minutes=5)
-for(prob.dir in prob.dir.vec){
-  dir.create(prob.dir, showWarnings=FALSE, recursive=TRUE)
-  limit.file <- file.path(prob.dir, "target.minutes")
-  fwrite(limit.dt, limit.file, col.names=FALSE)
-}
-
 ## test for informative error early if ucsc not available.
 path.vec <- stop.without.ucsc()
 prog <- path.vec[["bigWigInfo"]]
@@ -148,7 +106,7 @@ Sys.chmod(prog, old.mode)
 ## Pipeline should run to completion for integer count data.
 unlink(index.html)
 test_that("index.html is created", {
-  jobs_create_run(demo.dir)
+  jobs_create_run(demo.dir, target.minutes=5)
   expect_true(file.exists(index.html))
 })
 
@@ -194,4 +152,57 @@ test_that("joint_peaks.bigWig files have the right number of peaks", {
     observed.peaks[[sample.path]] <- nrow(peaks.dt)
   }
   expect_equal(observed.peaks, expected.peaks)
+})
+
+test_that("no duplicate models in problem cache", {
+  models.rds <- Sys.glob(file.path(
+    demo.dir, "samples", "*", "*", "problems", "*", "models.rds"))[1]
+  prob.dir <- dirname(models.rds)
+  models.dt <- PeakSegPipeline:::problem.models(prob.dir)
+  count.tab <- table(table(models.dt$penalty.str))
+  expect_identical(names(count.tab), "1")
+  PeakSegPipeline:::problem.coverage(prob.dir)
+  inf.fit <- PeakSegDisk::PeakSegFPOP_dir(prob.dir, "Inf")
+  models.new <- PeakSegPipeline:::problem.models(prob.dir)
+  count.new <- table(table(models.new$penalty.str))
+  expect_identical(names(count.new), "1")
+})
+
+test_that("no duplicate observations in train data cache", {
+  train_data.csv <- file.path(demo.dir, "train_data.csv")
+  train.orig <- fread(file=train_data.csv)[order(problem.dir)]
+  count.orig <- table(table(train.orig$problem.dir))
+  expect_identical(names(count.orig), "1")
+  tlist <- problem.target(train.orig$problem.dir[1])
+  problem.train(demo.dir)
+  train.new <- fread(file=train_data.csv)[order(problem.dir)]
+  expect_identical(train.new$problem.dir, train.orig$problem.dir)
+  count.new <- table(table(train.new$problem.dir))
+  expect_identical(names(count.new), "1")
+})
+
+test_that("problem.target does not waste time on very similar penalties", {
+  problem.dir <- normalizePath(file.path(
+    demo.dir, "samples/kidney/MS002201/problems/chr10:18024675-38818835"))
+  tlist.1 <- problem.target(problem.dir)
+  max.ok <- 2
+  ## First remove any models that are duplicated.
+  counts.1 <- tlist.1$models[, .(penalties=.N), by=peaks]
+  keep.peaks <- counts.1[penalties<=max.ok, peaks]
+  keep.models <- tlist.1$models[peaks %in% keep.peaks]
+  saveRDS(keep.models, file.path(problem.dir, "models.rds"))
+  ## Now run the algo again.
+  tlist.2 <- problem.target(problem.dir)
+  tlist.2$models[, comp.before := penalty %in% tlist.1$models$penalty]
+  print(tlist.2$models[order(penalty), .(penalty, peaks, comp.before)])
+  counts.2 <- tlist.2$models[, .(penalties=.N), by=peaks]
+  too.many.2 <- counts.2[max.ok<penalties]
+  expect_equal(nrow(too.many.2), 0)
+  ## Now run again... buggy version got more models here.
+  tlist.3 <- problem.target(problem.dir)
+  tlist.3$models[, comp.before := penalty %in% tlist.2$models$penalty]
+  print(tlist.3$models[order(penalty), .(penalty, peaks, comp.before)])
+  counts.3 <- tlist.3$models[, .(penalties=.N), by=peaks]
+  too.many.3 <- counts.3[max.ok<penalties]
+  expect_equal(nrow(too.many.3), 0)
 })

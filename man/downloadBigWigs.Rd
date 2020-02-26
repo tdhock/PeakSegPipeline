@@ -2,7 +2,9 @@
 \alias{downloadBigWigs}
 \title{downloadBigWigs}
 \description{Download bigWig files from a trackDb file.}
-\usage{downloadBigWigs(trackDb.txt, out.dir, verbose = 0)}
+\usage{downloadBigWigs(trackDb.txt, 
+    out.dir, verbose = getOption("PeakSegPipeline.verbose", 
+        1))}
 \arguments{
   \item{trackDb.txt}{trackDb text file.}
   \item{out.dir}{Output directory.}

@@ -8,7 +8,7 @@
 ## ncpus [integer(1)]:        Number of required cpus per task,
 ##                            Set larger than 1 if you want to further parallelize
 ##                            with multicore/parallel within each task.
-## walltime [integer(1)]:     Walltime for this job, in minutes.
+## walltime [integer(1)]:     Walltime for this job, in seconds.
 ##                            Must be at least 1 minute.
 ## memory   [integer(1)]:     Memory in megabytes for each cpu.
 ##                            Must be at least 100 (when I tried lower values my
@@ -19,11 +19,11 @@
 
 <%
 # relative paths are not handled well by Slurm
-log.file = fs::path_expand(log.file)
+log.file = shQuote(fs::path_expand(log.file))
 -%>
 
 
-#SBATCH --job-name=<%= job.name %>
+#SBATCH --job-name=<%= shQuote(job.name) %>
 #SBATCH --output=<%= log.file %>
 #SBATCH --error=<%= log.file %>
 #SBATCH --time=<%= ceiling(resources$walltime / 60) %>

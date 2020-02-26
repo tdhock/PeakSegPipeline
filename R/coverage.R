@@ -11,10 +11,7 @@ bigWigCoverage <- function
   if(input.bedGraph==input.bigWig){
     stop("input.bigWig must be a filename that ends with bigWig")
   }
-  system.or.stop(paste(
-    "bigWigToBedGraph",
-    input.bigWig,
-    input.bedGraph))
+  bigWigToBedGraph(input.bigWig, input.bedGraph)
   cov.dt <- bedGraphCoverage(input.bedGraph)
   info.dt <- bigWigInfo(input.bigWig)
   unlink(input.bedGraph)

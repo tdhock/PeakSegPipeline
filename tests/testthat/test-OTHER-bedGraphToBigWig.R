@@ -1,7 +1,7 @@
 library(testthat)
 library(PeakSegPipeline)
 library(data.table)
-context("demo")
+context("bedGraphToBigWig")
 chromInfo.dt <- fread(text="chr1 100
 chr9 100
 chr10 100")
@@ -18,4 +18,17 @@ test_that("bedGraphToBigWig sorts alphabetically", {
   bigWig.created <- bedGraphToBigWig(
     peaks.bedGraph, chromInfo.txt, peaks.bigWig)
   expect_identical(bigWig.created, TRUE)
+})
+
+test_that("readBigWig returns 0-row data table", {
+  expect_silent({
+    empty.dt <- readBigWig(peaks.bigWig, "chr9", 50, 60)
+  })
+  expect_equal(nrow(empty.dt), 0)
+})
+
+test_that("readBigWig returns 1-row data table", {
+  one.row <- readBigWig(peaks.bigWig, "chr9", 0, 50)
+  expect_equal(nrow(one.row), 1)
+  expect_identical(names(one.row), c("chromStart", "chromEnd", "count"))
 })

@@ -21,16 +21,17 @@ orderChrom <- function(chrom.vec, ...){
 plot_all <- function
 ### Gather and plot results of peak calling, generate summary web page
 ### set.dir.arg/index.html. Labeled chunk plots are created in
-### parallel via future.apply::future_lapply. If set.dir.arg/hub.sh
+### parallel via psp_lapply. If set.dir.arg/hub.sh
 ### exists it is called at the end of this function in order to
 ### generate a track hub based on the peak model files -- it should
 ### contain something like Rscript -e
 ### 'PeakSegPipeline::create_track_hub(...)'
 (set.dir.arg,
 ### Path/to/data/dir.
-  zoom.out.times=10
+  zoom.out.times=10,
 ## The UCSC links in the HTML tables will be zoomed out from the peak
 ## this number of times.
+  verbose=getOption("PeakSegPipeline.verbose", 1)
 ){
   jobPeaks <- jprob.name <- sample.loss.diff <- group.loss.diff <-
     Input.up <- zoomPos <- n.groups.up <- str.groups.up <-
@@ -71,7 +72,7 @@ plot_all <- function
       "no predicted joint peaks found; to do joint peak prediction run ",
       file.path(joint.glob, "jobPeaks.sh"))
   }
-  cat(
+  if(verbose)cat(
     "Reading predicted peaks in",
     length(jobPeaks.RData.vec),
     "jobPeaks.RData files.\n",
@@ -79,15 +80,36 @@ plot_all <- function
   ## First pass to figure out background level for each sample.
   summary.dt.list <- list()
   background.list <- list()
-  for(job.i in seq_along(jobPeaks.RData.vec)){
+  job.i.vec <- seq_along(jobPeaks.RData.vec)
+  for(job.i in job.i.vec){
     jobPeaks.RData <- jobPeaks.RData.vec[[job.i]]
+    if(verbose)cat(sprintf(
+      "%4d / %4d first pass %s\n",
+      job.i, length(jobPeaks.RData.vec), jobPeaks.RData))
     load(jobPeaks.RData)
     if(nrow(jobPeaks)){
       jobPeaks[, n.samples := sapply(jobPeaks$background.mean.vec, nrow)]
       not.all.samples <- jobPeaks[n.samples < max(n.samples)]
       if(nrow(not.all.samples)){
-        print(not.all.samples)
-        stop("some problems do not have all ", max(jobPeaks$n.samples), " samples")
+        if(verbose){
+          cat("Some samples missing, re-doing joint predictions:\n")
+          print(not.all.samples)
+        }
+        jprob.dir.vec <- not.all.samples[, file.path(
+          set.dir, "problems", problem.name, "jointProblems", jprob.name)]
+        unlink(file.path(jprob.dir.vec, "segmentations.RData"))
+        unlink(file.path(jprob.dir.vec, "peakInfo.rds"))
+        job.dir <- dirname(jobPeaks.RData)
+        jobPeaks <- PeakSegPipeline::problem.joint.predict.job(job.dir)
+        ## try again.
+        jobPeaks[, n.samples := sapply(jobPeaks$background.mean.vec, nrow)]
+        not.all.samples <- jobPeaks[n.samples < max(n.samples)]
+        if(nrow(not.all.samples)){
+          stop(
+            "some problems do not have all ",
+            max(jobPeaks$n.samples),
+            " samples")
+        }
       }
       bkg.mat <- do.call(cbind, jobPeaks$background.mean.vec)
       background.list[[job.i]] <- rowMeans(bkg.mat, na.rm=TRUE)
@@ -109,8 +131,11 @@ plot_all <- function
     out.tsv <- out.tsv.vec[[out.col]]
     conn.list[[out.col]] <- gzfile(out.tsv, "w")
   }
-  for(job.i in seq_along(jobPeaks.RData.vec)){
+  for(job.i in job.i.vec){
     jobPeaks.RData <- jobPeaks.RData.vec[[job.i]]
+    if(verbose)cat(sprintf(
+      "%4d / %4d second pass %s\n",
+      job.i, length(jobPeaks.RData.vec), jobPeaks.RData))
     load(jobPeaks.RData)
     if(nrow(jobPeaks)){
       out.mat.list <- list()
@@ -168,14 +193,14 @@ plot_all <- function
   summary.dt <- do.call(rbind, summary.dt.list)
   ## Plot each labeled chunk.
   chunk.limits.csv <- file.path(set.dir, "chunk.limits.csv")
-  unsorted.problems <- fread(file.path(set.dir, "problems.bed"))
+  unsorted.problems <- fread(file=file.path(set.dir, "problems.bed"))
   setnames(unsorted.problems, c("chrom", "problemStart", "problemEnd"))
   unsorted.problems[, problemStart1 := problemStart +1L]
   unsorted.problems[, problem.name := sprintf(
     "%s:%d-%d", chrom, problemStart, problemEnd)]
   setkey(unsorted.problems, chrom, problemStart1, problemEnd)
   chunk.dir.vec <- if(file.exists(chunk.limits.csv)){
-    chunks <- fread(chunk.limits.csv)
+    chunks <- fread(file=chunk.limits.csv)
     chunks[, chunk.name := sprintf("%s:%d-%d", chrom, chromStart, chromEnd)]
     chunks[, chromStart1 := chromStart+1L]
     setkey(chunks, chrom, chromStart1, chromEnd)
@@ -183,7 +208,7 @@ plot_all <- function
     chunks.with.problems[, file.path(
       set.dir, "problems", problem.name, "chunks", chunk.name)]
   }
-  future.apply::future_lapply(chunk.dir.vec, function(chunk.dir){
+  psp_lapply(chunk.dir.vec, function(chunk.dir){
     PeakSegPipeline::problem.joint.plot(chunk.dir)
   })
   problems <- unsorted.problems[orderChrom(chrom, problemStart),]
@@ -194,7 +219,7 @@ plot_all <- function
     base.tsv.gz <- paste0(
       "peaks_matrix_", suffix, ".tsv.gz")
     path.tsv.gz <- file.path(set.dir, base.tsv.gz)
-    cmd <- paste("zcat", path.tsv.gz)
+    cmd <- paste("zcat", shQuote(path.tsv.gz))
     fread(cmd=cmd, ...)
   }
   ## Read first row and column of samples matrix to get names.
@@ -205,7 +230,9 @@ plot_all <- function
   setnames(pos.dt, c("chrom", "peakStart", "peakEnd"))
   ord.vec <- pos.dt[, orderChrom(chrom, peakStart, peakEnd)]
   pos.ord.dt <- pos.dt[ord.vec]
-  for(sample.i in 2:length(col.name.vec)){
+  sample.i.vec <- 2:length(col.name.vec)
+  for(i in seq_along(sample.i.vec)){
+    sample.i <- sample.i.vec[[i]]
     presence.dt <- zcat("sample", select=sample.i)[ord.vec]
     has.peak <- which(presence.dt[[1]]==1)
     mean.vec <- zcat("meanCoverage", select=sample.i)[ord.vec][[1]]
@@ -216,6 +243,8 @@ plot_all <- function
     out.path <- col.name.vec[[sample.i]]
     out.file <- file.path(
       set.dir, "samples", out.path, "joint_peaks.bedGraph")
+    if(verbose)cat(sprintf(
+      "%4d / %4d writing %s\n", i, length(sample.i.vec), out.file))
     fwrite(
       bg.dt,
       out.file,
@@ -326,7 +355,7 @@ plot_all <- function
     sample.id <- basename(sample.dir)
     group.dir <- dirname(sample.dir)
     sample.group <- basename(group.dir)
-    sample.labels <- fread(labels.bed)
+    sample.labels <- fread(file=labels.bed)
     setnames(sample.labels, c("chrom", "labelStart", "labelEnd", "annotation"))
     all.labels.list[[labels.bed]] <- data.table(
       sample.id, sample.group, sample.labels)
@@ -436,7 +465,7 @@ specific.html.vec
   ## finally, create track hub if hub.sh exists.
   hub.sh <- file.path(set.dir, "hub.sh")
   if(file.exists(hub.sh)){
-    system.or.stop(paste("bash", hub.sh))
+    system.or.stop(paste("bash", shQuote(hub.sh)))
   }
 ### Nothing.
 }

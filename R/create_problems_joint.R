@@ -1,14 +1,26 @@
+psp_lapply <- function
+### Use the lapply-like function defined in the PeakSegPipeline.lapply
+### option, or the default base::lapply.
+(...
+### Passed to the lapply-like function.
+){
+  fun <- getOption("PeakSegPipeline.lapply", lapply)
+  fun(...)
+### Result of the lapply-like function.
+}
+
 create_problems_joint <- function
 ### Create joint problems for one separate problem, after separate
 ### peak prediction. Parallelized over joint problems via
-### future.apply::future_lapply.
+### psp_lapply.
 (prob.dir,
 ### proj.dir/problems/problemID
-  peaks=NULL
+  peaks=NULL,
 ### data.table of peaks predicted in all samples for this problem (if
 ### it has already been computed by problem.predict.allSamples), or
 ### NULL which means to read predicted peaks from
 ### proj.dir/samples/*/*/problemID/peaks.bed files.
+  verbose=getOption("PeakSegPipeline.verbose", 1)
 ){
   chromStart <- chromEnd <- clusterStart1 <- clusterStart <-
     clusterEnd <- . <- annotation <- labelStart <- labelEnd <-
@@ -16,14 +28,6 @@ create_problems_joint <- function
         problemStart <- problemEnd <- problemStart1 <- cluster <- NULL
   ## above to avoid "no visible binding for global variable" NOTEs in
   ## CRAN check.
-  jointProblems.bed.sh <- file.path(prob.dir, "jointProblems.bed.sh")
-  PBS.header <- if(file.exists(jointProblems.bed.sh)){
-    sh.lines <- readLines(jointProblems.bed.sh)
-    pbs.lines <- grep("^#", sh.lines, value=TRUE)
-    paste(pbs.lines, collapse="\n")
-  }else{
-    "#!/bin/bash"
-  }
   ann.colors <-
     c(noPeaks="#f6f4bf",
       peakStart="#ffafaf",
@@ -38,7 +42,7 @@ create_problems_joint <- function
     peaks.glob <- file.path(
       samples.dir, "*", "*", "problems", problem.name, "peaks.bed")
     peaks.bed.vec <- Sys.glob(peaks.glob)
-    cat("Found", length(peaks.bed.vec), peaks.glob, "files.\n")
+    if(verbose)cat("Found", length(peaks.bed.vec), peaks.glob, "files.\n")
     peaks.list <- list()
     for(sample.i in seq_along(peaks.bed.vec)){
       peaks.bed <- peaks.bed.vec[[sample.i]]
@@ -49,7 +53,7 @@ create_problems_joint <- function
       group.dir <- dirname(sample.dir)
       sample.group <- basename(group.dir)
       ## no peaks gives a warning, which is handled.
-      sample.peaks <- suppressWarnings(fread(peaks.bed))
+      sample.peaks <- suppressWarnings(fread(file=peaks.bed))
       if(nrow(sample.peaks)){
         setnames(
           sample.peaks,
@@ -72,12 +76,13 @@ create_problems_joint <- function
       clusterEnd=max(chromEnd)
     ), by=cluster]
     clusters[, clusterStart1 := clusterStart + 1L]
-    cat(nrow(peaks), "total peaks form",
-        nrow(clusters), "overlapping peak clusters.\n")
+    if(verbose)cat(
+      nrow(peaks), "total peaks form",
+      nrow(clusters), "overlapping peak clusters.\n")
     list(
       peaks=clusters[, .(clusterStart, clusterEnd)])
   }else{
-    cat("No predicted peaks.\n")
+    if(verbose)cat("No predicted peaks.\n")
     clusters <- data.table(
       cluster=integer(),
       clusterStart1=integer(),
@@ -94,7 +99,7 @@ create_problems_joint <- function
     sample.id <- basename(sample.dir)
     group.dir <- dirname(sample.dir)
     sample.group <- basename(group.dir)
-    sample.labels <- fread(labels.bed)
+    sample.labels <- fread(file=labels.bed)
     setnames(
       sample.labels,
       c("chrom", "labelStart", "labelEnd", "annotation"))
@@ -110,7 +115,7 @@ create_problems_joint <- function
   }
   labels <- do.call(rbind, labels.list)
   if(is.null(labels)){
-    cat("No labels.\n")
+    if(verbose)cat("No labels.\n")
   }else{
     label.props <- labels[, list(
       prop.noPeaks=mean(annotation=="noPeaks")
@@ -121,7 +126,7 @@ create_problems_joint <- function
     labels.with.no.peaks <- over[is.na(cluster),]
     labels.with.no.peaks[, bases := labelEnd - labelStart]
     labels.with.no.peaks[, reduce := as.integer(bases/3)]
-    cat(
+    if(verbose)cat(
       "Found", nrow(labels.with.no.peaks),
       "labeled regions with no peaks out of",
       nrow(label.props), "total.\n")
@@ -185,43 +190,18 @@ create_problems_joint <- function
           sep="\t",
           row.names=FALSE,
           col.names=FALSE)
-        ## Script for target.
-        target.tsv <- file.path(jprob.dir, "target.tsv")
-        sh.file <- paste0(target.tsv, ".sh")
-        target.cmd <- Rscript(
-          'PeakSegPipeline::problem.joint.target("%s")', jprob.dir)
-        script.txt <- paste0(PBS.header, "
-#PBS -o ", target.tsv, ".out
-#PBS -e ", target.tsv, ".err
-#PBS -N JTarget", pname, "
-", target.cmd, "
-")
-        writeLines(script.txt, sh.file)
       }
-      ## Script for peaks.
-      peaks.bed <- file.path(jprob.dir, "peaks.bed")
-      sh.file <- paste0(peaks.bed, ".sh")
-      pred.cmd <- Rscript(
-        'PeakSegPipeline::problem.joint.predict("%s")',
-        jprob.dir)
-      script.txt <- paste0(PBS.header, "
-#PBS -o ", peaks.bed, ".out
-#PBS -e ", peaks.bed, ".err
-#PBS -N JPred", problem$problem.name, "
-", pred.cmd, "
-")
-      writeLines(script.txt, sh.file)
     }
     ## Sanity checks -- make sure no joint problems overlap each other,
     ## or are outside the separate problem.
     stopifnot(separate.problem$problemStart <= problem.info$problemStart)
     stopifnot(problem.info$problemEnd <= separate.problem$problemEnd)
     problem.info[, stopifnot(problemEnd[-.N] <= problemStart[-1])]
-    cat(
+    if(verbose)cat(
       "Creating ", nrow(problem.info),
       " joint segmentation problems for ", problem.name,
       "\n", sep="")
-    nothing <- future.apply::future_lapply(1:nrow(problem.info), makeProblem)
+    nothing <- psp_lapply(1:nrow(problem.info), makeProblem)
     write.table(
       problem.info[, .(chrom, problemStart, problemEnd)],
       jointProblems.bed,
@@ -230,6 +210,6 @@ create_problems_joint <- function
       col.names=FALSE,
       row.names=FALSE)
   }else{
-    cat("No joint problems.\n")
+    if(verbose)cat("No joint problems.\n")
   }
 }

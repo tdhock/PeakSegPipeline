@@ -5,12 +5,14 @@
 repeatedly calls \code{\link[PeakSegDisk]{PeakSegFPOP_dir}} with different penalty values,
 until it finds an interval of penalty values with minimal label
 error. The calls to PeakSegFPOP are parallelized using
-\code{\link[future.apply]{future_lapply}}.  A time limit in minutes may be
+\code{\link{psp_lapply}}.  A time limit in minutes may be
 specified in a file problem.dir/target.minutes; the search will
 stop at a sub-optimal target interval if this many minutes has
 elapsed. Useful for testing environments with build time limits
 (travis).}
-\usage{problem.target(problem.dir, verbose = 0)}
+\usage{problem.target(problem.dir, 
+    verbose = getOption("PeakSegPipeline.verbose", 
+        1))}
 \arguments{
   \item{problem.dir}{problemID directory in which coverage.bedGraph has already been
 computed. If there is a labels.bed file then the number of
@@ -22,10 +24,8 @@ interval of minimal error penalty values.}
 
 \value{List of info related to target interval computation: target is the
 interval of log(penalty) values that achieve minimum incorrect
-labels (numeric vector of length 2), target.iterations is a
-data.table with target intervals as a function of iteration,
-models is a data.table with one row per model for which the label
-error was computed.}
+labels (numeric vector of length 2), models and iterations are
+data.tables with one row per model.}
 
 \author{Toby Dylan Hocking}
 
@@ -70,8 +70,8 @@ target.list <- problem.target(problem.dir, verbose=1)
 
 ## These are all the models computed in order to find the target
 ## interval.
-print(target.list$models[, list(
-  penalty, log.penalty=log(penalty), peaks, total.loss, fn, fp, errors)])
+print(target.list$models[order(penalty), list(
+  penalty, log.penalty=log(penalty), peaks, total.loss, fn, fp)])
 
 ## This is the target interval in log(penalty) values.
 print(target.list$target)

@@ -15,14 +15,14 @@ downloadProblems <- function
   ## CRAN check.
   pre.genome <- paste0(url.prefix, genome)
   file.list <- list()
-  for(db in c("chromInfo", "gap")){    
+  for(db in c("chromInfo", "gap")){
     u <- paste0(pre.genome, "/database/", db, ".txt.gz")
     f <- tempfile()
     gz <- paste0(f, ".gz")
     download.file(u, gz)
-    system.or.stop(paste("gunzip", gz))
+    system.or.stop(paste("gunzip", shQuote(gz)))
     if(db=="gap"){
-      dt <- fread(f)
+      dt <- fread(file=f)
       fwrite(dt[, 2:4, with=FALSE], f)
     }
     file.list[[db]] <- f

@@ -1,10 +1,13 @@
 \name{system.or.stop}
 \alias{system.or.stop}
 \title{system or stop}
-\description{Run a command line or stop with an error.}
-\usage{system.or.stop(cmd, verbose = 0)}
+\description{Run a command line and stop with
+an error for non-zero status code.}
+\usage{system.or.stop(cmd, verbose = getOption("PeakSegPipeline.verbose", 
+    1))}
 \arguments{
-  \item{cmd}{Command line, passed to system.}
+  \item{cmd}{Command line arguments, which will be escaped by \code{\link[base]{shQuote}},
+pasted together, and then passed to system.}
   \item{verbose}{print output?}
 }
 

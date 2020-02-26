@@ -1,5 +1,6 @@
 library(testthat)
 context("problem.target")
+library(data.table)
 library(PeakSegPipeline)
 
 data(Mono27ac, envir=environment())
@@ -28,7 +29,7 @@ test_that("problem.target uses problem/labels.bed if present", {
   expect_is(target.list, "list")
   expect_is(target.list$target, "numeric")
   expect_identical(length(target.list$target), 2L)
-  expect_is(target.list$target.iterations, "data.table")
+  expect_is(target.list$iterations, "data.table")
   expect_is(target.list$models, "data.table")
 })
 
@@ -50,6 +51,25 @@ test_that("problem.target uses sampleID/labels.bed if present", {
   expect_is(target.list, "list")
   expect_is(target.list$target, "numeric")
   expect_identical(length(target.list$target), 2L)
-  expect_is(target.list$target.iterations, "data.table")
+  expect_is(target.list$iterations, "data.table")
   expect_is(target.list$models, "data.table")
+})
+
+test_that("model CSV files are deleted", {
+  file.vec <- Sys.glob(file.path(problem.dir, "coverage.bedGraph_penalty=*"))
+  expect_equal(length(file.vec), 0)
+})
+
+test_that("models RDS file is present", {
+  models.rds <- file.path(problem.dir, "models.rds")
+  models.dt <- readRDS(models.rds)
+  expect_is(models.dt, "data.table")
+  err.dt <- models.dt$errors.dt[[1]]
+  expect_is(err.dt, "data.table")
+  expect_equal(models.dt$possible.fp[1], sum(err.dt$possible.fp))
+  expect_equal(models.dt$possible.fn[1], sum(err.dt$possible.tp))
+  model.row <- models.dt[1]
+  seg.dt <- model.row$segments.dt[[1]]
+  expect_is(seg.dt, "data.table")
+  expect_equal(nrow(seg.dt), model.row$segments)
 })

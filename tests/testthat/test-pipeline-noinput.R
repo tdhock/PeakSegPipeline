@@ -17,11 +17,10 @@ fwrite(chromInfo, chromInfo.txt, sep="\t", col.names=FALSE)
 input.bedGraph <- file.path(work.dir, "input.bedGraph")
 fwrite(count.dt, input.bedGraph, col.names=FALSE, sep="\t")
 count.bigWig <- file.path(work.dir, "count.bigWig")
-system.or.stop(paste(
-  "bedGraphToBigWig",
+bedGraphToBigWig(
   input.bedGraph,
   chromInfo.txt,
-  count.bigWig))
+  count.bigWig)
 bigWig.dt <- bigWigCoverage(count.bigWig)
 test_that("bigWigCoverage stats are OK", {
   expect_equal(bigWig.dt$total.coverage, 40)
@@ -37,11 +36,10 @@ chromInfo <- data.table(
   chrom=c("chr1", "chr2"),
   chromEnd=.Machine$integer.max)
 fwrite(chromInfo, chromInfo.txt, sep="\t", col.names=FALSE)
-system.or.stop(paste(
-  "bedGraphToBigWig",
+bedGraphToBigWig(
   input.bedGraph,
   chromInfo.txt,
-  count.bigWig))
+  count.bigWig)
 bigWig.dt <- bigWigCoverage(count.bigWig)
 test_that("no integer overflow for big chroms", {
   expect_true(is.finite(bigWig.dt$total.bases))
@@ -65,20 +63,19 @@ chr1	10149	10154	0.42
 chromInfo <- fread("
 chr1 100000
 ")
-work.dir <- tempdir()
+dir.create(work.dir <- file.path(tempdir(), "folder (bad name)"))
 chromInfo.txt <- file.path(work.dir, "chromInfo.txt")
 fwrite(chromInfo, chromInfo.txt, sep="\t", col.names=FALSE)
 input.bedGraph <- file.path(work.dir, "input.bedGraph")
 fwrite(norm.dt, input.bedGraph, col.names=FALSE, sep="\t")
 norm.bigWig <- file.path(work.dir, "norm.bigWig")
-system.or.stop(paste(
-  "bedGraphToBigWig",
+bedGraphToBigWig(
   input.bedGraph,
   chromInfo.txt,
-  norm.bigWig))
+  norm.bigWig)
 denorm.bigWig <- file.path(work.dir, "denorm.bigWig")
-denormalizeBigWig(norm.bigWig, denorm.bigWig)
 test_that("intermediate bedGraph files are deleted", {
+  denormalizeBigWig(norm.bigWig, denorm.bigWig)
   denorm.bedGraph <- file.path(work.dir, "denorm.bedGraph")
   norm.bedGraph <- file.path(work.dir, "norm.bedGraph")
   expect_true(!file.exists(denorm.bedGraph))
@@ -110,23 +107,30 @@ fwrite(chromInfo, chromInfo.txt, sep="\t", col.names=FALSE)
 input.bedGraph <- file.path(work.dir, "input.bedGraph")
 fwrite(norm.dt, input.bedGraph, col.names=FALSE, sep="\t")
 norm.bigWig <- file.path(work.dir, "norm.bigWig")
-system.or.stop(paste(
-  "bedGraphToBigWig",
+bedGraphToBigWig(
   input.bedGraph,
   chromInfo.txt,
-  norm.bigWig))
+  norm.bigWig)
 denorm.bigWig <- file.path(work.dir, "denorm.bigWig")
 denormalizeBigWig(norm.bigWig, denorm.bigWig)
 denorm.dt <- readBigWig(denorm.bigWig, "chr1", 0, 100000)
 test_that("coverage counts 0:9", {
   expect_identical(denorm.dt$count, 1:9)
 })
-
+test_that("denorm.bedGraph.sorted is deleted", {
+  denorm.bedGraph.sorted <- sub("bigWig$", "bedGraph.sorted", denorm.bigWig)
+  expect_false(file.exists(denorm.bedGraph.sorted))
+})
+test_that("denorm.chromInfo is deleted", {
+  denorm.chromInfo <- sub("bigWig$", "chromInfo", denorm.bigWig)
+  expect_false(file.exists(denorm.chromInfo))
+})
 
 ## Then test pipeline.
-test.data.dir <- file.path(Sys.getenv("HOME"), "PeakSegPipeline-test")
-non.integer.dir <- file.path(test.data.dir, "non-integer")
-demo.dir <- file.path(test.data.dir, "noinput")
+test.data.dir <- file.path("~/PeakSegPipeline-test")
+non.integer.dir <- file.path(test.data.dir, "non-integer (bad)")
+unlink(non.integer.dir, recursive=TRUE, force=TRUE)#start fresh.
+demo.dir <- file.path(test.data.dir, "noinput (bad)")
 index.html <- file.path(demo.dir, "index.html")
 download.to <- function
 (u, f, writeFun=if(grepl("bigWig", f))writeBin else writeLines){
@@ -140,7 +144,7 @@ download.to <- function
   }
 }
 res.list <- list(
-  walltime = 3600, #in minutes
+  walltime = 3600, #in seconds.
   ncpus=1,
   ntasks=1,
   chunks.as.arrayjobs=TRUE)
@@ -191,13 +195,7 @@ for(bigWig.part in bigWig.part.vec){
   demo.bigWig <- sub("non-integer", "noinput", bigWig.file)
   if(!file.exists(demo.bigWig)){
     dir.create(dirname(demo.bigWig), showWarnings=FALSE, recursive=TRUE)
-    bw.dt <- readBigWig(bigWig.file, "chr10", 0, 128616069)
-    out.dt <- data.table(chrom="chr10", bw.dt)
-    demo.bedGraph <- sub("bigWig", "bedGraph", demo.bigWig)
-    fwrite(out.dt, demo.bedGraph, sep="\t", col.names=FALSE)
-    system.or.stop(
-      paste("bedGraphToBigWig", demo.bedGraph, chrom.sizes.file, demo.bigWig))
-    unlink(demo.bedGraph)
+    denormalizeBigWig(bigWig.file, demo.bigWig)
   }
 }
 
@@ -221,15 +219,24 @@ chr10	125919472	128616069
 ", file=problems.bed)
 }
 
-## Pipeline should raise error for non-integer data.
-test_that("error for non-integer data in bigWigs", {
+test_that("pipeline error for non-integer data in bigWigs", {
   expect_error({
-    jobs_create_run(non.integer.dir)
+    jobs_create_run(non.integer.dir, steps=1)
   }, "non-integer data in")
 })
-unlink(non.integer.dir, recursive=TRUE, force=TRUE)
 
-## Set time limit.
+test_that("coverage error for non-integer data in bigWigs", {
+  non.int.prob.dirs <- Sys.glob(file.path(
+    non.integer.dir, "samples", "*", "*", "problems", "*"))
+  unlink(file.path(non.int.prob.dirs, "coverage.bedGraph"))
+  one.prob.dir <- non.int.prob.dirs[1]
+  expected.err <- paste("non-integer data in", one.prob.dir)
+  expect_error({
+    problem.coverage(one.prob.dir)
+  }, expected.err, fixed=TRUE)
+})
+
+## Set time limit manually.
 (sample.dir.vec <- Sys.glob(file.path(
   demo.dir, "samples", "*", "*")))
 prob.dir.vec <- file.path(
@@ -280,22 +287,26 @@ if(FALSE){
   system("sudo scontrol update NodeName=localhost State=RESUME")
 }
 
+sleep.fun <- function(i){
+  system(paste("squeue -u", Sys.getenv("USER")))
+  10
+}
+
 unlink(index.html)
 test_that("index.html is created via batchtools", {
   reg.list <- jobs_submit_batchtools(jobs, res.list)
   reg <- reg.list[[length(reg.list)]]
-  result <- batchtools::waitForJobs(reg=reg, sleep=function(i){
-    system("squeue")
-    10
-  })
+  result <- batchtools::waitForJobs(reg=reg, sleep=sleep.fun)
   expect_true(file.exists(index.html))
-  log.glob <- file.path(demo.dir, "registry", "*", "logs", "*")
+  log.glob <- file.path(
+    shQuote(normalizePath(demo.dir)),
+    "registry", "*", "logs", "*")
   system(paste("tail -n 10000", log.glob))
 })
 
 test_that("entries of peaks matrix are 0/1", {
-  mat.tsv.gz <- file.path(demo.dir, "peaks_matrix_sample.tsv.gz")
-  peak.dt <- fread(cmd=paste("zcat", mat.tsv.gz))
+  mat.tsv.gz <- normalizePath(file.path(demo.dir, "peaks_matrix_sample.tsv.gz"))
+  peak.dt <- fread(cmd=paste("zcat", shQuote(mat.tsv.gz)))
   class.vec <- as.character(sapply(peak.dt, class))
   expected.class.vec <- c("character", rep("integer", length(bigWig.part.vec)))
   expect_identical(class.vec, expected.class.vec)
@@ -308,13 +319,12 @@ unlink(index.html)
 test_that("run only steps 5-6 creates index.html", {
   reg.list <- jobs_submit_batchtools(some.jobs, res.list)
   reg <- reg.list[[length(reg.list)]]
-  result <- batchtools::waitForJobs(reg=reg, sleep=function(i){
-    system("squeue")
-    10
-  })
+  result <- batchtools::waitForJobs(reg=reg, sleep=sleep.fun)
   expect_true(file.exists(index.html))
   for(step.i in names(reg.list)){
-    log.glob <- file.path(demo.dir, "registry", step.i, "logs", "*")
+    log.glob <- file.path(
+      shQuote(normalizePath(demo.dir)),
+      "registry", step.i, "logs", "*")
     system(paste("tail -n 10000", log.glob))
   }
 })

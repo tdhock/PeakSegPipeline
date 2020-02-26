@@ -2,7 +2,8 @@
 \alias{bedGraphToBigWig}
 \title{bedGraphToBigWig}
 \description{Attempt to create \code{bigWig} file.}
-\usage{bedGraphToBigWig(bedGraph, chromInfo, bigWig)}
+\usage{bedGraphToBigWig(bedGraph, 
+    chromInfo, bigWig)}
 \arguments{
   \item{bedGraph}{\code{bedGraph} file (input), four tab-separated columns: chrom,
 chromStart, chromEnd, numeric data.}
