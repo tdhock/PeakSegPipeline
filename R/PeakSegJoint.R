@@ -87,18 +87,18 @@ problem.joint.predict.job <- function
   }
   jobProblems <- fread(file=jobProblems.bed)
   problems.dir <- file.path(data.dir, "problems")
-  setnames(jobProblems, c("chrom", "problemStart", "problemEnd", "problem.name"))
+  setnames(
+    jobProblems,
+    c("chrom", "problemStart", "problemEnd", "problem.name"))
   jobProblems[, jprob.name := sprintf(
     "%s:%d-%d", chrom, problemStart, problemEnd)]
   prob.progress <- function(joint.dir.i){
     prob <- jobProblems[joint.dir.i]
-    joint.dir <- prob[, file.path(
-      problems.dir, problem.name, "jointProblems", jprob.name)]
     if(verbose)cat(sprintf(
       "%4d / %4d joint prediction problems %s\n",
       joint.dir.i, nrow(jobProblems),
-      joint.dir))
-    peakInfo.rds <- file.path(joint.dir, "peakInfo.rds")
+      prob$joint.dir))
+    peakInfo.rds <- file.path(prob$joint.dir, "peakInfo.rds")
     already.computed <- if(!file.exists(peakInfo.rds)){
       FALSE
     }else{
@@ -112,7 +112,7 @@ problem.joint.predict.job <- function
     if(already.computed){
       if(verbose)cat("Skipping since peakInfo.rds already exists.\n")
     }else{
-      pred.row <- problem.joint.predict(joint.dir)
+      pred.row <- problem.joint.predict(prob$joint.dir)
     }
     if(pred.row[, sample.loss.diff==0 && group.loss.diff==0]){
       data.table()
@@ -120,10 +120,13 @@ problem.joint.predict.job <- function
       prob[, data.table(problem.name, jprob.name, pred.row)]
     }
   }
+  jobProblems[, joint.dir := file.path(
+    problems.dir, problem.name, "jointProblems", jprob.name)]
   jmodel.list <- psp_lapply(1:nrow(jobProblems), prob.progress)
   jobPeaks <- do.call(rbind, jmodel.list)
   jobPeaks.RData <- file.path(job.dir, "jobPeaks.RData")
   save(jobPeaks, file=jobPeaks.RData)
+  unlink(jobProblems$joint.dir, recursive=TRUE)
   jobPeaks
 ### data.table of predicted peaks, one row for each job, same columns
 ### as from problem.joint.predict.
@@ -318,6 +321,7 @@ problem.joint <- function
   problemStart1 <- problemStart <- problemEnd <- chrom <- count <- NULL
   ## above to avoid "no visible binding for global variable" NOTEs in
   ## CRAN check.
+  dir.create(jointProblem.dir, showWarnings=FALSE, recursive=TRUE)
   segmentations.RData <- file.path(jointProblem.dir, "segmentations.RData")
   jprob.name <- basename(jointProblem.dir)
   jointProblem.row <- PeakSegPipeline::problem.table(jprob.name)
