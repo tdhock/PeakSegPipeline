@@ -73,7 +73,6 @@ test_that("trackDb.txt file has the correct link to the bigwig files", {
 
 test_that("trackDb.txt file must not have link for joint_peaks bigwig", {
   trackDb.vec <- readLines(trackDb.txt)
-  coverage.line <- grep("samples/kidney/MS002201/joint_peaks.bigWig", trackDb.vec)
-  coverage.url <- sub(".* ", "", trackDb.vec[coverage.line])
-  expect_length(coverage.url, 0)
+  joint_peaks.bigWig.line <- grep("joint_peaks.bigWig", trackDb.vec)
+  expect_length(joint_peaks.bigWig.line, 0)
 })
