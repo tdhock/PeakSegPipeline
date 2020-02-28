@@ -72,10 +72,12 @@ create_track_hub <- function
   joint.bigWig.list <- list()
   for(joint_peaks.bedGraph in joint_peaks.bedGraph.vec){
     joint_peaks.bigWig <- sub("bedGraph$", "bigWig", joint_peaks.bedGraph)
-    created <- bedGraphToBigWig(
-      joint_peaks.bedGraph, chromInfo.txt, joint_peaks.bigWig)
-    if(created){
-      joint.bigWig.list[[joint_peaks.bedGraph]] <- joint_peaks.bigWig
+    if(file.exists(joint_peaks.bedGraph)){
+      created <- bedGraphToBigWig(
+        joint_peaks.bedGraph, chromInfo.txt, joint_peaks.bigWig)
+      if(created){
+        joint.bigWig.list[[joint_peaks.bedGraph]] <- joint_peaks.bigWig
+      }
     }
   }
   ## Write genomes.txt
