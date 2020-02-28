@@ -12,7 +12,7 @@ bigWig.part.vec <- c(
   "kidney/MS002201"
 )
 joint_peaks.bedGraph.file <- file.path(
-  demo.dir, "samples", bigWig.part.vec[1], "joint_peaks.bedGraph")
+  demo.dir, "samples", bigWig.part.vec, "joint_peaks.bedGraph")
 joint_peaks.bedGraph <- "
 chr10	33183545	33225766	20.08
 chr10	33465652	33619573	16.79
@@ -82,11 +82,11 @@ test_that("hub.txt file has correct email", {
 
 test_that("trackDb.txt file has the correct link to the bigwig files", {
   trackDb.vec <- readLines(trackDb.txt)
-  coverage.line <- grep("samples/kidney/MS002201/coverage.bigWig", trackDb.vec)
-  jointpeak.line <- grep("samples/kidney/MS002201/joint_peaks.bigWig", trackDb.vec)
+  coverage.line <- grep(paste0("samples/", bigWig.part.vec, "/coverage.bigWig"), trackDb.vec)
+  jointpeak.line <- grep(paste0("samples/", bigWig.part.vec, "/joint_peaks.bigWig"), trackDb.vec)
   coverage.url <- sub(".* ", "", trackDb.vec[coverage.line])
   jointpeak.url <- sub(".* ", "", trackDb.vec[jointpeak.line])
-  base.url <- paste0(url, "/samples/", bigWig.part.vec[1], "/")
+  base.url <- paste0(url, "/samples/", bigWig.part.vec, "/")
   expect_equal(coverage.url, paste0(base.url, "coverage.bigWig"))
   expect_equal(jointpeak.url, paste0(base.url, "joint_peaks.bigWig"))
 })

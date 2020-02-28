@@ -65,9 +65,9 @@ test_that("hub.txt file has correct email", {
 
 test_that("trackDb.txt file has the correct link to the bigwig files", {
   trackDb.vec <- readLines(trackDb.txt)
-  coverage.line <- grep("samples/kidney/MS002201/coverage.bigWig", trackDb.vec)
+  coverage.line <- grep(paste0("samples/", bigWig.part.vec, "/coverage.bigWig"), trackDb.vec)
   coverage.url <- sub(".* ", "", trackDb.vec[coverage.line])
-  expected.coverage.url <- paste0(url, "/samples/", bigWig.part.vec[1], "/", "coverage.bigWig")
+  expected.coverage.url <- paste0(url, "/samples/", bigWig.part.vec, "/coverage.bigWig")
   expect_equal(coverage.url, expected.coverage.url)
 })
 
