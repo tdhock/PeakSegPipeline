@@ -293,75 +293,80 @@ problem.coverage <- function
            " need ", coverage.bigWig,
            " which does not exist.")
     }
-    prob.cov <- problem[, readBigWig(
+    bigWigToBedGraphNoGaps(
       coverage.bigWig,
       chrom,
       problemStart,
-      problemEnd)]
-    if(nrow(prob.cov)==0){
-      stop(
-        "coverage/count data file ",
-        prob.cov.bedGraph,
-        " is empty; typically this happens when ",
-        coverage.bigWig,
-        " has no data in this genomic region")
-    }
-    if(any(prob.cov$count < 0)){
-      stop("negative coverage in ", prob.cov.bedGraph)
-    }
-    prob.cov[, count.num.str := paste(count)]
-    prob.cov[, count.int := as.integer(round(count))]
-    prob.cov[, count.int.str := paste(count.int)]
-    not.int <- prob.cov[count.int.str != count.num.str]
-    if(nrow(not.int)){
-      print(not.int)
-      stop("non-integer data in ", prob.cov.bedGraph)
-    }
-    u.pos <- prob.cov[, sort(unique(c(chromStart, chromEnd)))]
-    zero.cov <- data.table(
-      chrom=problem$chrom,
-      chromStart=u.pos[-length(u.pos)],
-      chromEnd=u.pos[-1],
-      count=0L)
-    setkey(zero.cov, chromStart)
-    zero.cov[J(prob.cov$chromStart), count := prob.cov$count.int]
-    ## The chromStart on the last line of the coverage file should
-    ## match the problemEnd, for caching purposes.
-    last.end <- zero.cov[.N, chromEnd]
-    first.start <- zero.cov[1, chromStart]
-    dup.cov <- rbind(if(problem$problemStart==first.start){
-      NULL
-    }else{
-      data.table(
-        chrom=problem$chrom,
-        chromStart=problem$problemStart,
-        chromEnd=first.start,
-        count=0L)
-    }, zero.cov, if(last.end == problem$problemEnd){
-      NULL
-    }else{
-      data.table(
-        chrom=problem$chrom,
-        chromStart=last.end,
-        chromEnd=problem$problemEnd,
-        count=0L)
-    })
-    ## dup.cov has chromStart and End the same as problemStart and
-    ## end, but maybe has some rows which could be compressed.
-    out.cov <- dup.cov[c(diff(count), Inf)!=0]
-    out.cov[, chromStart := c(problem$problemStart, chromEnd[-.N])]
-    fwrite(
-      out.cov,
-      prob.cov.bedGraph,
-      quote=FALSE,
-      sep="\t",
-      col.names=FALSE)
+      problemEnd,
+      prob.cov.bedGraph)
   }
   problem
 ### problem data.table. If necessary, the bigWigToBedGraph command
 ### line program is used to create problemID/coverage.bedGraph and
 ### then we (1) stop if there are any negative or non-integer data and
 ### (2) add lines with zero counts for missing data.
+}
+
+bigWigToBedGraphNoGaps <- function
+### Run bigWigToBedGraph then fill in gaps with zeros.
+(coverage.bigWig,
+### file/url of bigWig.
+  chrom,
+### string, chrom of data to pull from bigWig.
+  problemStart,
+### integer, start position of data to pull from bigWig.
+  problemEnd,
+### integer, end position of data to pull from bigWig.
+  prob.cov.bedGraph
+### string, out file to save data.
+){
+  prob.cov <- readBigWig(
+    coverage.bigWig,
+    chrom,
+    problemStart,
+    problemEnd)
+  if(nrow(prob.cov)==0){
+    stop(
+      "coverage/count data file ",
+      prob.cov.bedGraph,
+      " is empty; typically this happens when ",
+      coverage.bigWig,
+      " has no data in this genomic region")
+  }
+  if(any(prob.cov$count < 0)){
+    stop("negative coverage in ", prob.cov.bedGraph)
+  }
+  prob.cov[, count.num.str := paste(count)]
+  prob.cov[, count.int := as.integer(round(count))]
+  prob.cov[, count.int.str := paste(count.int)]
+  not.int <- prob.cov[count.int.str != count.num.str]
+  if(nrow(not.int)){
+    print(not.int)
+    stop("non-integer data in ", prob.cov.bedGraph)
+  }
+  u.pos <- unique(sort(c(
+    prob.cov$chromStart, prob.cov$chromEnd,
+    problemStart, problemEnd
+  )))
+  dup.cov <- data.table(
+    chrom,
+    chromStart=u.pos[-length(u.pos)],
+    chromEnd=u.pos[-1],
+    count=0L)
+  setkey(zero.cov, chromStart)
+  dup.cov[J(prob.cov$chromStart), count := prob.cov$count.int]
+  ## dup.cov has could have some duplicate count values in adjacent
+  ## rows. In contrast out.cov below is compressed (no duplicate count
+  ## values in adjacent rows).
+  out.cov <- dup.cov[c(diff(count), Inf)!=0]
+  out.cov[, chromStart := c(problem$problemStart, chromEnd[-.N])]
+  fwrite(
+    out.cov,
+    prob.cov.bedGraph,
+    quote=FALSE,
+    sep="\t",
+    col.names=FALSE)
+### nothing.
 }
 
 problem.features <- function

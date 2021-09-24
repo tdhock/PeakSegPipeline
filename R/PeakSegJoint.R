@@ -72,7 +72,7 @@ problem.joint.predict.job <- function
   verbose=getOption("PeakSegPipeline.verbose", 1)
 ){
   jprob.name <- chrom <- problemStart <- problemEnd <- problem.name <-
-    jprob.name <- sample.loss.diff <- group.loss.diff <- NULL
+    jprob.name <- sample.loss.diff <- group.loss.diff <- joint.dir <- NULL
   ## above to avoid "no visible binding for global variable" NOTEs in
   ## CRAN check.
   jobProblems.bed <- file.path(job.dir, "jobProblems.bed")
