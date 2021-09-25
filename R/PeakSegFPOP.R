@@ -353,13 +353,13 @@ bigWigToBedGraphNoGaps <- function
     chromStart=u.pos[-length(u.pos)],
     chromEnd=u.pos[-1],
     count=0L)
-  setkey(zero.cov, chromStart)
+  setkey(dup.cov, chromStart)
   dup.cov[J(prob.cov$chromStart), count := prob.cov$count.int]
   ## dup.cov has could have some duplicate count values in adjacent
   ## rows. In contrast out.cov below is compressed (no duplicate count
   ## values in adjacent rows).
   out.cov <- dup.cov[c(diff(count), Inf)!=0]
-  out.cov[, chromStart := c(problem$problemStart, chromEnd[-.N])]
+  out.cov[, chromStart := c(problemStart, chromEnd[-.N])]
   fwrite(
     out.cov,
     prob.cov.bedGraph,
