@@ -257,11 +257,6 @@ problem.coverage <- function
 ### lines do not match the expected problemID, then we recreate it
 ### from sampleID/coverage.bigWig.
 ){
-  chrom <- problemStart <- problemEnd <- count.num.str <- coverage <-
-    count.int <- count.int.str <- chromStart <- chromEnd <- J <-
-      count <- NULL
-  ## above to avoid "no visible binding for global variable" NOTEs in
-  ## CRAN check.
   stopifnot(is.character(problem.dir))
   stopifnot(length(problem.dir)==1)
   dir.create(problem.dir, showWarnings=FALSE, recursive=TRUE)
@@ -295,9 +290,9 @@ problem.coverage <- function
     }
     bigWigToBedGraphNoGaps(
       coverage.bigWig,
-      chrom,
-      problemStart,
-      problemEnd,
+      problem[["chrom"]],
+      problem[["chromStart"]],
+      problem[["chromEnd"]],
       prob.cov.bedGraph)
   }
   problem
@@ -320,6 +315,11 @@ bigWigToBedGraphNoGaps <- function
   prob.cov.bedGraph
 ### string, out file to save data.
 ){
+  count.num.str <- 
+    count.int <- count.int.str <- chromStart <- chromEnd <- J <-
+      count <- NULL
+  ## above to avoid "no visible binding for global variable" NOTEs in
+  ## CRAN check.
   prob.cov <- readBigWig(
     coverage.bigWig,
     chrom,
