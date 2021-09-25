@@ -291,8 +291,8 @@ problem.coverage <- function
     bigWigToBedGraphNoGaps(
       coverage.bigWig,
       problem[["chrom"]],
-      problem[["chromStart"]],
-      problem[["chromEnd"]],
+      problem[["problemStart"]],
+      problem[["problemEnd"]],
       prob.cov.bedGraph)
   }
   problem
