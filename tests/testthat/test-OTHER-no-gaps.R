@@ -23,7 +23,7 @@ data.table::fwrite(
 PeakSegPipeline::bedGraphToBigWig(f.bedGraph, f.chromInfo, f.bigWig)
 f.new <- paste0(f, ".new")
 test_that("NoGaps removes gaps and duplicates", {
-  PeakSegPipeline::bigWigToBedGraphNoGaps(f.bigWig, chrom, 0, last, f.new)
+  PeakSegPipeline::bigWigToBedGraphNoGaps(f.bigWig, f.new, chrom, 0, last)
   cleaned <- data.table::fread(f.new, col.names = names(dup.gap))
   expected <- data.table(rbind(
     d(0, 15, 5),

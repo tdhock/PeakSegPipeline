@@ -290,10 +290,10 @@ problem.coverage <- function
     }
     bigWigToBedGraphNoGaps(
       coverage.bigWig,
+      prob.cov.bedGraph,
       problem[["chrom"]],
       problem[["problemStart"]],
-      problem[["problemEnd"]],
-      prob.cov.bedGraph)
+      problem[["problemEnd"]])
   }
   problem
 ### problem data.table. If necessary, the bigWigToBedGraph command
@@ -304,37 +304,37 @@ problem.coverage <- function
 
 bigWigToBedGraphNoGaps <- function
 ### Run bigWigToBedGraph then fill in gaps with zeros.
-(coverage.bigWig,
-### file/url of bigWig.
-  chrom,
-### string, chrom of data to pull from bigWig.
-  problemStart,
-### integer, start position of data to pull from bigWig.
-  problemEnd,
-### integer, end position of data to pull from bigWig.
-  prob.cov.bedGraph
-### string, out file to save data.
+(in.bigWig,
+### character string path to input bigWig file.
+  out.bedGraph,
+### character string path to output bedGraph file.
+  chrom=NULL,
+### character string, chromosome name to filter data.
+  start=NULL,
+### start position to filter data.
+  end=NULL
+### end position to filter data.
 ){
-  count.num.str <- 
+  count.num.str <-
     count.int <- count.int.str <- chromStart <- chromEnd <- J <-
       count <- NULL
   ## above to avoid "no visible binding for global variable" NOTEs in
   ## CRAN check.
   prob.cov <- readBigWig(
-    coverage.bigWig,
+    in.bigWig,
     chrom,
-    problemStart,
-    problemEnd)
+    start,
+    end)
   if(nrow(prob.cov)==0){
     stop(
       "coverage/count data file ",
-      prob.cov.bedGraph,
+      out.bedGraph,
       " is empty; typically this happens when ",
-      coverage.bigWig,
+      in.bigWig,
       " has no data in this genomic region")
   }
   if(any(prob.cov$count < 0)){
-    stop("negative coverage in ", prob.cov.bedGraph)
+    stop("negative coverage in ", out.bedGraph)
   }
   prob.cov[, count.num.str := paste(count)]
   prob.cov[, count.int := as.integer(round(count))]
@@ -342,11 +342,11 @@ bigWigToBedGraphNoGaps <- function
   not.int <- prob.cov[count.int.str != count.num.str]
   if(nrow(not.int)){
     print(not.int)
-    stop("non-integer data in ", prob.cov.bedGraph)
+    stop("non-integer data in ", out.bedGraph)
   }
   u.pos <- unique(sort(c(
     prob.cov$chromStart, prob.cov$chromEnd,
-    problemStart, problemEnd
+    start, end
   )))
   dup.cov <- data.table(
     chrom,
@@ -359,10 +359,10 @@ bigWigToBedGraphNoGaps <- function
   ## rows. In contrast out.cov below is compressed (no duplicate count
   ## values in adjacent rows).
   out.cov <- dup.cov[c(diff(count), Inf)!=0]
-  out.cov[, chromStart := c(problemStart, chromEnd[-.N])]
+  out.cov[, chromStart := c(start, chromEnd[-.N])]
   fwrite(
     out.cov,
-    prob.cov.bedGraph,
+    out.bedGraph,
     quote=FALSE,
     sep="\t",
     col.names=FALSE)
@@ -506,7 +506,7 @@ problem.models <- function
 ### Data table with all info from model files. One row per model, with
 ### list columns segments.dt and errors.dt with elements that are data
 ### tables representing the segmentation model and label errors.
-}  
+}
 
 problem.target <- structure(function
 ### Compute target interval for a segmentation problem. This function
