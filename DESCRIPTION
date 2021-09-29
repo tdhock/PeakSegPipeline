@@ -1,7 +1,7 @@
 Package: PeakSegPipeline
 Type: Package
 Title: Genome-Wide Peak Prediction Using Supervised Learning and Optimal Segmentation
-Version: 2020.2.13
+Version: 2021.9.24
 Author: Toby Dylan Hocking
 Maintainer: Toby Dylan Hocking <toby.hocking@r-project.org>
 Description: Implementations of supervised machine learning
